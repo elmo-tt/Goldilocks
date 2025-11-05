@@ -164,14 +164,31 @@ export default function CopilotOverlay({
               try {
                 const title = String(c.args?.title || 'Untitled')
                 const excerpt = String(c.args?.excerpt || '')
-                const body = String(c.args?.body || '')
+                let body = String(c.args?.body || '')
                 const tags = Array.isArray(c.args?.tags) ? c.args.tags.map((t: any) => String(t)).slice(0, 8) : []
-                const keyphrase = c.args?.keyphrase ? String(c.args.keyphrase) : undefined
-                const metaTitle = c.args?.metaTitle ? String(c.args.metaTitle) : undefined
-                const metaDescription = c.args?.metaDescription ? String(c.args.metaDescription) : undefined
-                const canonicalUrl = c.args?.canonicalUrl ? String(c.args.canonicalUrl) : undefined
+                let keyphrase = c.args?.keyphrase ? String(c.args.keyphrase) : undefined
+                let metaTitle = c.args?.metaTitle ? String(c.args.metaTitle) : undefined
+                let metaDescription = c.args?.metaDescription ? String(c.args.metaDescription) : undefined
+                let canonicalUrl = c.args?.canonicalUrl ? String(c.args.canonicalUrl) : undefined
                 const noindex = typeof c.args?.noindex === 'boolean' ? Boolean(c.args.noindex) : undefined
                 const status = (c.args?.status === 'published') ? 'published' : 'draft'
+                // Extract SEO lines if the model placed them in the body
+                try {
+                  const mt = body.match(/^\s*Meta\s*Title\s*:\s*(.+)$/im)?.[1]?.trim()
+                  const md = body.match(/^\s*Meta\s*Description\s*:\s*(.+)$/im)?.[1]?.trim()
+                  const kp = (body.match(/^\s*(Keyphrase|Focus\s*keyphrase)\s*:\s*(.+)$/im)?.[2] || '').trim()
+                  const cu = body.match(/^\s*Canonical\s*URL\s*:\s*(.+)$/im)?.[1]?.trim()
+                  if (!metaTitle && mt) metaTitle = mt
+                  if (!metaDescription && md) metaDescription = md
+                  if (!keyphrase && kp) keyphrase = kp
+                  if (!canonicalUrl && cu) canonicalUrl = cu
+                  // Remove SEO block lines and heading from body
+                  body = body
+                    .replace(/^\s*#{0,3}\s*SEO\s+Optimization\s*$/gim, '')
+                    .replace(/^\s*(Meta\s*Title|Meta\s*Description|Keyphrase|Focus\s*keyphrase|Canonical\s*URL)\s*:\s*.+$/gim, '')
+                    .replace(/\n{3,}/g, '\n\n')
+                    .trim()
+                } catch {}
                 ArticlesStore.save({ title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, noindex, status })
                 onNavigate('articles', { minimize: autoMinimize })
                 try { bus.emit('toast', { message: `Created article “${title}”.`, type: 'success' }) } catch {}

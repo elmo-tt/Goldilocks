@@ -115,6 +115,10 @@ export function parseCommand(input: string, practiceAreas?: PracticeAreaRef[]): 
     return { type: "NAVIGATE", target: "calendar" };
   }
 
+  // If the input looks like a question, let the LLM handle it instead of navigating.
+  const isQuestion = q.includes('?') || /^(can|could|how|what|why|where|when|which|do|does|did|will|are|is|should|would|may|might)\b/.test(q)
+  if (isQuestion) return { type: "UNKNOWN" };
+
   const nav = parseIntent(input);
   if (nav) return { type: "NAVIGATE", target: nav };
   return { type: "UNKNOWN" };

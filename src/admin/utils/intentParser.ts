@@ -60,10 +60,13 @@ export function parseCommand(input: string, practiceAreas?: PracticeAreaRef[]): 
   const q = input.trim().toLowerCase();
   if (!q) return { type: "UNKNOWN" };
 
-  // Let the LLM handle rich content creation and research flows instead of hard routing.
-  // This avoids accidentally opening practice pages when the user intends to draft an article.
-  if (/(create|write|draft|generate|compose|summarize|research)\b[\s\S]*\b(article|post)\b/.test(q)
-    || /(search\s+web|web\s+search|sources?\b)/.test(q)) {
+  // Let the LLM handle content creation, edits, and research flows (avoid hard navigation to practice pages).
+  if (
+    /(create|write|draft|generate|compose|summarize|research|update|edit|modify|append|revise|publish|unpublish)\b[\s\S]*\b(article|post)\b/.test(q)
+    || /(update\s+the\s+article\s+titled|update\s+the\s+article\s+about)/.test(q)
+    || /(meta\s*title|meta\s*description|key\s*phrase|keyphrase|canonical\s*url|\bseo\b)/.test(q)
+    || /(search\s+web|web\s+search|sources?\b)/.test(q)
+  ) {
     return { type: "UNKNOWN" };
   }
 

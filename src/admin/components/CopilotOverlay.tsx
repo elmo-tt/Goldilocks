@@ -5,6 +5,8 @@ import { CTA, OFFICES, PRACTICE_AREAS } from '../data/goldlaw'
 import { ArticlesStore } from '../../shared/articles/store'
 import { simulatePushTaskToFilevine } from '../data/integrations'
 import { bus } from '../utils/bus'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { PanelLeft, Plus, X, Send, Bot, Trash2 } from 'lucide-react'
 
 export type Message = { id: string; role: 'user' | 'assistant'; content: string; ts: number; typing?: boolean }
@@ -261,7 +263,19 @@ export default function CopilotOverlay({
                   <span className="dot" />
                 </div>
               ) : (
-                <div>{m.content}</div>
+                m.role === 'assistant' ? (
+                  <div className="md">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}
+                      components={{
+                        a: (props: any) => <a href={props.href} target="_blank" rel="noopener noreferrer">{props.children}</a>
+                      }}
+                    >
+                      {m.content}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <div>{m.content}</div>
+                )
               )}
             </div>
           ))}

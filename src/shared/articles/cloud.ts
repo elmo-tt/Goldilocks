@@ -78,27 +78,35 @@ export const CloudArticlesStore = {
     if (!supabase) throw new Error('Supabase not configured')
     const id = input.id || ('a_' + Math.random().toString(36).slice(2, 10))
     const now = Date.now()
-    let baseSlug = (input.slug || slugify(input.title))
-    const uniqueSlug = await ensureUniqueSlug(baseSlug, input.id)
+    // If updating (id exists), fetch current to merge and avoid wiping fields
+    let existing: Article | undefined
+    if (input.id) {
+      const cur = await supabase.from('articles').select('*').eq('id', id).limit(1).maybeSingle()
+      if (!cur.error) existing = cur.data as unknown as Article | undefined
+    }
+    const prev = existing || ({} as Partial<Article>)
+    // Preserve slug unless explicitly changed or title provided requiring re-slug
+    const desiredSlugBase = input.slug || (input.title && input.title !== prev.title ? slugify(input.title) : (prev.slug || slugify(input.title)))
+    const uniqueSlug = await ensureUniqueSlug(desiredSlugBase!, input.id)
     const next: Article = {
       id,
-      slug: uniqueSlug,
-      title: input.title,
-      tags: input.tags || [],
-      heroUrl: input.heroUrl,
-      heroDataUrl: input.heroDataUrl,
-      excerpt: input.excerpt || '',
-      body: input.body || '',
-      status: (input.status as ArticleStatus) || 'draft',
-      createdAt: (input as any).createdAt || now,
+      slug: uniqueSlug || (prev.slug as string) || slugify(input.title),
+      title: input.title || (prev.title as string) || 'Untitled',
+      tags: (input.tags !== undefined ? input.tags : prev.tags) || [],
+      heroUrl: (input.heroUrl !== undefined ? input.heroUrl : prev.heroUrl),
+      heroDataUrl: (input.heroDataUrl !== undefined ? input.heroDataUrl : prev.heroDataUrl),
+      excerpt: (input.excerpt !== undefined ? input.excerpt : prev.excerpt) || '',
+      body: (input.body !== undefined ? input.body : prev.body) || '',
+      status: (input.status !== undefined ? input.status : prev.status) || 'draft',
+      createdAt: (prev.createdAt as number) || (input as any).createdAt || now,
       updatedAt: now,
-      metaTitle: (input as any).metaTitle,
-      metaDescription: (input as any).metaDescription,
-      keyphrase: (input as any).keyphrase,
-      canonicalUrl: (input as any).canonicalUrl,
-      noindex: (input as any).noindex,
+      metaTitle: (input as any).metaTitle !== undefined ? (input as any).metaTitle : (prev as any).metaTitle,
+      metaDescription: (input as any).metaDescription !== undefined ? (input as any).metaDescription : (prev as any).metaDescription,
+      keyphrase: (input as any).keyphrase !== undefined ? (input as any).keyphrase : (prev as any).keyphrase,
+      canonicalUrl: (input as any).canonicalUrl !== undefined ? (input as any).canonicalUrl : (prev as any).canonicalUrl,
+      noindex: (input as any).noindex !== undefined ? (input as any).noindex : (prev as any).noindex,
     }
-    let { data, error } = await supabase.from('articles').upsert(next, { onConflict: 'id' }).select().limit(1)
+    let { data, error } = await supabase.from('articles').upsert(next as any, { onConflict: 'id' }).select().limit(1)
     if (error) {
       const minimal = {
         id: next.id,

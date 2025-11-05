@@ -206,6 +206,25 @@ export default function CopilotOverlay({
                     const rawLower = raw.toLowerCase()
                     art = all.find(a => rawLower.includes(a.title.toLowerCase()))
                   }
+                  // Keyword-based heuristic: match by topic words in title/tags/excerpt; prefer most recent on tie
+                  if (!art) {
+                    const rawLower = (userMsg.content || '').toLowerCase()
+                    const tokens = (rawLower.match(/[a-z0-9]+/g) || [])
+                    const stop = new Set(['the','and','for','with','that','this','from','about','into','onto','within','your','you','our','are','will','can','make','add','update','article','articles','post','posts','please','now'])
+                    const keywords = Array.from(new Set(tokens.filter(w => w.length >= 4 && !stop.has(w)))).slice(0, 12)
+                    let best: { a: any; score: number } | null = null
+                    for (const a of all) {
+                      const text = [a.title, (a.tags||[]).join(' '), a.excerpt || '', a.slug || ''].join(' ').toLowerCase()
+                      let score = 0
+                      for (const k of keywords) { if (text.includes(k)) score++ }
+                      if (score > 0) {
+                        if (!best) best = { a, score }
+                        else if (score > best.score) best = { a, score }
+                        else if (score === best.score && (a.updatedAt || 0) > (best.a.updatedAt || 0)) best = { a, score }
+                      }
+                    }
+                    if (best) { art = best.a }
+                  }
                 }
                 if (!art) {
                   updateNote = 'Could not locate the target article (need id/slug or an exact title).'

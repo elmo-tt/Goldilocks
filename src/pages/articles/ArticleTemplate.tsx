@@ -26,89 +26,73 @@ function HtmlBody({ html, heroMaxWidth }: { html: string; heroMaxWidth?: number 
     if (!el) return
     let cancelled = false
     const usedIds = new Set<string>()
-    const imgs = Array.from(el.querySelectorAll('img')) as HTMLImageElement[]
-    imgs.forEach(img => {
-      // Constrain images to hero width (if provided) and apply optional data-width percentage
-      img.style.maxWidth = heroMaxWidth ? `${heroMaxWidth}px` : '100%'
-      img.style.height = 'auto'
-      img.style.display = 'block'
-      img.style.borderRadius = '8px'
-      const dw = img.getAttribute('data-width')
-      if (dw) {
-        const pct = Math.max(10, Math.min(100, parseInt(dw)))
-        img.style.width = pct + '%'
-      } else {
-        img.style.width = ''
-      }
-      // Apply alignment
-      const da = img.getAttribute('data-align')
-      if (da === 'center') {
-        img.style.marginLeft = 'auto'
-        img.style.marginRight = 'auto'
+    const apply = () => {
+      const imgs = Array.from(el.querySelectorAll('img')) as HTMLImageElement[]
+      imgs.forEach(img => {
+        // Constrain images to hero width (if provided) and apply optional data-width percentage
+        img.style.maxWidth = heroMaxWidth ? `${heroMaxWidth}px` : '100%'
+        img.style.height = 'auto'
         img.style.display = 'block'
-      } else if (da === 'right') {
-        img.style.marginLeft = 'auto'
-        img.style.marginRight = '0'
-        img.style.display = 'block'
-      } else {
-        img.style.marginLeft = '0'
-        img.style.marginRight = '0'
-      }
-      // Captions are styled separately via explicit markers
-      // Prefer data-asset-id if present
-      const dataId = img.getAttribute('data-asset-id') || ''
-      const src = img.getAttribute('src') || ''
-      const isAssetSrc = src.startsWith('asset:')
-      const id = dataId || (isAssetSrc ? src.slice(6) : '')
-      if (id) {
-        usedIds.add(id)
-        AssetStore.getUrl(id).then(url => {
-          if (!cancelled && url) img.src = url
-        })
-        // If metadata contains a caption and no caption element follows, inject one
-        const nextEl = img.nextElementSibling as HTMLElement | null
-        const hasCaption = !!(nextEl && nextEl.matches(`p[data-caption-for="${id}"]`))
-        if (!hasCaption && (AssetStore as any).getMeta) {
-          ;(AssetStore as any).getMeta(id).then((meta: any) => {
-            if (cancelled) return
-            const caption: string | undefined = meta?.caption
-            if (!caption) return
-            // Ensure still no caption element after potential async delay
-            const curNext = img.nextElementSibling as HTMLElement | null
-            if (curNext && curNext.matches(`p[data-caption-for="${id}"]`)) return
-            const p = document.createElement('p')
-            p.setAttribute('data-caption-for', id)
-            const em = document.createElement('em')
-            em.textContent = caption
-            p.appendChild(em)
-            // Apply caption styling inline for immediate effect
-            p.style.color = 'rgba(255,255,255,0.65)'
-            p.style.fontSize = '14px'
-            p.style.fontStyle = 'italic'
-            p.style.marginTop = '6px'
-            img.insertAdjacentElement('afterend', p)
-          }).catch(() => {})
+        img.style.borderRadius = '8px'
+        const dw = img.getAttribute('data-width')
+        if (dw) {
+          const pct = Math.max(10, Math.min(100, parseInt(dw)))
+          img.style.width = pct + '%'
+        } else {
+          img.style.width = ''
         }
-      }
-    })
+        // Apply alignment
+        const da = img.getAttribute('data-align')
+        if (da === 'center') {
+          img.style.marginLeft = 'auto'
+          img.style.marginRight = 'auto'
+          img.style.display = 'block'
+        } else if (da === 'right') {
+          img.style.marginLeft = 'auto'
+          img.style.marginRight = '0'
+          img.style.display = 'block'
+        } else {
+          img.style.marginLeft = '0'
+          img.style.marginRight = '0'
+        }
+        // Prefer data-asset-id if present
+        const dataId = img.getAttribute('data-asset-id') || ''
+        const src = img.getAttribute('src') || ''
+        const isAssetSrc = src.startsWith('asset:')
+        const id = dataId || (isAssetSrc ? src.slice(6) : '')
+        if (id) {
+          usedIds.add(id)
+          AssetStore.getUrl(id).then(url => {
+            if (!cancelled && url) img.src = url
+          })
+        }
+      })
+      // Style any paragraphs explicitly marked as captions
+      const marked = Array.from(el.querySelectorAll('p[data-caption-for]')) as HTMLElement[]
+      marked.forEach(p => {
+        p.style.color = 'rgba(255,255,255,0.65)'
+        p.style.fontSize = '14px'
+        p.style.fontStyle = 'italic'
+        p.style.marginTop = '6px'
+      })
+      // Also style any figcaptions present
+      const captions = Array.from(el.querySelectorAll('figcaption')) as HTMLElement[]
+      captions.forEach(fc => {
+        fc.style.color = 'rgba(255,255,255,0.65)'
+        fc.style.fontSize = '14px'
+        fc.style.fontStyle = 'italic'
+        fc.style.marginTop = '6px'
+      })
+    }
+    // Initial apply
+    apply()
+    // Re-apply on attribute mutations so changes show without needing DevTools
+    const mo = new MutationObserver(() => apply())
+    mo.observe(el, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-width', 'data-align', 'src'] })
     // Style any paragraphs explicitly marked as captions
-    const marked = Array.from(el.querySelectorAll('p[data-caption-for]')) as HTMLElement[]
-    marked.forEach(p => {
-      p.style.color = 'rgba(255,255,255,0.65)'
-      p.style.fontSize = '14px'
-      p.style.fontStyle = 'italic'
-      p.style.marginTop = '6px'
-    })
-    // Also style any figcaptions present
-    const captions = Array.from(el.querySelectorAll('figcaption')) as HTMLElement[]
-    captions.forEach(fc => {
-      fc.style.color = 'rgba(255,255,255,0.65)'
-      fc.style.fontSize = '14px'
-      fc.style.fontStyle = 'italic'
-      fc.style.marginTop = '6px'
-    })
     return () => {
       cancelled = true
+      mo.disconnect()
       for (const id of usedIds) AssetStore.revokeUrl(id)
     }
   }, [safe, heroMaxWidth])

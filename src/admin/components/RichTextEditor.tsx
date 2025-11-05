@@ -126,15 +126,17 @@ export default function RichTextEditor({ value, onChange, onPickAsset, registerA
       try {
         const imgs = Array.from(root.querySelectorAll('img')) as HTMLImageElement[]
         for (const img of imgs) {
-          // Apply width from data-width
+          // Apply width from data-width, default to 50% to make handles accessible
           const dw = img.getAttribute('data-width')
           if (dw) {
             const pct = Math.max(10, Math.min(100, parseInt(dw)))
             img.style.width = pct + '%'
-            img.style.maxWidth = '100%'
-            img.style.height = 'auto'
-            img.style.display = 'block'
+          } else {
+            img.style.width = '50%'
           }
+          img.style.maxWidth = '100%'
+          img.style.height = 'auto'
+          img.style.display = 'block'
           // Resolve asset token to preview URL once
           const src = img.getAttribute('src') || ''
           if (src.startsWith('asset:') && !img.dataset.assetResolved) {
@@ -157,7 +159,7 @@ export default function RichTextEditor({ value, onChange, onPickAsset, registerA
     // Initial pass
     apply()
     const obs = new MutationObserver(() => apply())
-    obs.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'data-asset-id', 'data-width'] })
+    obs.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'data-asset-id', 'data-width', 'data-align'] })
     return () => { obs.disconnect() }
   }, [editor])
 
@@ -263,10 +265,10 @@ export default function RichTextEditor({ value, onChange, onPickAsset, registerA
         {editor.isActive('image') && (
           <div style={{ display:'inline-flex', gap:6, alignItems:'center', marginLeft:6 }}>
             <span style={{ fontSize:12, opacity:.8 }}>Image size:</span>
-            <button type="button" className="button" onClick={() => editor.chain().updateAttributes('image', { 'data-width': '25' }).focus().run()}>25%</button>
-            <button type="button" className="button" onClick={() => editor.chain().updateAttributes('image', { 'data-width': '50' }).focus().run()}>50%</button>
-            <button type="button" className="button" onClick={() => editor.chain().updateAttributes('image', { 'data-width': '75' }).focus().run()}>75%</button>
-            <button type="button" className="button" onClick={() => editor.chain().updateAttributes('image', { 'data-width': '100' }).focus().run()}>100%</button>
+            <button type="button" className="button" onClick={() => editor.chain().focus().updateAttributes('image', { 'data-width': '25' }).run()}>25%</button>
+            <button type="button" className="button" onClick={() => editor.chain().focus().updateAttributes('image', { 'data-width': '50' }).run()}>50%</button>
+            <button type="button" className="button" onClick={() => editor.chain().focus().updateAttributes('image', { 'data-width': '75' }).run()}>75%</button>
+            <button type="button" className="button" onClick={() => editor.chain().focus().updateAttributes('image', { 'data-width': '100' }).run()}>100%</button>
           </div>
         )}
       </div>

@@ -1,0 +1,96 @@
+.footer { background: var(--color-7-0a0d48, #0a0d48); color: #fff; padding-block: 64px 36px; }
+.footer-inner { display: grid; gap: clamp(56px, 9vw, 120px); padding-inline: clamp(24px, 8vw, 160px); }
+
+/* Top row: 3 columns */
+.footer-top { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: auto; column-gap: clamp(24px, 5vw, 56px); row-gap: clamp(8px, 2.5vw, 20px); align-items: start; }
+.ft-col { min-width: 0; }
+/* Explicit row/column placement of top blocks using direct grid children */
+.footer-top > .ft-col:nth-child(1) { grid-column: 1 / 3; grid-row: 1; }
+.footer-top > .ft-col:nth-child(2) { grid-column: 3; grid-row: 1; justify-self: start; align-self: start; }
+.footer-top > .ft-col:nth-child(3) { grid-column: 4; grid-row: 1; justify-self: start; align-self: start; }
+
+/* Brand/Tag */
+.ft-logo { font-weight: 700; letter-spacing: 0.6px; margin-bottom: 10px; }
+.ft-tag { max-width: 34ch; opacity: 0.9; margin: 0; font-size: 18px; }
+.ft-tag { margin: 0 0 8px 0; }
+
+/* Contact */
+.ft-title { font-size: 18px; opacity: 0.9; margin-bottom: 12px; }
+.ft-addresses { display: grid; gap: 14px; opacity: 0.9; font-size: 16px; }
+.ft-addresses p { margin: 0; line-height: 1.25; color: rgba(255,255,255,0.78); }
+
+.ft-call { margin-top: 18px; display: inline-flex; align-items: center; gap: 12px; background: linear-gradient(90deg,#f2e0a9 0%, #d0ae63 100%); color: var(--color-7-0a0d48, #0a0d48); border-radius: 12px; padding: 10px 14px; text-decoration: none; font-weight: 600; width: fit-content; border: 1px solid rgba(0,0,0,0.2); box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
+.ft-call-ico { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: var(--color-7-0a0d48, #0a0d48); }
+.ft-call-text { display: flex; flex-direction: column; line-height: 1.1; gap: 2px; font-size: 18px; color: #fff; }
+.ft-call-note { opacity: 0.9; margin: 0; font-weight: 500; font-size: 12px; }
+.ft-call-num { font-size: 18px; color: #fff; }
+
+/* Footer CTA text stack — match hero call typography */
+.ft-lines { display: flex; flex-direction: column; line-height: 1.1; color: var(--color-7-0a0d48, #0a0d48); }
+.ft-topline { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.85; color: var(--color-7-0a0d48, #0a0d48); }
+.ft-topline .tm { font-size: 0.7em; vertical-align: super; line-height: 0; margin-left: 1px; opacity: 0.9; }
+.ft-topline .lower-s { text-transform: lowercase; letter-spacing: 0; }
+.ft-number { font-weight: 600; font-size: 1.2rem; letter-spacing: 0.01em; color: var(--color-7-0a0d48, #0a0d48); }
+
+.ft-socials { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 10px; }
+.ft-cta { display: grid; align-content: start; }
+.ft-cta .ft-call { margin-top: 0; }
+.ft-soc { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 999px; background: rgba(255,255,255,0.08); color: #fff; text-decoration: none; opacity: 0.9; }
+.ft-soc:hover { opacity: 1; }
+
+/* Newsletter */
+.ft-news-card { background: #030535; border-radius: 10px; padding: 20px; display: grid; gap: 10px; }
+.ft-news-title { font-size: 32px; line-height: 1.2; font-weight: 500; }
+.ft-news-sub { margin: 0; color: rgba(255,255,255,0.78); line-height: 1.3; }
+.ft-form { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 6px; }
+.ft-input { width: 100%; border-radius: 8px; border: 0; background: #fff; color: #0a0d48; padding: 10px 12px; outline: none; }
+.ft-btn { background: linear-gradient(180deg,#e7d9a6,#c9a75d); color: #172554; border: 0; border-radius: 8px; padding: 10px 12px; font-weight: 600; cursor: pointer; }
+
+/* Bottom row: 4 columns of links */
+.footer-mid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); column-gap: clamp(24px, 5vw, 56px); row-gap: clamp(20px, 4vw, 48px); }
+.fl-col { min-width: 0; }
+.fl-title { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
+.fl-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.fl-list a { color: rgba(255,255,255,0.78); text-decoration: none; font-size: 16px; }
+.fl-list a:hover { opacity: 1; text-decoration: underline; }
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .footer-top { grid-template-columns: 1fr 1fr; }
+  .ft-news { grid-column: 1 / -1; }
+}
+@media (max-width: 900px) {
+  .footer-top { grid-template-columns: 1fr; grid-template-rows: auto; column-gap: 0; }
+  .footer-top > .ft-col { grid-column: auto; grid-row: auto; }
+  .ft-brand, .ft-contact, .ft-cta { grid-column: auto; grid-row: auto; }
+  .footer-mid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 768px) {
+  .footer-inner { gap: 32px; }
+  .footer-top { display: flex; flex-direction: column; gap: 16px; }
+  .footer-top > .ft-col + .ft-col { margin-top: 12px; }
+  .ft-brand { margin-bottom: 16px; }
+  .ft-addresses { margin-top: 8px; font-size: 15px; }
+  .ft-addresses p { margin: 0 0 6px 0; line-height: 1.4; }
+  /* Remove card surfaces; keep clean stacking */
+  .ft-call { width: 100%; display: flex; justify-content: center; align-items: center; gap: 12px; padding: 12px 16px; }
+  .ft-call-ico { width: 32px; height: 32px; }
+  .ft-topline { font-size: 0.625rem; }
+  .ft-number { font-size: 1.4rem; }
+  /* Socials: single row w/ horizontal scroll if needed */
+  .ft-socials { display: grid; grid-auto-flow: column; grid-auto-columns: min-content; justify-content: center; gap: 10px; overflow-x: auto; padding: 6px 0; }
+  .ft-socials::-webkit-scrollbar { display: none; }
+  .ft-soc { width: 28px; height: 28px; flex: 0 0 auto; }
+  .ft-cta { margin-top: 8px; }
+  .footer-mid { grid-template-columns: 1fr; row-gap: 24px; }
+  .ft-title { font-size: 16px; }
+  .ft-news-title { font-size: 24px; }
+  .footer-mid { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 16px; }
+}
+@media (max-width: 560px) {
+  .footer-mid { grid-template-columns: 1fr; }
+  .ft-addresses { font-size: 14px; }
+  .ft-call { padding: 10px 14px; column-gap: 10px; }
+  .ft-number { font-size: 1.25rem; }
+  .ft-soc { width: 26px; height: 26px; }
+}

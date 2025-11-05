@@ -1,0 +1,35 @@
+.faq { background: var(--color-7-0a0d48, #0a0d48); color: #fff; padding-block: 72px; }
+.faq-inner { display: grid; grid-template-columns: minmax(320px, 420px) 1fr; column-gap: clamp(48px, 10vw, 140px); align-items: stretch; padding-inline: clamp(32px, 14vw, 240px); }
+.faq-left { display: grid; grid-template-rows: auto 1fr; row-gap: 8px; min-height: 0; position: relative; padding-bottom: 115px; }
+
+/* Left column */
+.faq-title { font-size: 32px; line-height: 1.1; font-weight: 400; margin: 8px 0; max-width: 26ch; }
+.faq-title .muted { color: rgba(255,255,255,0.65); display: block; }
+.faq-card { display: grid; gap: 6px; margin-top: 0; background: #030535; border-radius: 8px; padding: 14px; text-decoration: none; color: #fff; width: 300px; height: 115px; overflow: hidden; position: absolute; left: 0; bottom: 0; }
+.faq-card-title { color: rgba(255,255,255,0.65); font-size: 18px; line-height: 1.3; }
+.faq-card-link { display: inline-flex; align-items: center; gap: 8px; opacity: 0.85; font-size: 16px; }
+.faq-card:hover .faq-card-link { opacity: 1; }
+
+/* Right column: accordion */
+.faq-list { display: grid; gap: 6px; }
+.faq-item { border-bottom: 1px solid rgba(255,255,255,0.16); }
+.faq-q { width: 100%; background: transparent; color: #fff; border: 0; text-align: left; padding: 16px 0; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 16px; cursor: pointer; }
+.faq-q:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(255,255,255,0.28); border-radius: 8px; }
+.faq-plus { width: 18px; height: 18px; position: relative; opacity: 0.8; }
+.faq-plus::before, .faq-plus::after { content: ''; position: absolute; background: #fff; border-radius: 2px; }
+.faq-plus::before { width: 18px; height: 2px; top: 8px; left: 0; }
+.faq-plus::after { width: 2px; height: 18px; top: 0; left: 8px; transition: transform 160ms ease; }
+.faq-item.open .faq-plus::after { transform: scaleY(0); }
+.faq-a { padding: 0 0 16px 0; }
+.faq-a p { margin: 0; opacity: 0.92; line-height: 1.5; }
+
+@media (max-width: 900px) {
+  /* Switch to flex column so we can order items */
+  .faq-inner { display: flex; flex-direction: column; }
+  /* Flatten left column so its children are flex items */
+  .faq-left { display: contents; position: static; padding-bottom: 0; }
+  /* Order: title (1), accordion list (2), view-all card (3) */
+  .faq-title { order: 1; max-width: 32ch; }
+  .faq-right { order: 2; }
+  .faq-card { order: 3; width: 100%; height: auto; position: static; margin-top: 16px; }
+}

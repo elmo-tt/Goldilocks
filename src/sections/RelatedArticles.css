@@ -1,0 +1,30 @@
+.related { background: var(--color-7-0a0d48, #0a0d48); color: #fff; padding-block: 56px; }
+.related-inner { padding-inline: clamp(24px, 8vw, 160px); display: grid; gap: 0; }
+.related-title { font-size: 32px; font-weight: 500; margin: 0 0 48px 0; }
+
+.related-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+
+.related-card { background: var(--color-4-030534, #030534); border-radius: 6px; border: 0; padding: 36px; display: flex; flex-direction: column; height: 340px; }
+.related-top { display: grid; gap: 8px; }
+.related-h3 { font-size: 24px; font-weight: 500; line-height: 1.25; margin: 0; }
+.related-h3 a { color: #fff; text-decoration: none; }
+.related-h3 a:hover { text-decoration: underline; }
+
+.related-bottom { margin-top: auto; display: flex; align-items: center; gap: 10px; color: rgba(255,255,255,0.65); font-size: 14px; }
+.meta-item { color: rgba(255,255,255,0.7); }
+.meta-sep { opacity: 0.6; }
+
+/* Eyebrow gold gradient to match article page */
+.related .eyebrow { 
+  font-size: 0.8125rem; 
+  letter-spacing: 0.08em; 
+  text-transform: uppercase; 
+  background-image: linear-gradient(90deg, #8E6F18, #E1D3AD);
+  -webkit-background-clip: text; 
+  background-clip: text; 
+  color: transparent; 
+  font-weight: 700; 
+}
+
+@media (max-width: 1100px) { .related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .related-grid { grid-template-columns: 1fr; } }

@@ -1,0 +1,264 @@
+:root {
+  --hue: 27;
+  --sat: 69%;
+  --white: hsl(0, 0%, 100%);
+  /* Brand glow color (gold) as RGB triplet for rgba(var(--glow-color), a) usage */
+  --glow-color: 208, 174, 99;
+  --border-color: #392e4e;
+  --background-dark: #030535;
+  color-scheme: light dark;
+}
+
+.card-grid {
+  display: grid;
+  gap: 0.5em;
+  padding: 0.75em;
+  max-width: 54em;
+  font-size: clamp(1rem, 0.9rem + 0.5vw, 1.5rem);
+  margin: 0 auto;
+}
+
+.magic-bento-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  aspect-ratio: 4/3;
+  min-height: 200px;
+  width: 100%;
+  max-width: 100%;
+  padding: 1.25em;
+  border-radius: 20px;
+  border: 0;
+  background: var(--background-dark);
+  font-weight: 300;
+  overflow: hidden;
+  transition: all 0.3s ease;
+
+  --glow-x: 50%;
+  --glow-y: 50%;
+  --glow-intensity: 0;
+  --glow-radius: 200px;
+}
+
+.magic-bento-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.magic-bento-card__header,
+.magic-bento-card__content {
+  display: flex;
+  position: relative;
+  color: var(--white);
+}
+
+.magic-bento-card__header {
+  gap: 0.75em;
+  justify-content: space-between;
+}
+
+.magic-bento-card__content {
+  flex-direction: column;
+}
+
+.magic-bento-card__label {
+  font-size: 16px;
+}
+
+.magic-bento-card__title,
+.magic-bento-card__description {
+  --clamp-title: 1;
+  --clamp-desc: 3;
+}
+
+.magic-bento-card__title {
+  font-weight: 400;
+  font-size: 16px;
+  margin: 0 0 0.25em;
+}
+
+.magic-bento-card__description {
+  font-size: 12px;
+  line-height: 1.2;
+  opacity: 0.9;
+}
+
+.magic-bento-card--text-autohide .magic-bento-card__title,
+.magic-bento-card--text-autohide .magic-bento-card__description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.magic-bento-card--text-autohide .magic-bento-card__title {
+  -webkit-line-clamp: var(--clamp-title);
+  line-clamp: var(--clamp-title);
+}
+
+.magic-bento-card--text-autohide .magic-bento-card__description {
+  -webkit-line-clamp: var(--clamp-desc);
+  line-clamp: var(--clamp-desc);
+}
+
+/* Step styling */
+.magic-bento-card.is-step .magic-bento-card__label {
+  font-size: 60px;
+  font-weight: 600;
+  color: #d0ae63;
+}
+.magic-bento-card.is-step .magic-bento-card__title { font-size: 20px; }
+.magic-bento-card.is-step .magic-bento-card__description { font-size: 15px; line-height: 1.3; }
+
+/* Rating variant: allow fixed height via desktop media query; keep padding */
+.magic-bento-card.is-rating { aspect-ratio: auto; padding: 1.25em; }
+/* Locations variant */
+.magic-bento-card.is-locations { aspect-ratio: auto; height: auto; }
+
+@media (max-width: 599px) {
+  .card-grid {
+    grid-template-columns: 1fr;
+    width: 90%;
+    margin: 0 auto;
+    padding: 0.5em;
+  }
+
+  .magic-bento-card {
+    width: 100%;
+    min-height: 180px;
+  }
+  /* Review (rating) tile mobile tweaks */
+  .magic-bento-card.is-rating .wreath { width: clamp(150px, 46vw, 200px); }
+  .magic-bento-card.is-rating .rating-bottom { padding-top: 18px; }
+  .magic-bento-card.is-rating .rating-list { margin-top: 4px; }
+  .magic-bento-card.is-rating .rating-score { font-size: clamp(22px, 6.4vw, 28px); }
+  .magic-bento-card.is-rating .rating-reviews { font-size: 0.8rem; }
+  .magic-bento-card.is-rating .google-g { width: 20px; }
+  /* Locations tile mobile tweaks: show map and clear header */
+  .magic-bento-card.is-locations { --map-scale: 0.72; --map-x: 12px; --map-y: -8px; }
+  .magic-bento-card.is-locations .magic-bento-card__content { padding-top: 3em; }
+  .magic-bento-card.is-locations .locations-card { grid-template-columns: 1fr; gap: 10px; }
+  .magic-bento-card.is-locations .locations-map { display: none; }
+}
+
+@media (min-width: 600px) {
+  .card-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 1024px) {
+  .card-grid { grid-template-columns: repeat(3, 1fr); }
+  /* Top row: 1,2,3. Second row: Locations spans 2 cols, Rating on the right */
+  .magic-bento-card:nth-child(4) { grid-column: 1 / span 2; grid-row: 2; }
+  .magic-bento-card:nth-child(5) { grid-column: 3; grid-row: 2; }
+  /* Fix heights for the larger boxes */
+  .magic-bento-card.is-rating,
+  .magic-bento-card.is-locations { height: 360px; min-height: 360px; }
+}
+
+/* Border glow effect */
+.magic-bento-card--border-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 6px;
+  background: radial-gradient(
+    var(--glow-radius) circle at var(--glow-x) var(--glow-y),
+    rgba(var(--glow-color), calc(var(--glow-intensity) * 0.8)) 0%,
+    rgba(var(--glow-color), calc(var(--glow-intensity) * 0.4)) 30%,
+    transparent 60%
+  );
+  border-radius: inherit;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: subtract;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  opacity: 0;
+  z-index: 1;
+}
+
+.magic-bento-card--border-glow:hover::after { opacity: 1; }
+.magic-bento-card--border-glow:hover { box-shadow: 0 4px 20px rgba(3, 5, 53, 0.35), 0 0 30px rgba(var(--glow-color), 0.35); }
+
+.particle-container { position: relative; overflow: hidden; }
+.particle::before { content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; background: rgba(var(--glow-color), 0.2); border-radius: 50%; z-index: -1; }
+.particle-container:hover { box-shadow: 0 4px 20px rgba(3, 5, 53, 0.25), 0 0 30px rgba(var(--glow-color), 0.35); }
+
+/* Global spotlight styles */
+.global-spotlight { mix-blend-mode: screen; will-change: transform, opacity; z-index: 200 !important; pointer-events: none; }
+.bento-section { position: relative; user-select: none; }
+
+/* Rating card overrides inside MagicBento: remove inner container visuals */
+.magic-bento-card .rating-card { background: transparent !important; border: 0 !important; padding: 0; box-shadow: none; display: flex; flex-direction: column; height: 100%; gap: 16px; }
+.magic-bento-card .rating-top { padding: 0; }
+.magic-bento-card .rating-bottom { padding: 0; margin-top: auto; }
+.magic-bento-card .rating-item { font-size: 18px; }
+/* Wreath scale (match hero) */
+.magic-bento-card .wreath { width: clamp(100px, 14vw, 150px); }
+.magic-bento-card .rating-list { gap: 10px; }
+
+/* Locations card sizing tweaks */
+.magic-bento-card.is-locations { position: relative; --map-scale: 0.93; --map-x: 180px; --map-y: -25px; }
+.magic-bento-card.is-locations .magic-bento-card__header { position: absolute; top: 1.25em; left: 1.25em; right: 1.25em; z-index: 2; pointer-events: none; }
+.magic-bento-card.is-locations .magic-bento-card__content { position: relative; display: grid; gap: 4px; height: 100%; z-index: 1; padding-top: 2.6em; }
+.magic-bento-card.is-locations .magic-bento-card__title { margin: 0; }
+.magic-bento-card.is-locations .magic-bento-card__description { font-size: 14px; line-height: 1.2; }
+
+/* Locations layout and map */
+.locations-card { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12px 24px; align-items: stretch; height: 100%; }
+.locations-info { display: flex; flex-direction: column; justify-content: flex-end; gap: 14px; height: 100%; align-self: stretch; }
+.locations-info .office-title { font-size: 18px; font-weight: 500; margin: 0 0 4px; }
+.locations-info .office-address { font-size: 14px; line-height: 1.35; color: rgba(255,255,255,0.85); }
+
+.locations-map {
+  position: absolute;
+  /* extend under the card padding to reach the border edges */
+  top: -1.25em;
+  right: -1.25em;
+  bottom: -1.25em;
+  left: -1.25em;
+  opacity: 0.95;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.map-group { position: absolute; left: 0; top: 0; height: 100%; width: auto; transform: translate(var(--map-x), var(--map-y)) scale(var(--map-scale)); transform-origin: left top; }
+.florida-map-img { display: block; height: 100%; width: auto; }
+
+.pin { position: absolute; display: inline-flex; align-items: center; transform: translate(-50%, -50%); color: #fff; }
+.pin .dot { width: 16px; height: 16px; border-radius: 50%; background: rgba(var(--glow-color), 1); box-shadow: 0 0 0 4px rgba(var(--glow-color), 0.2), 0 0 10px rgba(var(--glow-color), 0.35); border: 2px solid rgba(3,5,53,0.8); position: relative; overflow: visible; z-index: 1; }
+.pin .label { margin-left: 10px; font-size: 18px; white-space: nowrap; }
+
+/* Approximate positions on the Florida map image */
+.pin-psl { top: 48%; left: 100%; }
+.pin-wpb { top: 55%; left: 106%; }
+
+/* Radar pulse animation on pin dots */
+.pin .dot::after,
+.pin .dot::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: 100%;
+  border: 2px solid rgba(var(--glow-color), 0.5);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 0.7;
+  animation: radar-pulse 2.4s ease-out infinite;
+  z-index: 0;
+}
+.pin .dot::before { animation-delay: 1.2s; opacity: 0.5; }
+
+@keyframes radar-pulse {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+  70% { opacity: 0.12; }
+  100% { transform: translate(-50%, -50%) scale(2.6); opacity: 0; }
+}

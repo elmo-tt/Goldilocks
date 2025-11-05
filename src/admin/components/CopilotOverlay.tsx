@@ -58,7 +58,7 @@ export default function CopilotOverlay({
 
   if (!open) return null
 
-  const send = () => {
+  const send = async () => {
     const text = input.trim()
     if (!text) return
     const userMsg: Message = { id: newId('m'), role: 'user', content: text, ts: Date.now() }
@@ -110,7 +110,17 @@ export default function CopilotOverlay({
         break
       }
       default: {
-        reply = "Here's a mock response. In a real build, I'd query your sources (GA4, CTM, CRM, DMS) and return an answer with links and next steps."
+        try {
+          const res = await fetch('/.netlify/functions/copilot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: [...active.messages, userMsg] })
+          })
+          const data = await res.json().catch(() => ({} as any))
+          reply = (data?.content || '').trim() || 'Sorry, I could not get a response right now.'
+        } catch {
+          reply = 'Sorry, I could not get a response right now.'
+        }
       }
     }
 

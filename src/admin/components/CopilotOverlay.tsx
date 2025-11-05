@@ -142,6 +142,7 @@ export default function CopilotOverlay({
           const data = await res.json().catch(() => ({} as any))
           reply = (data?.content || '').trim() || ''
           const calls = Array.isArray(data?.toolCalls) ? data.toolCalls as Array<{ name: string; args: any }> : []
+          let updateNote: string | undefined
           for (const c of calls) {
             if (!c || !c.name) continue
             if (c.name === 'createTask') {
@@ -190,8 +191,24 @@ export default function CopilotOverlay({
                 const slugArg = (c.args?.slug ? String(c.args.slug) : '').trim()
                 let art = idArg ? ArticlesStore.all().find(a => a.id === idArg) : undefined
                 if (!art && slugArg) art = ArticlesStore.getBySlug(slugArg)
+                // Fallback: try to match by a quoted title from the user's message
                 if (!art) {
-                  // No matching article; do nothing
+                  const raw = userMsg.content || ''
+                  const all = ArticlesStore.all()
+                  // Try quoted title first
+                  const qm = raw.match(/["'“”‘’]([^"'“”‘’]{5,})["'“”‘’]/)
+                  const qTitle = qm ? (qm[1] || '').trim() : ''
+                  if (qTitle) {
+                    art = all.find(a => a.title.toLowerCase() === qTitle.toLowerCase()) || all.find(a => a.title.toLowerCase().includes(qTitle.toLowerCase()))
+                  }
+                  // If still not found, see if any article title appears verbatim in the raw text
+                  if (!art) {
+                    const rawLower = raw.toLowerCase()
+                    art = all.find(a => rawLower.includes(a.title.toLowerCase()))
+                  }
+                }
+                if (!art) {
+                  updateNote = 'Could not locate the target article (need id/slug or an exact title).'
                 } else {
                   const providedTitle = c.args?.title ? String(c.args.title) : undefined
                   const fields: any = { id: art.id, slug: art.slug, title: providedTitle || art.title }
@@ -206,9 +223,13 @@ export default function CopilotOverlay({
                   if (c.args?.status === 'published' || c.args?.status === 'draft') fields.status = c.args.status
                   ArticlesStore.save(fields)
                   onNavigate('articles', { minimize: autoMinimize })
+                  updateNote = `Updated article “${fields.title}”.`
                 }
               } catch {}
             }
+          }
+          if (updateNote) {
+            reply = reply ? `${reply}\n\n${updateNote}` : updateNote
           }
           if (!reply) reply = 'Done.'
         } catch {

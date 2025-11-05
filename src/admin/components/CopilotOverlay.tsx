@@ -3,6 +3,8 @@ import type { NavId } from '../utils/intentParser'
 import { parseCommand } from '../utils/intentParser'
 import { CTA, OFFICES, PRACTICE_AREAS } from '../data/goldlaw'
 import { ArticlesStore } from '../../shared/articles/store'
+import { getBackend } from '../../shared/config'
+import { CloudArticlesStore } from '../../shared/articles/cloud'
 import { simulatePushTaskToFilevine } from '../data/integrations'
 import { bus } from '../utils/bus'
 import ReactMarkdown from 'react-markdown'
@@ -191,6 +193,10 @@ export default function CopilotOverlay({
                 const slugArg = (c.args?.slug ? String(c.args.slug) : '').trim()
                 let art = idArg ? ArticlesStore.all().find(a => a.id === idArg) : undefined
                 if (!art && slugArg) art = ArticlesStore.getBySlug(slugArg)
+                // Supabase fallback: if not in local cache yet, fetch by slug
+                if (!art && slugArg && getBackend() === 'supabase') {
+                  try { art = await CloudArticlesStore.getBySlug(slugArg) } catch {}
+                }
                 // Fallback: try to match by a quoted title from the user's message
                 if (!art) {
                   const raw = userMsg.content || ''

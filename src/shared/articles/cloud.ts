@@ -120,6 +120,12 @@ export const CloudArticlesStore = {
         status: next.status,
         createdAt: next.createdAt,
         updatedAt: next.updatedAt,
+        // SEO fields
+        metaTitle: (next as any).metaTitle,
+        metaDescription: (next as any).metaDescription,
+        keyphrase: (next as any).keyphrase,
+        canonicalUrl: (next as any).canonicalUrl,
+        noindex: (next as any).noindex,
       }
       const res = await supabase.from('articles').upsert(minimal as any, { onConflict: 'id' }).select().limit(1)
       if (res.error) throw res.error

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { NavId } from '../utils/intentParser'
 import { parseCommand } from '../utils/intentParser'
 import { CTA, OFFICES, PRACTICE_AREAS } from '../data/goldlaw'
@@ -33,6 +33,7 @@ export default function CopilotOverlay({
   const [activeId, setActiveId] = useState(convos[0].id)
   const [input, setInput] = useState('')
   const [autoMinimize, setAutoMinimize] = useState(true)
+  const messagesRef = useRef<HTMLDivElement | null>(null)
 
   const active = useMemo(() => convos.find(c => c.id === activeId)!, [convos, activeId])
 
@@ -55,6 +56,13 @@ export default function CopilotOverlay({
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(convos)) } catch {}
   }, [convos])
+
+  // Auto-scroll to bottom on new messages
+  useEffect(() => {
+    const el = messagesRef.current
+    if (!el) return
+    try { el.scrollTop = el.scrollHeight } catch {}
+  }, [active.messages.length, activeId, open])
 
   if (!open) return null
 
@@ -135,7 +143,7 @@ export default function CopilotOverlay({
 
   const newChat = () => {
     const c: Conversation = { id: newId('c'), title: 'New chat', messages: [ { id: newId('m'), role: 'assistant', content: 'What would you like to do?', ts: Date.now() } ] }
-    setConvos(prev => [c, ...prev])
+    setConvos(prev => [...prev, c])
     setActiveId(c.id)
   }
 
@@ -197,7 +205,7 @@ export default function CopilotOverlay({
           </div>
         </div>
 
-        <div className="messages">
+        <div className="messages" ref={messagesRef}>
           {active.messages.map(m => (
             <div key={m.id} className={'msg ' + (m.role === 'user' ? 'me' : '')}>
               <div style={{ fontSize: 12, color: 'var(--ops-muted)' }}>{m.role === 'user' ? 'You' : 'Copilot'}</div>

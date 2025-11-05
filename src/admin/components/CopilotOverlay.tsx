@@ -125,7 +125,30 @@ export default function CopilotOverlay({
             body: JSON.stringify({ messages: [...active.messages, userMsg] })
           })
           const data = await res.json().catch(() => ({} as any))
-          reply = (data?.content || '').trim() || 'Sorry, I could not get a response right now.'
+          reply = (data?.content || '').trim() || ''
+          const calls = Array.isArray(data?.toolCalls) ? data.toolCalls as Array<{ name: string; args: any }> : []
+          for (const c of calls) {
+            if (!c || !c.name) continue
+            if (c.name === 'createTask') {
+              const title = String(c.args?.title || 'Follow up')
+              const created = simulatePushTaskToFilevine(title)
+              bus.emit('create-task', { title: created.title })
+              onNavigate('tasks', { minimize: autoMinimize })
+            } else if (c.name === 'navigate') {
+              const target = (c.args?.target || 'overview') as NavId
+              onNavigate(target, { minimize: autoMinimize })
+            } else if (c.name === 'call') {
+              openSafe(CTA.tel, '_self'); doMinimize()
+            } else if (c.name === 'map') {
+              const office: 'wpb' | 'psl' = (c.args?.office === 'psl') ? 'psl' : 'wpb'
+              const off = office === 'psl'
+                ? OFFICES.find(o => o.city.toLowerCase().includes('lucie'))
+                : OFFICES.find(o => o.city.toLowerCase().includes('west palm')) || OFFICES[0]
+              if (off?.mapsUrl) openSafe(off.mapsUrl, '_blank')
+              doMinimize()
+            }
+          }
+          if (!reply) reply = 'Done.'
         } catch {
           reply = 'Sorry, I could not get a response right now.'
         }

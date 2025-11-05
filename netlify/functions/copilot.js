@@ -142,7 +142,7 @@ export const handler = async (event) => {
             noindex: { type: 'boolean' },
             status: { type: 'string', enum: ['draft','published'] }
           },
-          anyOf: [ { required: ['id'] }, { required: ['slug'] } ]
+          // Note: We cannot enforce mutual requirement here; the system prompt instructs the model to provide id or slug and to ask to clarify if ambiguous.
         }
       }
     }

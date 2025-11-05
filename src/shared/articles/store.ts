@@ -56,25 +56,27 @@ const LocalArticlesStore = {
     const id = input.id || newId()
     const existing = list.find(a => a.id === id)
     const now = Date.now()
-    let slug = (input.slug || slugify(input.title))
+    // Determine slug: keep existing unless explicitly changed or creating new
+    let slug = existing ? (input.slug || existing.slug) : (input.slug || slugify(input.title))
     slug = ensureUniqueSlug(slug, list, existing?.id)
+    // Build next by preserving existing values when input omits them
     let next: Article = {
       id,
       slug,
-      title: input.title,
-      tags: input.tags || [],
-      heroUrl: input.heroUrl,
-      heroDataUrl: input.heroDataUrl,
-      excerpt: input.excerpt || '',
-      body: input.body || '',
-      status: (input.status as ArticleStatus) || 'draft',
+      title: (input.title ?? existing?.title ?? 'Untitled') as string,
+      tags: (input.tags !== undefined ? input.tags : (existing?.tags ?? [])) as string[],
+      heroUrl: (input.heroUrl !== undefined ? input.heroUrl : existing?.heroUrl),
+      heroDataUrl: (input.heroDataUrl !== undefined ? input.heroDataUrl : existing?.heroDataUrl),
+      excerpt: (input.excerpt !== undefined ? input.excerpt : (existing?.excerpt ?? '')) as string,
+      body: (input.body !== undefined ? input.body : (existing?.body ?? '')) as string,
+      status: (input.status !== undefined ? input.status : (existing?.status ?? 'draft')) as ArticleStatus,
       createdAt: existing?.createdAt || now,
       updatedAt: now,
-      metaTitle: (input as any).metaTitle,
-      metaDescription: (input as any).metaDescription,
-      keyphrase: (input as any).keyphrase,
-      canonicalUrl: (input as any).canonicalUrl,
-      noindex: (input as any).noindex,
+      metaTitle: (input as any).metaTitle !== undefined ? (input as any).metaTitle : (existing as any)?.metaTitle,
+      metaDescription: (input as any).metaDescription !== undefined ? (input as any).metaDescription : (existing as any)?.metaDescription,
+      keyphrase: (input as any).keyphrase !== undefined ? (input as any).keyphrase : (existing as any)?.keyphrase,
+      canonicalUrl: (input as any).canonicalUrl !== undefined ? (input as any).canonicalUrl : (existing as any)?.canonicalUrl,
+      noindex: (input as any).noindex !== undefined ? (input as any).noindex : (existing as any)?.noindex,
     }
     const applyIntoList = () => {
       if (existing) {

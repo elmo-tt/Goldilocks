@@ -21,6 +21,17 @@ function newId() { return 'm_' + Math.random().toString(36).slice(2, 10) }
 export const CloudAssetStore = {
   _urlCache: new Map<string, string>(),
   _thumbCache: new Map<string, string>(),
+  // Probe if the optional 'assets' table exists/works; cache the result to avoid noisy errors.
+  _tableReady: null as null | boolean,
+  async _ensureTable() {
+    if (!supabase) { this._tableReady = false; return false }
+    if (this._tableReady != null) return this._tableReady
+    try {
+      const { error } = await (supabase.from('assets') as any).select('*').limit(1)
+      this._tableReady = !error
+    } catch { this._tableReady = false }
+    return this._tableReady
+  },
   // Local fallback for metadata when Supabase table/columns aren't available
   async _openMetaDB(): Promise<IDBDatabase> {
     return await new Promise((resolve, reject) => {
@@ -76,14 +87,15 @@ export const CloudAssetStore = {
       createdAt: Date.now(),
     }
     // Best-effort: store metadata in table 'assets' (optional). Ignore errors in dev.
-    try { await supabase.from('assets').insert(meta) } catch {}
+    try { if (await this._ensureTable()) await supabase.from('assets').insert(meta) } catch {}
     return meta
   },
 
   async getMeta(id: string): Promise<AssetMeta | undefined> {
     if (!supabase) return undefined
     try {
-      const { data, error } = await supabase.from('assets').select('*').eq('id', id).single()
+      if (!(await this._ensureTable())) throw new Error('TABLE_DISABLED')
+      const { data, error } = await (supabase.from('assets') as any).select('*').eq('id', id).maybeSingle()
       if (!error && data) {
         const base = data as unknown as AssetMeta
         // If optional fields are missing, try to fill from local fallback
@@ -143,8 +155,10 @@ export const CloudAssetStore = {
     } catch {}
     // Fallback to table if available
     try {
-      const { data, error } = await supabase.from('assets').select('*').order('createdAt', { ascending: false })
-      if (!error && data) return (data as unknown as AssetMeta[])
+      if (await this._ensureTable()) {
+        const { data, error } = await supabase.from('assets').select('*').order('createdAt', { ascending: false })
+        if (!error && data) return (data as unknown as AssetMeta[])
+      }
     } catch {}
     return []
   },
@@ -188,7 +202,7 @@ export const CloudAssetStore = {
   async remove(id: string): Promise<void> {
     if (!supabase) return
     await supabase.storage.from(bucket).remove([id])
-    await supabase.from('assets').delete().eq('id', id)
+    try { if (await this._ensureTable()) await supabase.from('assets').delete().eq('id', id) } catch {}
     this.revokeUrl(id)
   },
   async updateMeta(id: string, patch: Partial<AssetMeta>): Promise<void> {
@@ -198,7 +212,7 @@ export const CloudAssetStore = {
     if (patch.title && !patch.name) record.name = patch.title
     try {
       // Best-effort upsert into assets table; ignore if columns don't exist
-      await (supabase.from('assets') as any).upsert(record, { onConflict: 'id' })
+      if (await this._ensureTable()) await (supabase.from('assets') as any).upsert(record, { onConflict: 'id' })
     } catch {}
     // Always write to local fallback so UI can reflect changes even if table/columns are absent
     await this._updateLocalMeta(id, patch)

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { NavId } from '../utils/intentParser'
 import { parseCommand } from '../utils/intentParser'
 import { CTA, OFFICES, PRACTICE_AREAS } from '../data/goldlaw'
-import { ArticlesStore } from '../../shared/articles/store'
+import { ArticlesStore, slugify } from '../../shared/articles/store'
 import { getBackend } from '../../shared/config'
 import { CloudArticlesStore } from '../../shared/articles/cloud'
 import { simulatePushTaskToFilevine } from '../data/integrations'
@@ -172,6 +172,7 @@ export default function CopilotOverlay({
                 let canonicalUrl = c.args?.canonicalUrl ? String(c.args.canonicalUrl) : undefined
                 const noindex = typeof c.args?.noindex === 'boolean' ? Boolean(c.args.noindex) : undefined
                 const status = (c.args?.status === 'published') ? 'published' : 'draft'
+                const baseSlug = slugify(title)
                 // Extract SEO lines if the model placed them in the body
                 try {
                   const mt = body.match(/^\s*Meta\s*Title\s*:\s*(.+)$/im)?.[1]?.trim()
@@ -189,7 +190,23 @@ export default function CopilotOverlay({
                     .replace(/\n{3,}/g, '\n\n')
                     .trim()
                 } catch {}
-                ArticlesStore.save({ title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, noindex, status })
+                // Default canonical to this site's article URL (avoid external source URL)
+                try {
+                  const origin = (typeof window !== 'undefined' ? window.location.origin : '')
+                  const looksExternal = (u: string) => /^https?:\/\//i.test(u) && origin && !u.startsWith(origin)
+                  if (!canonicalUrl || looksExternal(canonicalUrl)) {
+                    canonicalUrl = origin ? `${origin}/articles/${baseSlug}` : `/articles/${baseSlug}`
+                  }
+                } catch {}
+                const saved = ArticlesStore.save({ title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, noindex, status })
+                // If slug changed due to uniqueness, correct canonical to the final slug
+                try {
+                  const origin = (typeof window !== 'undefined' ? window.location.origin : '')
+                  const desired = origin ? `${origin}/articles/${saved.slug}` : `/articles/${saved.slug}`
+                  if (saved.canonicalUrl !== desired) {
+                    ArticlesStore.save({ id: saved.id, title: saved.title, canonicalUrl: desired })
+                  }
+                } catch {}
                 onNavigate('articles', { minimize: autoMinimize })
                 try { bus.emit('toast', { message: `Created article “${title}”.`, type: 'success' }) } catch {}
               } catch {}

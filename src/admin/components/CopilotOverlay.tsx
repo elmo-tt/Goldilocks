@@ -259,7 +259,29 @@ export default function CopilotOverlay({
           if (updateNote) {
             reply = reply ? `${reply}\n\n${updateNote}` : updateNote
           }
-          if (!reply) reply = 'Done.'
+          // If the model returned no meaningful content and no tool calls, provide a clarifying prompt with suggestions.
+          const isTrivial = (s: string) => /^(done|ok|okay|sure|noted)\.?$/i.test(s.trim())
+          if ((!reply || isTrivial(reply)) && calls.length === 0) {
+            try {
+              const rawLower = (userMsg.content || '').toLowerCase()
+              const tokens = (rawLower.match(/[a-z0-9]+/g) || [])
+              const stop = new Set(['the','and','for','with','that','this','from','about','into','onto','within','your','you','our','are','will','can','make','add','update','article','articles','post','posts','please','now'])
+              const keywords = Array.from(new Set(tokens.filter(w => w.length >= 4 && !stop.has(w)))).slice(0, 10)
+              const all = ArticlesStore.all()
+              const scored = all.map(a => {
+                const text = [a.title, (a.tags||[]).join(' '), a.excerpt || '', a.slug || ''].join(' ').toLowerCase()
+                let score = 0; for (const k of keywords) { if (text.includes(k)) score++ }
+                return { a, score }
+              }).filter(x => x.score > 0)
+              scored.sort((x, y) => (y.score - x.score) || ((y.a.updatedAt||0) - (x.a.updatedAt||0)))
+              const picks = scored.slice(0, 3).map(x => `- "${x.a.title}" (slug: ${x.a.slug})`).join('\n')
+              const hint = picks ? `\n\nPossible matches:\n${picks}` : ''
+              reply = `I couldn’t identify a specific article to update from that request. Please provide the slug or exact title.${hint}`
+              bus.emit('toast', { message: 'No article update performed — need slug or exact title.', type: 'error' })
+            } catch {
+              reply = 'I couldn’t determine a specific action. Please provide the article slug or exact title.'
+            }
+          }
         } catch {
           reply = 'Sorry, I could not get a response right now.'
         }

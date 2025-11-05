@@ -3,21 +3,41 @@ import type { FilevineTask } from '../data/integrations'
 import { FILEVINE_TASKS } from '../data/integrations'
 import { bus } from '../utils/bus'
 
+const TASKS_KEY = 'gl_tasks'
+function readTasks(): FilevineTask[] {
+  try {
+    const raw = localStorage.getItem(TASKS_KEY)
+    if (!raw) return []
+    const arr = JSON.parse(raw)
+    return Array.isArray(arr) ? arr : []
+  } catch { return [] }
+}
+function writeTasks(list: FilevineTask[]) {
+  try { localStorage.setItem(TASKS_KEY, JSON.stringify(list)) } catch {}
+}
+
 export default function TasksSection() {
-  const [tasks, setTasks] = useState<FilevineTask[]>(() => FILEVINE_TASKS)
+  const [tasks, setTasks] = useState<FilevineTask[]>(() => {
+    const saved = readTasks()
+    return saved.length ? saved : FILEVINE_TASKS
+  })
   const open = useMemo(() => tasks.filter(t => t.status === 'open'), [tasks])
   const done = useMemo(() => tasks.filter(t => t.status === 'done'), [tasks])
 
   useEffect(() => {
     const off = bus.on('create-task', ({ title }) => {
       const id = 'fv-' + Math.floor(1000 + Math.random() * 9000)
-      setTasks(prev => [{ id, title, assignee: 'Unassigned', status: 'open' }, ...prev])
+      setTasks(prev => { const next = [{ id, title, assignee: 'Unassigned', status: 'open' as const }, ...prev]; writeTasks(next); return next })
     })
     return off
   }, [])
 
   const toggle = (id: string) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: t.status === 'open' ? 'done' as const : 'open' as const } : t))
+    setTasks(prev => {
+      const next = prev.map(t => t.id === id ? { ...t, status: t.status === 'open' ? 'done' as const : 'open' as const } : t)
+      writeTasks(next)
+      return next
+    })
   }
 
   return (

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { NavId } from '../utils/intentParser'
 import { parseCommand } from '../utils/intentParser'
 import { CTA, OFFICES, PRACTICE_AREAS } from '../data/goldlaw'
+import { ArticlesStore } from '../../shared/articles/store'
 import { simulatePushTaskToFilevine } from '../data/integrations'
 import { bus } from '../utils/bus'
 import { PanelLeft, Plus, X, Send, Bot, Trash2 } from 'lucide-react'
@@ -132,8 +133,24 @@ export default function CopilotOverlay({
             if (c.name === 'createTask') {
               const title = String(c.args?.title || 'Follow up')
               const created = simulatePushTaskToFilevine(title)
-              bus.emit('create-task', { title: created.title })
+              try {
+                const KEY = 'gl_tasks'
+                const raw = localStorage.getItem(KEY)
+                const arr = raw ? JSON.parse(raw) : []
+                const item = { id: created.id, title: created.title, assignee: 'Unassigned', status: 'open' as const }
+                const next = Array.isArray(arr) ? [item, ...arr] : [item]
+                localStorage.setItem(KEY, JSON.stringify(next))
+              } catch {}
               onNavigate('tasks', { minimize: autoMinimize })
+              setTimeout(() => { bus.emit('create-task', { title: created.title }) }, 0)
+            } else if (c.name === 'createArticle') {
+              try {
+                const title = String(c.args?.title || 'Untitled')
+                const excerpt = String(c.args?.excerpt || '')
+                const body = String(c.args?.body || '')
+                ArticlesStore.save({ title, excerpt, body })
+                onNavigate('articles', { minimize: autoMinimize })
+              } catch {}
             } else if (c.name === 'navigate') {
               const target = (c.args?.target || 'overview') as NavId
               onNavigate(target, { minimize: autoMinimize })

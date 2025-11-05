@@ -1,8 +1,14 @@
 import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { ArticlesStore } from '@/shared/articles/store'
 
 export default function ArticlesList() {
-  const items = ArticlesStore.published()
+  const [items, setItems] = useState(() => ArticlesStore.published())
+  useEffect(() => {
+    const on = () => setItems(ArticlesStore.published())
+    window.addEventListener('gl:articles-updated', on as any)
+    return () => window.removeEventListener('gl:articles-updated', on as any)
+  }, [])
   return (
     <main style={{ padding: '80px 24px 24px' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>

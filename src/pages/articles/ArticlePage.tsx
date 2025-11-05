@@ -6,16 +6,20 @@ import RelatedArticles from '@/sections/RelatedArticles'
 import '@/sections/RelatedArticles.css'
 import ArticleTemplate from './ArticleTemplate'
 import { useParams } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { ArticlesStore } from '@/shared/articles/store'
 
 export default function ArticlePage() {
   const { slug } = useParams<{ slug: string }>()
-  const a = slug ? ArticlesStore.getBySlug(slug) : undefined
+  const [a, setA] = useState(() => (slug ? ArticlesStore.getBySlug(slug) : undefined))
 
   // Scroll to top on article change
   useEffect(() => {
     window.scrollTo(0, 0)
+    setA(slug ? ArticlesStore.getBySlug(slug) : undefined)
+    const on = () => setA(slug ? ArticlesStore.getBySlug(slug) : undefined)
+    window.addEventListener('gl:articles-updated', on as any)
+    return () => window.removeEventListener('gl:articles-updated', on as any)
   }, [slug])
 
   return (

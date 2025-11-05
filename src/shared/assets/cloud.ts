@@ -27,7 +27,14 @@ export const CloudAssetStore = {
     if (!supabase) { this._tableReady = false; return false }
     if (this._tableReady != null) return this._tableReady
     try {
-      const { error } = await (supabase.from('assets') as any).select('*').limit(1)
+      // Opt-in via env flag. By default, avoid using the assets table entirely.
+      const flag = (() => {
+        try { return String((import.meta as any).env?.VITE_ASSETS_TABLE_ENABLED || '') } catch { return '' }
+      })().toLowerCase()
+      const enabled = ['1','true','yes','on'].includes(flag)
+      if (!enabled) { this._tableReady = false; return false }
+      // Probe required columns explicitly to avoid 400s on schema mismatch.
+      const { error } = await (supabase.from('assets') as any).select('id,name').limit(1)
       this._tableReady = !error
     } catch { this._tableReady = false }
     return this._tableReady
@@ -86,8 +93,13 @@ export const CloudAssetStore = {
       size: file.size,
       createdAt: Date.now(),
     }
-    // Best-effort: store metadata in table 'assets' (optional). Ignore errors in dev.
-    try { if (await this._ensureTable()) await supabase.from('assets').insert(meta) } catch {}
+    // Best-effort: store minimal metadata in optional table 'assets'.
+    // To avoid 400 on schema mismatch, only write { id, name }.
+    try {
+      if (await this._ensureTable()) {
+        await supabase.from('assets').insert({ id, name: meta.name } as any)
+      }
+    } catch {}
     return meta
   },
 
@@ -208,16 +220,20 @@ export const CloudAssetStore = {
   async updateMeta(id: string, patch: Partial<AssetMeta>): Promise<void> {
     if (!supabase) return
     // Map "title" to display name if provided
-    const record: any = { id, ...patch }
-    if (patch.title && !patch.name) record.name = patch.title
+    const remotePatch: any = {}
+    const newName = (patch.name || patch.title)?.trim?.()
+    if (newName) remotePatch.name = newName
     try {
       // Best-effort: avoid upsert/on_conflict to prevent 400 when PK/unique isn't configured.
       if (await this._ensureTable()) {
-        const upd = await (supabase.from('assets') as any).update(record).eq('id', id).select().limit(1)
+        // Only update 'name' to remain compatible with minimal schemas.
+        const upd = Object.keys(remotePatch).length
+          ? await (supabase.from('assets') as any).update(remotePatch).eq('id', id).select().limit(1)
+          : { data: [], error: null }
         const noRow = !!upd.error || !upd.data || (Array.isArray(upd.data) && upd.data.length === 0)
         if (noRow) {
-          const insertRec: any = { id, ...record }
-          if (insertRec.createdAt == null) insertRec.createdAt = Date.now()
+          const insertRec: any = { id }
+          if (newName) insertRec.name = newName
           await (supabase.from('assets') as any).insert(insertRec)
         }
       }

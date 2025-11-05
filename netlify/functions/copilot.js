@@ -28,7 +28,8 @@ export const handler = async (event) => {
       'Format your responses in Markdown (GFM). Prefer short sections with headings, bullet/numbered lists, and inline links like [Title](https://...). Use bold for key labels.',
       'You may call tools when appropriate: createTask, navigate, call, map, fetchUrl, searchWeb, createArticle.',
       // Article workflow with SEO
-      'When asked to write an article from web sources: (1) use fetchUrl for any provided URL, (2) optionally use searchWeb (3–5 results), (3) present a brief "Sources" list as bullets with links, (4) present a short excerpt and a structured article body with headings, (5) call createArticle with { title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, status }. Keep metaTitle ~60 chars, metaDescription ~155 chars. Tags should be 1–5 short topic labels.',
+      'When asked to write an article from web sources: (1) use fetchUrl for every provided URL in the user message (treat them as primary sources), (2) optionally use searchWeb (3–5 results) if available, (3) present a brief "Sources" list as bullets with links, (4) present a short excerpt and a structured article body with headings, (5) call createArticle with { title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, status }. Keep metaTitle ~60 chars, metaDescription ~155 chars. Tags should be 1–5 short topic labels. Stay strictly on-topic with the fetched sources; do not pivot to unrelated topics.',
+      'If searchWeb is unavailable, proceed using provided fetchUrl content only and do not fabricate sources. If a provided URL fetch fails or is irrelevant, ask for another URL or clarification before drafting.',
       'When asked to modify an existing article: you MUST call updateArticle with an identifier (slug or id) plus only the fields to change. If you cannot uniquely identify the article, ask a brief clarifying question (offer 1–3 likely titles) and do not claim completion.',
       'Do NOT say "Done" unless you actually invoked a tool (e.g., updateArticle/createArticle) successfully.',
       'Ask for confirmation if a destructive or uncertain action is requested. If the user says "yes"/"proceed", go ahead and call the tool.',
@@ -197,7 +198,29 @@ export const handler = async (event) => {
       return { note: 'CLIENT_TOOL', name, args }
     }
 
-    let convo = [...messages]
+    // Prefetch user-provided URLs (from the last user message) and inject as authoritative context
+    const lastUser = incoming[incoming.length - 1] || {}
+    const urlMatches = String(lastUser.content || '').match(/https?:\/\/[^\s)"'<>]+/g) || []
+    const uniqueUrls = Array.from(new Set(urlMatches)).slice(0, 2)
+    const fetchedSources = []
+    for (const u of uniqueUrls) {
+      const out = await runServerTool('fetchUrl', { url: u })
+      fetchedSources.push({ url: u, title: out?.title || '', text: out?.text || '' })
+    }
+    let convo = [sys]
+    if (fetchedSources.length) {
+      const bullets = fetchedSources.map((s, i) => `${i + 1}. ${s.title || '(untitled)'} — ${s.url}`).join('\n')
+      const snippets = fetchedSources.map((s, i) => `SOURCE ${i + 1} (${s.url})\nTitle: ${s.title || '(untitled)'}\nExcerpt: ${(s.text || '').slice(0, 1200)}`).join('\n\n')
+      const srcMsg = [
+        'User provided the following source URL(s). Treat them as primary and stay strictly on-topic with them. Cite them under a Sources section:',
+        bullets,
+        'Summaries (for your reference):',
+        snippets,
+        'If a source seems irrelevant to the request, ask for clarification instead of inventing content.'
+      ].join('\n\n')
+      convo.push({ role: 'system', content: srcMsg })
+    }
+    convo = [...convo, ...incoming.map(m => ({ role: m.role, content: String(m.content || '') }))]
     let clientCalls = []
     let finalContent = ''
     for (let step = 0; step < 3; step++) {

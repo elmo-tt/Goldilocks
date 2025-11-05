@@ -97,17 +97,21 @@ export default function RichTextEditor({ value, onChange, onPickAsset, registerA
           const id = info.id
           const src = info.src || `asset:${id}`
           const alt = info.alt || ''
-          const title = info.title
+          const title = info.title || ''
           const width = Math.max(10, Math.min(100, Math.round(info.widthPct || 50)))
-          const chain = editor.chain().focus().setImage({ src, alt, title })
-          chain.updateAttributes('image', { 'data-width': String(width) })
-          if (id) chain.updateAttributes('image', { 'data-asset-id': id })
-          if (info.description) chain.updateAttributes('image', { 'data-description': info.description })
+          const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          const attrs: string[] = []
+          attrs.push(`src="${esc(src)}"`)
+          if (alt) attrs.push(`alt="${esc(alt)}"`)
+          if (title) attrs.push(`title="${esc(title)}"`)
+          if (id) attrs.push(`data-asset-id="${id}"`)
+          attrs.push(`data-width="${String(width)}"`)
+          if (info.description) attrs.push(`data-description="${esc(info.description)}"`)
+          let html = `<img ${attrs.join(' ')} />`
           if (info.caption) {
-            const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-            chain.insertContent(`<p data-caption-for="${id}"><em>${esc(info.caption)}</em></p>`) // marked caption below image
+            html += `<p data-caption-for="${id}"><em>${esc(info.caption)}</em></p>`
           }
-          chain.run()
+          editor.chain().focus().insertContent(html).run()
         } catch {}
       }
     }

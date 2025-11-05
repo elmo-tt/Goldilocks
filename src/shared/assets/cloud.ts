@@ -211,8 +211,16 @@ export const CloudAssetStore = {
     const record: any = { id, ...patch }
     if (patch.title && !patch.name) record.name = patch.title
     try {
-      // Best-effort upsert into assets table; ignore if columns don't exist
-      if (await this._ensureTable()) await (supabase.from('assets') as any).upsert(record, { onConflict: 'id' })
+      // Best-effort: avoid upsert/on_conflict to prevent 400 when PK/unique isn't configured.
+      if (await this._ensureTable()) {
+        const upd = await (supabase.from('assets') as any).update(record).eq('id', id).select().limit(1)
+        const noRow = !!upd.error || !upd.data || (Array.isArray(upd.data) && upd.data.length === 0)
+        if (noRow) {
+          const insertRec: any = { id, ...record }
+          if (insertRec.createdAt == null) insertRec.createdAt = Date.now()
+          await (supabase.from('assets') as any).insert(insertRec)
+        }
+      }
     } catch {}
     // Always write to local fallback so UI can reflect changes even if table/columns are absent
     await this._updateLocalMeta(id, patch)

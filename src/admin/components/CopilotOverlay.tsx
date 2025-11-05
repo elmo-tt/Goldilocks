@@ -162,7 +162,14 @@ export default function CopilotOverlay({
                 const title = String(c.args?.title || 'Untitled')
                 const excerpt = String(c.args?.excerpt || '')
                 const body = String(c.args?.body || '')
-                ArticlesStore.save({ title, excerpt, body })
+                const tags = Array.isArray(c.args?.tags) ? c.args.tags.map((t: any) => String(t)).slice(0, 8) : []
+                const keyphrase = c.args?.keyphrase ? String(c.args.keyphrase) : undefined
+                const metaTitle = c.args?.metaTitle ? String(c.args.metaTitle) : undefined
+                const metaDescription = c.args?.metaDescription ? String(c.args.metaDescription) : undefined
+                const canonicalUrl = c.args?.canonicalUrl ? String(c.args.canonicalUrl) : undefined
+                const noindex = typeof c.args?.noindex === 'boolean' ? Boolean(c.args.noindex) : undefined
+                const status = (c.args?.status === 'published') ? 'published' : 'draft'
+                ArticlesStore.save({ title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, noindex, status })
                 onNavigate('articles', { minimize: autoMinimize })
               } catch {}
             } else if (c.name === 'navigate') {

@@ -27,7 +27,8 @@ export const handler = async (event) => {
       'You are the GOLDLAW Copilot. Answer concisely and helpfully.',
       'Format your responses in Markdown (GFM). Prefer short sections with headings, bullet/numbered lists, and inline links like [Title](https://...). Use bold for key labels.',
       'You may call tools when appropriate: createTask, navigate, call, map, fetchUrl, searchWeb, createArticle.',
-      'When asked to write an article from web sources: (1) use fetchUrl for any provided URL, (2) optionally use searchWeb (3–5 results), (3) present a brief "Sources" list as bullets with links, (4) present a short excerpt and a structured article body with headings, (5) call createArticle with { title, excerpt, body }.',
+      // Article workflow with SEO
+      'When asked to write an article from web sources: (1) use fetchUrl for any provided URL, (2) optionally use searchWeb (3–5 results), (3) present a brief "Sources" list as bullets with links, (4) present a short excerpt and a structured article body with headings, (5) call createArticle with { title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, status }. Keep metaTitle ~60 chars, metaDescription ~155 chars. Tags should be 1–5 short topic labels.',
       'Ask for confirmation if a destructive or uncertain action is requested. If the user says "yes"/"proceed", go ahead and call the tool.',
       'If answering without tools, keep replies brief and actionable.'
     ].join(' ')
@@ -97,13 +98,22 @@ export const handler = async (event) => {
       type: 'function',
       function: {
         name: 'createArticle',
-        description: 'Create an article in the admin. This is executed on the client.',
+        description: 'Create an article in the admin. This is executed on the client. Include SEO fields when possible.',
         parameters: {
           type: 'object',
           properties: {
             title: { type: 'string' },
             body: { type: 'string' },
-            excerpt: { type: 'string' }
+            excerpt: { type: 'string' },
+            // SEO fields
+            tags: { type: 'array', items: { type: 'string' } },
+            keyphrase: { type: 'string' },
+            metaTitle: { type: 'string' },
+            metaDescription: { type: 'string' },
+            canonicalUrl: { type: 'string' },
+            noindex: { type: 'boolean' },
+            // Draft or published
+            status: { type: 'string', enum: ['draft','published'] }
           },
           required: ['title']
         }

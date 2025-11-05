@@ -7,7 +7,7 @@ import { simulatePushTaskToFilevine } from '../data/integrations'
 import { bus } from '../utils/bus'
 import { PanelLeft, Plus, X, Send, Bot, Trash2 } from 'lucide-react'
 
-export type Message = { id: string; role: 'user' | 'assistant'; content: string; ts: number }
+export type Message = { id: string; role: 'user' | 'assistant'; content: string; ts: number; typing?: boolean }
 export type Conversation = { id: string; title: string; messages: Message[] }
 
 function newId(prefix = 'id') { return prefix + '-' + Math.random().toString(36).slice(2, 9) }
@@ -72,6 +72,8 @@ export default function CopilotOverlay({
     if (!text) return
     const userMsg: Message = { id: newId('m'), role: 'user', content: text, ts: Date.now() }
     const cmd = parseCommand(text, PRACTICE_AREAS)
+    setConvos(prev => prev.map(c => c.id === activeId ? { ...c, title: c.messages.length <= 1 ? summarizeTitle(text) : c.title, messages: [...c.messages, userMsg] } : c))
+    setInput('')
 
     let reply = ''
     const doMinimize = () => { if (autoMinimize) onClose() }
@@ -82,18 +84,22 @@ export default function CopilotOverlay({
     switch (cmd.type) {
       case 'NAVIGATE': {
         reply = `Navigating to ${cmd.target}.`
+        setConvos(prev => prev.map(c => c.id === activeId ? { ...c, messages: [...c.messages, { id: newId('m'), role: 'assistant', content: reply, ts: Date.now() }] } : c))
+        onNavigate(cmd.target, { minimize: autoMinimize })
         break
       }
       case 'CALL': {
         reply = `Calling GOLDLAW at ${CTA.phone}…`
         openSafe(CTA.tel, '_self')
         doMinimize()
+        setConvos(prev => prev.map(c => c.id === activeId ? { ...c, messages: [...c.messages, { id: newId('m'), role: 'assistant', content: reply, ts: Date.now() }] } : c))
         break
       }
       case 'CONTACT': {
         reply = 'Opening contact form…'
         openSafe(CTA.contactUrl, '_blank')
         doMinimize()
+        setConvos(prev => prev.map(c => c.id === activeId ? { ...c, messages: [...c.messages, { id: newId('m'), role: 'assistant', content: reply, ts: Date.now() }] } : c))
         break
       }
       case 'MAP': {
@@ -103,12 +109,14 @@ export default function CopilotOverlay({
         reply = `Opening map to ${office?.city ?? 'office'}…`
         if (office) openSafe(office.mapsUrl, '_blank')
         doMinimize()
+        setConvos(prev => prev.map(c => c.id === activeId ? { ...c, messages: [...c.messages, { id: newId('m'), role: 'assistant', content: reply, ts: Date.now() }] } : c))
         break
       }
       case 'OPEN_PRACTICE': {
         reply = 'Opening practice page…'
         openSafe(cmd.url, '_blank')
         doMinimize()
+        setConvos(prev => prev.map(c => c.id === activeId ? { ...c, messages: [...c.messages, { id: newId('m'), role: 'assistant', content: reply, ts: Date.now() }] } : c))
         break
       }
       case 'CREATE_TASK': {
@@ -116,9 +124,13 @@ export default function CopilotOverlay({
         bus.emit('create-task', { title: created.title })
         reply = `Created task in Filevine: "${created.title}" (ID: ${created.id}).`
         doMinimize()
+        setConvos(prev => prev.map(c => c.id === activeId ? { ...c, messages: [...c.messages, { id: newId('m'), role: 'assistant', content: reply, ts: Date.now() }] } : c))
         break
       }
       default: {
+        const thinkingId = newId('m')
+        const thinking: Message = { id: thinkingId, role: 'assistant', content: '', typing: true, ts: Date.now() }
+        setConvos(prev => prev.map(c => c.id === activeId ? { ...c, messages: [...c.messages, thinking] } : c))
         try {
           const res = await fetch('/.netlify/functions/copilot', {
             method: 'POST',
@@ -169,15 +181,8 @@ export default function CopilotOverlay({
         } catch {
           reply = 'Sorry, I could not get a response right now.'
         }
+        setConvos(prev => prev.map(c => c.id === activeId ? { ...c, messages: c.messages.map(m => m.id === thinkingId ? { ...m, content: reply, typing: false, ts: Date.now() } : m) } : c))
       }
-    }
-
-    const assistantMsg: Message = { id: newId('m'), role: 'assistant', content: reply, ts: Date.now() }
-    setConvos(prev => prev.map(c => c.id === activeId ? { ...c, title: c.messages.length <= 1 ? summarizeTitle(text) : c.title, messages: [...c.messages, userMsg, assistantMsg] } : c))
-    setInput('')
-
-    if (cmd.type === 'NAVIGATE') {
-      onNavigate(cmd.target, { minimize: autoMinimize })
     }
   }
 
@@ -249,7 +254,15 @@ export default function CopilotOverlay({
           {active.messages.map(m => (
             <div key={m.id} className={'msg ' + (m.role === 'user' ? 'me' : '')}>
               <div style={{ fontSize: 12, color: 'var(--ops-muted)' }}>{m.role === 'user' ? 'You' : 'Copilot'}</div>
-              <div>{m.content}</div>
+              {m.typing ? (
+                <div className="typing">
+                  <span className="dot" />
+                  <span className="dot" />
+                  <span className="dot" />
+                </div>
+              ) : (
+                <div>{m.content}</div>
+              )}
             </div>
           ))}
         </div>

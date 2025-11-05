@@ -174,6 +174,7 @@ export default function CopilotOverlay({
                 const status = (c.args?.status === 'published') ? 'published' : 'draft'
                 ArticlesStore.save({ title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, noindex, status })
                 onNavigate('articles', { minimize: autoMinimize })
+                try { bus.emit('toast', { message: `Created article “${title}”.`, type: 'success' }) } catch {}
               } catch {}
             } else if (c.name === 'navigate') {
               const target = (c.args?.target || 'overview') as NavId
@@ -234,6 +235,7 @@ export default function CopilotOverlay({
                 }
                 if (!art) {
                   updateNote = 'Could not locate the target article (need id/slug or an exact title).'
+                  try { bus.emit('toast', { message: updateNote, type: 'error' }) } catch {}
                 } else {
                   const providedTitle = c.args?.title ? String(c.args.title) : undefined
                   const fields: any = { id: art.id, slug: art.slug, title: providedTitle || art.title }
@@ -249,6 +251,7 @@ export default function CopilotOverlay({
                   ArticlesStore.save(fields)
                   onNavigate('articles', { minimize: autoMinimize })
                   updateNote = `Updated article “${fields.title}”.`
+                  try { bus.emit('toast', { message: updateNote, type: 'success' }) } catch {}
                 }
               } catch {}
             }

@@ -14,6 +14,7 @@ import './components/Copilot.css'
 import { Moon, Sun } from 'lucide-react'
 import ArticlesSection from './sections/ArticlesSection'
 import MediaSection from './sections/MediaSection'
+import { bus } from './utils/bus'
 
 const NAV: { id: NavId; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -119,6 +120,7 @@ export default function AdminApp() {
           <section className="ops-section">
             {section}
           </section>
+          <ToastHost />
           <CopilotOverlay
             open={copilotOpen}
             onClose={() => setCopilotOpen(false)}
@@ -129,6 +131,28 @@ export default function AdminApp() {
           />
         </main>
       </div>
+    </div>
+  )
+}
+
+function ToastHost() {
+  const [items, setItems] = useState<Array<{ id: string; msg: string; type: 'info'|'success'|'error' }>>([])
+  useEffect(() => {
+    const off = bus.on('toast', ({ message, type }) => {
+      const id = Math.random().toString(36).slice(2, 9)
+      setItems(prev => [...prev, { id, msg: message, type: (type||'info') }])
+      setTimeout(() => setItems(prev => prev.filter(x => x.id !== id)), 3500)
+    })
+    return () => { off() }
+  }, [])
+  if (items.length === 0) return null
+  return (
+    <div style={{ position: 'fixed', right: 16, bottom: 16, display: 'grid', gap: 8, zIndex: 9999 }}>
+      {items.map(t => (
+        <div key={t.id} style={{ padding: '10px 12px', borderRadius: 10, color: '#fff', background: t.type==='success' ? 'rgba(16,185,129,0.95)' : (t.type==='error' ? 'rgba(239,68,68,0.95)' : 'rgba(59,130,246,0.95)') }}>
+          {t.msg}
+        </div>
+      ))}
     </div>
   )
 }

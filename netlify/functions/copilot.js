@@ -29,7 +29,8 @@ export const handler = async (event) => {
       'You may call tools when appropriate: createTask, navigate, call, map, fetchUrl, searchWeb, createArticle.',
       // Article workflow with SEO
       'When asked to write an article from web sources: (1) use fetchUrl for any provided URL, (2) optionally use searchWeb (3–5 results), (3) present a brief "Sources" list as bullets with links, (4) present a short excerpt and a structured article body with headings, (5) call createArticle with { title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, status }. Keep metaTitle ~60 chars, metaDescription ~155 chars. Tags should be 1–5 short topic labels.',
-      'When asked to modify an existing article: call updateArticle with an identifier (slug or id) plus only the fields to change. Maintain existing values if not specified.',
+      'When asked to modify an existing article: you MUST call updateArticle with an identifier (slug or id) plus only the fields to change. If you cannot uniquely identify the article, ask a brief clarifying question (offer 1–3 likely titles) and do not claim completion.',
+      'Do NOT say "Done" unless you actually invoked a tool (e.g., updateArticle/createArticle) successfully.',
       'Ask for confirmation if a destructive or uncertain action is requested. If the user says "yes"/"proceed", go ahead and call the tool.',
       'If answering without tools, keep replies brief and actionable.'
     ].join(' ')

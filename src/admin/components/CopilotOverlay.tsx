@@ -184,6 +184,30 @@ export default function CopilotOverlay({
                 : OFFICES.find(o => o.city.toLowerCase().includes('west palm')) || OFFICES[0]
               if (off?.mapsUrl) openSafe(off.mapsUrl, '_blank')
               doMinimize()
+            } else if (c.name === 'updateArticle') {
+              try {
+                const idArg = (c.args?.id ? String(c.args.id) : '').trim()
+                const slugArg = (c.args?.slug ? String(c.args.slug) : '').trim()
+                let art = idArg ? ArticlesStore.all().find(a => a.id === idArg) : undefined
+                if (!art && slugArg) art = ArticlesStore.getBySlug(slugArg)
+                if (!art) {
+                  // No matching article; do nothing
+                } else {
+                  const providedTitle = c.args?.title ? String(c.args.title) : undefined
+                  const fields: any = { id: art.id, slug: art.slug, title: providedTitle || art.title }
+                  if (typeof c.args?.excerpt === 'string') fields.excerpt = String(c.args.excerpt)
+                  if (typeof c.args?.body === 'string') fields.body = String(c.args.body)
+                  if (Array.isArray(c.args?.tags)) fields.tags = c.args.tags.map((t: any) => String(t)).slice(0, 8)
+                  if (typeof c.args?.keyphrase === 'string') fields.keyphrase = String(c.args.keyphrase)
+                  if (typeof c.args?.metaTitle === 'string') fields.metaTitle = String(c.args.metaTitle)
+                  if (typeof c.args?.metaDescription === 'string') fields.metaDescription = String(c.args.metaDescription)
+                  if (typeof c.args?.canonicalUrl === 'string') fields.canonicalUrl = String(c.args.canonicalUrl)
+                  if (typeof c.args?.noindex === 'boolean') fields.noindex = Boolean(c.args.noindex)
+                  if (c.args?.status === 'published' || c.args?.status === 'draft') fields.status = c.args.status
+                  ArticlesStore.save(fields)
+                  onNavigate('articles', { minimize: autoMinimize })
+                }
+              } catch {}
             }
           }
           if (!reply) reply = 'Done.'

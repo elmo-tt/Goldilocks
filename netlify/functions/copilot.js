@@ -29,6 +29,7 @@ export const handler = async (event) => {
       'You may call tools when appropriate: createTask, navigate, call, map, fetchUrl, searchWeb, createArticle.',
       // Article workflow with SEO
       'When asked to write an article from web sources: (1) use fetchUrl for any provided URL, (2) optionally use searchWeb (3–5 results), (3) present a brief "Sources" list as bullets with links, (4) present a short excerpt and a structured article body with headings, (5) call createArticle with { title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, status }. Keep metaTitle ~60 chars, metaDescription ~155 chars. Tags should be 1–5 short topic labels.',
+      'When asked to modify an existing article: call updateArticle with an identifier (slug or id) plus only the fields to change. Maintain existing values if not specified.',
       'Ask for confirmation if a destructive or uncertain action is requested. If the user says "yes"/"proceed", go ahead and call the tool.',
       'If answering without tools, keep replies brief and actionable.'
     ].join(' ')
@@ -116,6 +117,31 @@ export const handler = async (event) => {
             status: { type: 'string', enum: ['draft','published'] }
           },
           required: ['title']
+        }
+      }
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'updateArticle',
+        description: 'Update an existing article identified by id or slug. This is executed on the client.',
+        parameters: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            slug: { type: 'string' },
+            title: { type: 'string' },
+            body: { type: 'string' },
+            excerpt: { type: 'string' },
+            tags: { type: 'array', items: { type: 'string' } },
+            keyphrase: { type: 'string' },
+            metaTitle: { type: 'string' },
+            metaDescription: { type: 'string' },
+            canonicalUrl: { type: 'string' },
+            noindex: { type: 'boolean' },
+            status: { type: 'string', enum: ['draft','published'] }
+          },
+          anyOf: [ { required: ['id'] }, { required: ['slug'] } ]
         }
       }
     }

@@ -88,7 +88,11 @@ const LocalArticlesStore = {
       applyIntoList()
       writeAll(list)
       // Push to Supabase in background if enabled
-      if (getBackend() === 'supabase') { CloudArticlesStore.save(next).catch(() => {}) }
+      if (getBackend() === 'supabase') {
+        CloudArticlesStore.save(next)
+          .then(() => { try { window.dispatchEvent(new CustomEvent('gl:articles-updated')) } catch {} })
+          .catch((err) => { try { console.error('Supabase save failed:', err) } catch {} })
+      }
       return next
     } catch (err) {
       // Fallback: remove inline image to reduce storage footprint and retry once

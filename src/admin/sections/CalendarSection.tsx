@@ -20,7 +20,7 @@ export default function CalendarSection() {
         <h3>Upcoming</h3>
         <div style={{ display: 'grid', gap: 8 }}>
           {OUTLOOK_EVENTS.map(e => (
-            <div key={e.id} style={{ display: 'grid', gap: 4, border: '1px solid var(--ops-border)', borderRadius: 10, padding: '10px 12px', background: 'var(--ops-blue-2)' }}>
+            <div key={e.id} className="ops-list-row">
               <div style={{ fontWeight: 600 }}>{e.subject}</div>
               <div style={{ fontSize: 12, color: 'var(--ops-muted)' }}>{fmtRange(e)}{e.location ? ` • ${e.location}` : ''}</div>
             </div>

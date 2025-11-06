@@ -83,7 +83,7 @@ function ListView({ onCreate, onEdit }: { onCreate: () => void; onEdit: (id: str
 
   return (
     <div className="section">
-      <div className="ops-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, marginBottom: 12 }}>
+      <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, marginBottom: 12 }}>
         <div>
           <strong>Articles</strong>
           <span className="ops-sub"> Manage and publish articles for the public site</span>
@@ -97,13 +97,13 @@ function ListView({ onCreate, onEdit }: { onCreate: () => void; onEdit: (id: str
           {items.length === 0 && <div style={{ color: 'var(--ops-muted)' }}>No articles yet. Click "Create Article" to start.
           </div>}
           {items.map(a => (
-            <div key={a.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', alignItems: 'center', gap: 12, border: '1px solid var(--ops-border)', borderRadius: 10, padding: '10px 12px', background: 'var(--ops-blue-2)' }}>
+            <div key={a.id} className="ops-list-row">
               <div style={{ display: 'grid', gap: 4 }}>
                 <div style={{ fontWeight: 600 }}>{a.title}</div>
                 <div style={{ fontSize: 12, color: 'var(--ops-muted)' }}>{a.slug} • {new Date(a.updatedAt).toLocaleString()}</div>
               </div>
-              <StatusBadge status={a.status} />
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div className="ops-list-status"><StatusBadge status={a.status} /></div>
+              <div className="ops-list-actions">
                 <button className="button" onClick={() => onEdit(a.id)}>Edit</button>
                 {a.status === 'published' && <a className="button" href={`/articles/${a.slug}`} target="_blank" rel="noreferrer">View</a>}
               </div>
@@ -233,7 +233,7 @@ function EditorView({ initial, onBack }: { initial?: Article; onBack: () => void
   }
 
   return (
-    <div className="section marketing-layout" style={{ gridTemplateColumns: '1fr 360px' }}>
+    <div className="section marketing-layout">
       <div>
         <div className="card" style={{ minHeight: 280 }}>
           <h3>Editor</h3>
@@ -242,7 +242,7 @@ function EditorView({ initial, onBack }: { initial?: Article; onBack: () => void
               <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Article title" />
             </Field>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="ops-two-col">
               <Field label="Slug">
                 <input className="input" value={slug} onChange={e => setSlug(slugify(e.target.value))} placeholder="auto-from-title" />
               </Field>

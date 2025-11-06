@@ -11,7 +11,7 @@ import SettingsSection from './sections/SettingsSection'
 import type { NavId } from './utils/intentParser'
 import CopilotOverlay from './components/CopilotOverlay'
 import './components/Copilot.css'
-import { Moon, Sun } from 'lucide-react'
+import { Moon, Sun, Menu } from 'lucide-react'
 import ArticlesSection from './sections/ArticlesSection'
 import MediaSection from './sections/MediaSection'
 import { bus } from './utils/bus'
@@ -31,6 +31,7 @@ const NAV: { id: NavId; label: string }[] = [
 export default function AdminApp() {
   const [nav, setNav] = useState<NavId>('overview')
   const [copilotOpen, setCopilotOpen] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
   const THEME_KEY = 'gl_admin_theme'
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try {
@@ -80,7 +81,7 @@ export default function AdminApp() {
     }
   }, [nav])
   return (
-    <div className="ops" data-theme={theme === 'light' ? 'light' : undefined}>
+    <div className="ops" data-theme={theme === 'light' ? 'light' : undefined} data-nav-open={navOpen ? 'true' : undefined}>
       <div className="ops-shell">
         <aside className="ops-sidebar">
           <div className="ops-brand">GOLDLAW Ops Studio</div>
@@ -90,13 +91,14 @@ export default function AdminApp() {
                 key={n.id}
                 href="#"
                 className={nav === n.id ? 'active' : ''}
-                onClick={(e) => { e.preventDefault(); setNav(n.id) }}
+                onClick={(e) => { e.preventDefault(); setNav(n.id); setNavOpen(false) }}
               >
                 {n.label}
               </a>
             ))}
           </nav>
         </aside>
+        {navOpen && <div className="ops-nav-overlay" onClick={() => setNavOpen(false)} />}
         <main className="ops-main">
           <div className="ops-header">
             <div className="ops-header-inner">
@@ -105,6 +107,7 @@ export default function AdminApp() {
                 <span className="ops-sub">Presentation mock</span>
               </div>
               <div className="ops-actions">
+                <button className="ops-btn mobile-only" onClick={() => setNavOpen(true)} title="Open menu"><Menu size={16} /> Menu</button>
                 <button className="ops-btn" onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} title="Toggle theme">
                   {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />} {theme === 'light' ? 'Dark' : 'Light'} Mode
                 </button>

@@ -9,7 +9,7 @@ const cols = [
 export default function CasesSection() {
   return (
     <div className="section">
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols.length}, 1fr)`, gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
         {cols.map((c) => (
           <div key={c.title} className="card" style={{ minHeight: 280 }}>
             <h3>{c.title}</h3>

@@ -5,9 +5,13 @@
 .ops-brand{ padding:24px; border-bottom:1px solid var(--ops-border); font-weight:700; letter-spacing:.4px; color:var(--ops-gold); }
 .ops-nav{ padding:12px; display:grid; gap:6px; }
 .ops-nav a{ text-decoration:none; color:inherit; padding:10px 12px; border-radius:10px; border:1px solid transparent; }
-.ops-nav a:hover{ background:var(--ops-blue-3); border-color:var(--ops-border); }
+@media (hover: hover) and (pointer: fine){
+  .ops-nav a:hover{ background:var(--ops-blue-3); border-color:var(--ops-border); }
+}
 .ops-nav a.active{ background:#112044; border-color:#17306b; color:#e9f0ff; }
-.ops[data-theme='light'] .ops-nav a:hover{ background:#f1f5fb; border-color:var(--ops-border); }
+@media (hover: hover) and (pointer: fine){
+  .ops[data-theme='light'] .ops-nav a:hover{ background:#f1f5fb; border-color:var(--ops-border); }
+}
 .ops[data-theme='light'] .ops-nav a.active{ background:#e9eefc; border-color:#d1dcfb; color:#0f172a; }
 .ops-main{ position:relative; }
 .ops-header{ position:sticky; top:0; background:var(--ops-header-bg); backdrop-filter: blur(8px); border-bottom:1px solid var(--ops-border); z-index:5; }
@@ -21,3 +25,24 @@
 .ops-section{ padding:24px; }
 .ops-card{ background:var(--ops-blue-2); border:1px solid var(--ops-border); border-radius:12px; padding:16px; }
 @media (max-width: 960px){ .ops-shell{ grid-template-columns:1fr; } .ops-sidebar{ display:none; } }
+
+/* Mobile helpers */
+.ops .mobile-only{ display:none; }
+.ops-nav-overlay{ display:none; }
+
+@media (max-width: 960px){
+  .ops .mobile-only{ display:inline-flex; align-items:center; }
+  .ops[data-nav-open='true'] .ops-nav-overlay{
+    display:block; position:fixed; inset:0; background:rgba(2,6,23,0.5); z-index:9;
+  }
+  .ops[data-nav-open='true'] .ops-sidebar{
+    display:flex; position:fixed; left:0; top:0; bottom:0; width:min(86vw, 300px); z-index:10;
+  }
+  .ops-header-inner{ flex-wrap:wrap; gap:8px; }
+  .ops-actions{ flex-wrap:wrap; gap:6px; margin-left:auto; }
+}
+
+@media (max-width: 520px){
+  .ops-header-inner{ padding:12px 16px; }
+  .ops-section{ padding:16px; }
+}

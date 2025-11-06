@@ -4,6 +4,8 @@ import './ArticleTemplate.css'
 import { useEffect, useRef, useState } from 'react'
 import { AssetStore } from '@/shared/assets/store'
 import DOMPurify from 'dompurify'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import type { Article } from '@/shared/articles/store'
 
 function looksLikeHtml(s: string) {
@@ -228,76 +230,53 @@ export default function ArticleTemplate({ article }: { article: Article }) {
   )
 }
 
-function BodyRenderer({ body }: { body?: string }) {
-  if (!body) return null
-  const lines = body.replace(/\r\n?/g, '\n').split('\n')
-  const out: React.ReactNode[] = []
-  let i = 0
-  while (i < lines.length) {
-    const line = lines[i]
-    if (!line.trim()) { i++; continue }
-    // Headings
-    if (/^###\s+/.test(line)) { out.push(<h3 key={i} style={{ color: '#fff', margin: 0 }}>{line.replace(/^###\s+/, '')}</h3>); i++; continue }
-    if (/^##\s+/.test(line)) { out.push(<h2 key={i} style={{ color: '#fff', margin: 0 }}>{line.replace(/^##\s+/, '')}</h2>); i++; continue }
-    if (/^#\s+/.test(line)) { out.push(<h2 key={i} style={{ color: '#fff', margin: 0 }}>{line.replace(/^#\s+/, '')}</h2>); i++; continue }
-    // Image line ![alt](src)
-    const imgMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)\s*$/)
-    if (imgMatch) {
-      const alt = imgMatch[1]
-      const src = imgMatch[2]
-      if (src.startsWith('asset:')) out.push(<InlineAssetImage key={`img-${i}`} id={src.slice(6)} alt={alt} />)
-      else out.push(<img key={`img-${i}`} src={src} alt={alt} style={{ width: '100%', borderRadius: 8 }} />)
-      i++; continue
-    }
-    // Unordered list block
-    if (/^-\s+/.test(line)) {
-      const items: string[] = []
-      while (i < lines.length && /^-\s+/.test(lines[i])) { items.push(lines[i].replace(/^-\s+/, '')); i++ }
-      out.push(
-        <ul key={`ul-${i}`} style={{ margin: 0, paddingLeft: 20 }}>
-          {items.map((t, idx) => <li key={idx} dangerouslySetInnerHTML={{ __html: mdInlineToHtml(t) }} />)}
-        </ul>
-      )
-      continue
-    }
-    // Ordered list block
-    if (/^\d+\.\s+/.test(line)) {
-      const items: string[] = []
-      while (i < lines.length && /^\d+\.\s+/.test(lines[i])) { items.push(lines[i].replace(/^\d+\.\s+/, '')); i++ }
-      out.push(
-        <ol key={`ol-${i}`} style={{ margin: 0, paddingLeft: 22 }}>
-          {items.map((t, idx) => <li key={idx} dangerouslySetInnerHTML={{ __html: mdInlineToHtml(t) }} />)}
-        </ol>
-      )
-      continue
-    }
-    // Blockquote
-    if (/^>\s+/.test(line)) {
-      const items: string[] = []
-      while (i < lines.length && /^>\s+/.test(lines[i])) { items.push(lines[i].replace(/^>\s+/, '')); i++ }
-      out.push(
-        <blockquote key={`q-${i}`} style={{ margin: 0, paddingLeft: 14, borderLeft: '3px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.85)' }}>
-          {items.map((t, idx) => <p key={idx} style={{ margin: 0 }} dangerouslySetInnerHTML={{ __html: mdInlineToHtml(t) }} />)}
-        </blockquote>
-      )
-      continue
-    }
-    // Paragraph (allow inline HTML formatting)
-    out.push(<p key={`p-${i}`} style={{ margin: 0 }} dangerouslySetInnerHTML={{ __html: mdInlineToHtml(line) }} />)
-    i++
-  }
-  return <>{out}</>
+function normalizeMarkdown(text?: string) {
+  if (!text) return ''
+  let s = text.replace(/\r\n?/g, '\n')
+  // Ensure ordered list markers start at a new line when embedded in a sentence
+  s = s.replace(/([^\n])\s(\d+)\.\s/g, '$1\n$2. ')
+  // Ensure bullet markers start at a new line
+  s = s.replace(/([^\n])\s-\s/g, '$1\n- ')
+  return s
 }
 
-function mdInlineToHtml(s: string) {
-  // very small inline Markdown to HTML
-  let html = s
-  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>')
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
-  return html
+function BodyRenderer({ body }: { body?: string }) {
+  if (!body) return null
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        a: (props: any) => <a href={props.href} target="_blank" rel="noopener noreferrer">{props.children}</a>,
+        img: (props: any) => {
+          const src = String(props.src || '')
+          const alt = String(props.alt || '')
+          const caption = typeof props.title === 'string' && props.title.trim() ? props.title.trim() : ''
+          const imgEl = src.startsWith('asset:')
+            ? <InlineAssetImage id={src.slice(6)} alt={alt} />
+            : <img src={src} alt={alt} style={{ width: '100%', borderRadius: 8 }} />
+          if (!caption) return imgEl
+          return (
+            <figure style={{ margin: 0 }}>
+              {imgEl}
+              <figcaption style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, fontStyle: 'italic', marginTop: 6 }}>{caption}</figcaption>
+            </figure>
+          )
+        },
+        h1: (p: any) => <h2 style={{ color: '#fff', margin: 0 }} {...p} />,
+        h2: (p: any) => <h3 style={{ color: '#fff', margin: 0 }} {...p} />,
+        h3: (p: any) => <h4 style={{ color: '#fff', margin: 0 }} {...p} />,
+        p: (p: any) => <p style={{ margin: 0 }} {...p} />,
+        ul: (p: any) => <ul style={{ margin: 0, paddingLeft: 20 }} {...p} />,
+        ol: (p: any) => <ol style={{ margin: 0, paddingLeft: 22 }} {...p} />,
+        blockquote: (p: any) => <blockquote style={{ margin: 0, paddingLeft: 14, borderLeft: '3px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.85)' }} {...p} />,
+      }}
+    >
+      {normalizeMarkdown(body)}
+    </ReactMarkdown>
+  )
 }
+
+ 
 
 function InlineAssetImage({ id, alt }: { id: string; alt?: string }) {
   const [url, setUrl] = useState<string | undefined>()

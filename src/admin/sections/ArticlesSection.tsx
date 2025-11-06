@@ -832,7 +832,7 @@ function enforceEditorialRules(body: string, tags: string[], title: string, exce
       })
       del.forEach(el => el.remove())
       const matched = findPracticeAreaLabel(tags, title, c.textContent || '')
-      const display = matched ? transformAreaLabelForCta(matched) : ''
+      const display = matched ? transformAreaLabelForCta(matched).toLowerCase() : ''
       const cta = matched
         ? `If you or someone you know has been a victim of ${display}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
         : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
@@ -860,7 +860,7 @@ function enforceEditorialRules(body: string, tags: string[], title: string, exce
         .replace(/^\s*.*—\s*Article\s*:\s*.*$/gim, '')
         .replace(/\n{3,}/g, '\n\n')
       const matched = findPracticeAreaLabel(tags, title, s)
-      const display = matched ? transformAreaLabelForCta(matched) : ''
+      const display = matched ? transformAreaLabelForCta(matched).toLowerCase() : ''
       const cta = matched
         ? `If you or someone you know has been a victim of ${display}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
         : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`

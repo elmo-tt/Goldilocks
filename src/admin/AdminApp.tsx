@@ -120,7 +120,7 @@ export default function AdminApp() {
         if (/[–—-]\s*Article\s*:\s*/i.test(t)) { node.remove(); continue }
       }
       const matched = findPALabel(tags, keyphrase || title, c.textContent || '')
-      const display = matched ? transformLabel(matched) : ''
+      const display = matched ? transformLabel(matched).toLowerCase() : ''
       const cta = matched
         ? `If you or someone you know has been a victim of ${display}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
         : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
@@ -147,7 +147,7 @@ export default function AdminApp() {
         .replace(/^\s*.*[–—-]\s*Article\s*:\s*.*$/gim, '')
         .replace(/\n{3,}/g, '\n\n')
       const matched = findPALabel(tags, keyphrase || title, s)
-      const display = matched ? transformLabel(matched) : ''
+      const display = matched ? transformLabel(matched).toLowerCase() : ''
       const cta = matched
         ? `If you or someone you know has been a victim of ${display}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
         : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`

@@ -50,27 +50,48 @@ export default function AdminApp() {
   }, [theme])
 
   useEffect(() => {
-    const KEY = 'gl_migr_2025_11_06_cta_excerpt'
+    const KEY = 'gl_migr_2025_11_06_cta_excerpt_v2'
     try { if (localStorage.getItem(KEY) === 'done') return }
     catch {}
     const norm = (s: string) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
-    const findPALabel = (tags?: string[], ref?: string) => {
+    const findPALabel = (tags?: string[], ref?: string, context?: string) => {
       try {
         const cands: string[] = []
         if (Array.isArray(tags)) for (const t of tags) if (t && t.trim()) cands.push(t)
         if (ref && ref.trim()) cands.push(ref)
+        if (context && context.trim()) cands.push(context.slice(0, 800))
         const cn = cands.map(norm)
-        for (const pa of PRACTICE_AREAS) {
-          const ln = norm(pa.label)
-          for (const c of cn) {
-            if (!c) continue
-            if (c.includes(ln) || ln.includes(c)) return pa.label
-            const toks = ln.split(' ')
-            let hits = 0
-            for (const tk of toks) { if (tk && c.includes(tk)) hits++ }
-            if (hits >= Math.min(2, toks.length)) return pa.label
+        const aliases: Array<{ target: string; patterns: string[] }> = [
+          { target: 'Trucking Accidents', patterns: ['truck accident', 'truck accidents', 'trucking accident', 'trucking accidents', 'semi truck', 'tractor trailer', '18 wheeler', 'big rig', 'commercial truck'] },
+          { target: 'Negligent Security', patterns: ['negligent security', 'inadequate security', 'premises security'] },
+        ]
+        let bestLabel: string | undefined
+        let bestScore = 0
+        const score = (label: string, c: string) => {
+          const ln = norm(label)
+          if (!ln || !c) return 0
+          if (c === ln) return 95
+          if (c.includes(ln)) return 90
+          const toks = ln.split(' ').filter(Boolean)
+          let hits = 0
+          for (const tk of toks) { if (c.includes(tk)) hits++ }
+          const ratio = toks.length ? hits / toks.length : 0
+          return Math.round(60 + 30 * ratio + Math.min(10, toks.length))
+        }
+        // score below against all PRACTICE_AREAS; no-op here
+        for (const c of cn) {
+          for (const a of aliases) {
+            for (const p of a.patterns) {
+              const pn = norm(p)
+              if (pn && c.includes(pn)) { bestLabel = a.target; bestScore = 100 }
+            }
+          }
+          for (const pa of PRACTICE_AREAS) {
+            const sc = score(pa.label, c)
+            if (sc > bestScore) { bestScore = sc; bestLabel = pa.label }
           }
         }
+        return bestLabel
       } catch {}
       return undefined
     }
@@ -91,9 +112,10 @@ export default function AdminApp() {
         if (/\bin focus:\b/i.test(t)) { node.remove(); continue }
         if (/[–—-]\s*Article\s*:\s*/i.test(t)) { node.remove(); continue }
       }
-      const matched = findPALabel(tags, keyphrase || title)
+      const matched = findPALabel(tags, keyphrase || title, c.textContent || '')
+      const display = matched ? norm(matched.replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s+/g, ' ')) : ''
       const cta = matched
-        ? `If you or someone you know has been a victim of ${matched.toLowerCase()}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
+        ? `If you or someone you know has been a victim of ${display}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
         : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
       const txt = (c.textContent || '').trim().toLowerCase()
       if (!txt.endsWith(cta.toLowerCase())) {

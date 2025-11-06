@@ -133,7 +133,7 @@ function enforceSeo(input: { title: string; body: string; metaTitle?: string; me
   if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(metaDescription)) metaDescription = `${kp}: ` + metaDescription
   metaDescription = ensureMaxLen(metaDescription, 160)
   const matchedLabel = findPracticeAreaLabel(input.tags, kp, input.body)
-  const displayLabel = matchedLabel ? sanitizeAreaLabel(matchedLabel).toLowerCase() : ''
+  const displayLabel = matchedLabel ? sanitizeAreaLabel(matchedLabel) : ''
   const cta = matchedLabel
     ? `If you or someone you know has been a victim of ${displayLabel}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
     : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`

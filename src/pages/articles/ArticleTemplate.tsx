@@ -12,7 +12,7 @@ function looksLikeHtml(s: string) {
   return /<(?:\/|[^>]+)>/.test(s)
 }
 
-function HtmlBody({ html, heroMaxWidth }: { html: string; heroMaxWidth?: number }) {
+function HtmlBody({ html, heroMaxWidth, excerpt }: { html: string; heroMaxWidth?: number; excerpt?: string }) {
   const ref = useRef<HTMLDivElement | null>(null)
   // Preprocess: also stamp data-asset-id while keeping src="asset:ID" intact
   const prepped = html.replace(
@@ -38,6 +38,19 @@ function HtmlBody({ html, heroMaxWidth }: { html: string; heroMaxWidth?: number 
           if (/^Article\s*:\s*/i.test(t)) { node.remove(); continue }
           if (/\bin focus:\b/i.test(t)) { node.remove(); continue }
           if (/[–—-]\s*Article\s*:\s*/i.test(t)) { node.remove(); continue }
+        }
+      } catch {}
+      // Remove an early paragraph that duplicates the excerpt
+      try {
+        if (excerpt && excerpt.trim()) {
+          const paras = Array.from(el.querySelectorAll('p')) as HTMLParagraphElement[]
+          const maxCheck = Math.min(6, paras.length)
+          const ex = excerpt.trim().toLowerCase()
+          for (let i = 0; i < maxCheck; i++) {
+            const p = paras[i]
+            const t = (p.textContent || '').trim().toLowerCase()
+            if (t && t === ex) { p.remove(); break }
+          }
         }
       } catch {}
       const imgs = Array.from(el.querySelectorAll('img')) as HTMLImageElement[]
@@ -251,9 +264,9 @@ export default function ArticleTemplate({ article }: { article: Article }) {
 
           <div className="article-body" style={{ display: 'grid', gap: 14, lineHeight: 1.7, color: 'rgba(255,255,255,0.9)', maxWidth: 840 }}>
             {looksLikeHtml(article.body) ? (
-              <HtmlBody html={article.body!} heroMaxWidth={heroWidth} />
+              <HtmlBody html={article.body!} heroMaxWidth={heroWidth} excerpt={article.excerpt || ''} />
             ) : (
-              <BodyRenderer body={article.body} />
+              <BodyRenderer body={article.body} excerpt={article.excerpt} />
             )}
           </div>
 
@@ -266,9 +279,36 @@ export default function ArticleTemplate({ article }: { article: Article }) {
   )
 }
 
-function normalizeMarkdown(text?: string) {
+function stripMd(s: string) {
+  let x = String(s || '')
+  x = x.replace(/`{1,3}[\s\S]*?`{1,3}/g, ' ')
+  x = x.replace(/\!\[[^\]]*\]\([^\)]*\)/g, ' ')
+  x = x.replace(/\[[^\]]*\]\([^\)]*\)/g, ' ')
+  x = x.replace(/^>\s+/gm, ' ')
+  x = x.replace(/^\s{0,3}[-*+]\s+/gm, ' ')
+  x = x.replace(/^\s*\d+\.\s+/gm, ' ')
+  x = x.replace(/^#{1,6}\s+/gm, ' ')
+  x = x.replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, '$1')
+  x = x.replace(/\s+/g, ' ')
+  return x.trim()
+}
+
+function normalizeMarkdown(text?: string, excerpt?: string) {
   if (!text) return ''
   let s = text.replace(/\r\n?/g, '\n')
+  try {
+    if (excerpt && excerpt.trim()) {
+      const parts = s.trim().split(/\n\n+/)
+      const ex = stripMd(excerpt).toLowerCase()
+      const maxCheck = Math.min(6, parts.length)
+      let removed = false
+      for (let i = 0; i < maxCheck; i++) {
+        const a = stripMd(parts[i] || '').toLowerCase()
+        if (a && ex && a === ex) { parts.splice(i, 1); removed = true; break }
+      }
+      if (removed) s = parts.join('\n\n')
+    }
+  } catch {}
   // Remove label-only or scaffolding lines that models may output
   s = s
     .replace(/^\s*(?:#{1,6}\s*)?(Introduction|Conclusion|Excerpt|Sources|References)\s*:?\s*$/gim, '')
@@ -292,7 +332,7 @@ function normalizeMarkdown(text?: string) {
   return s
 }
 
-function BodyRenderer({ body }: { body?: string }) {
+function BodyRenderer({ body, excerpt }: { body?: string; excerpt?: string }) {
   if (!body) return null
   return (
     <ReactMarkdown
@@ -323,7 +363,7 @@ function BodyRenderer({ body }: { body?: string }) {
         blockquote: (p: any) => <blockquote style={{ margin: 0, paddingLeft: 14, borderLeft: '3px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.85)' }} {...p} />,
       }}
     >
-      {normalizeMarkdown(body)}
+      {normalizeMarkdown(body, excerpt)}
     </ReactMarkdown>
   )
 }

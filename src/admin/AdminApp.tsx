@@ -15,6 +15,8 @@ import { Moon, Sun, Menu, LogOut, Bot, Home } from 'lucide-react'
 import ArticlesSection from './sections/ArticlesSection'
 import MediaSection from './sections/MediaSection'
 import { bus } from './utils/bus'
+import { ArticlesStore } from '../shared/articles/store'
+import { PRACTICE_AREAS } from './data/goldlaw'
 
 const NAV: { id: NavId; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -46,6 +48,98 @@ export default function AdminApp() {
   useEffect(() => {
     try { localStorage.setItem(THEME_KEY, theme) } catch {}
   }, [theme])
+
+  useEffect(() => {
+    const KEY = 'gl_migr_2025_11_06_cta_excerpt'
+    try { if (localStorage.getItem(KEY) === 'done') return }
+    catch {}
+    const norm = (s: string) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+    const findPALabel = (tags?: string[], ref?: string) => {
+      try {
+        const cands: string[] = []
+        if (Array.isArray(tags)) for (const t of tags) if (t && t.trim()) cands.push(t)
+        if (ref && ref.trim()) cands.push(ref)
+        const cn = cands.map(norm)
+        for (const pa of PRACTICE_AREAS) {
+          const ln = norm(pa.label)
+          for (const c of cn) {
+            if (!c) continue
+            if (c.includes(ln) || ln.includes(c)) return pa.label
+            const toks = ln.split(' ')
+            let hits = 0
+            for (const tk of toks) { if (tk && c.includes(tk)) hits++ }
+            if (hits >= Math.min(2, toks.length)) return pa.label
+          }
+        }
+      } catch {}
+      return undefined
+    }
+    const cleanHtml = (html: string, excerpt: string, tags: string[], title: string, keyphrase?: string) => {
+      const c = document.createElement('div') as HTMLDivElement
+      c.innerHTML = html || ''
+      try {
+        const p = c.querySelector('p') as HTMLParagraphElement | null
+        const ex = (excerpt || '').trim().toLowerCase()
+        const ft = (p?.textContent || '').trim().toLowerCase()
+        if (ex && ft && ex === ft) p?.remove()
+      } catch {}
+      const nodes = Array.from(c.querySelectorAll('p,h1,h2,h3,h4,h5,h6')) as HTMLElement[]
+      for (const node of nodes) {
+        const t = (node.textContent || '').trim()
+        if (/^(Introduction|Conclusion|Excerpt|Sources|References)\s*:?\s*$/i.test(t)) { node.remove(); continue }
+        if (/^Article\s*:\s*/i.test(t)) { node.remove(); continue }
+        if (/\bin focus:\b/i.test(t)) { node.remove(); continue }
+        if (/[–—-]\s*Article\s*:\s*/i.test(t)) { node.remove(); continue }
+      }
+      const matched = findPALabel(tags, keyphrase || title)
+      const cta = matched
+        ? `If you or someone you know has been a victim of ${matched.toLowerCase()}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
+        : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
+      const txt = (c.textContent || '').trim().toLowerCase()
+      if (!txt.endsWith(cta.toLowerCase())) {
+        const p = document.createElement('p')
+        p.textContent = cta
+        c.appendChild(p)
+      }
+      return c.innerHTML
+    }
+    const cleanMd = (src: string, excerpt: string, tags: string[], title: string, keyphrase?: string) => {
+      let s = String(src || '')
+      try {
+        const parts = s.trim().split(/\n\n+/)
+        const a = (parts[0] || '').trim().toLowerCase()
+        const b = (excerpt || '').trim().toLowerCase()
+        if (a && b && a === b) { parts.shift(); s = parts.join('\n\n') }
+      } catch {}
+      s = s
+        .replace(/^\s*(?:#{1,6}\s*)?(Introduction|Conclusion|Excerpt|Sources|References)\s*:?\s*$/gim, '')
+        .replace(/^\s*(?:#{1,6}\s*)?Article\s*:\s*.*$/gim, '')
+        .replace(/^\s*.*\bin focus:\b.*$/gim, '')
+        .replace(/^\s*.*[–—-]\s*Article\s*:\s*.*$/gim, '')
+        .replace(/\n{3,}/g, '\n\n')
+      const matched = findPALabel(tags, keyphrase || title)
+      const cta = matched
+        ? `If you or someone you know has been a victim of ${matched.toLowerCase()}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
+        : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
+      const trimmed = s.replace(/\s+$/, '')
+      if (!trimmed.toLowerCase().endsWith(cta.toLowerCase())) s = trimmed + '\n\n' + cta
+      else s = trimmed
+      return s
+    }
+    try {
+      const all = ArticlesStore.all()
+      let changed = 0
+      for (const a of all) {
+        const before = a.body || ''
+        let after = before
+        if (/<\w+[^>]*>/i.test(before)) after = cleanHtml(before, a.excerpt || '', a.tags || [], a.title || '', a.keyphrase)
+        else after = cleanMd(before, a.excerpt || '', a.tags || [], a.title || '', a.keyphrase)
+        if (after && after !== before) { ArticlesStore.save({ id: a.id, title: a.title, body: after }); changed++ }
+      }
+      try { localStorage.setItem(KEY, 'done') } catch {}
+      if (changed > 0) { try { bus.emit('toast', { message: `Migrated ${changed} article(s).`, type: 'success' }) } catch {} }
+    } catch {}
+  }, [])
 
   // Hide FAB when other overlays request it (e.g., article media picker)
   useEffect(() => {

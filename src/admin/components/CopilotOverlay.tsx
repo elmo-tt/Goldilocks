@@ -45,6 +45,28 @@ function ensureMaxLen(s: string, n: number) {
   return cut.replace(/\s+\S*$/, '')
 }
 
+function norm(s: string) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() }
+function findPracticeAreaLabel(tags?: string[], keyphrase?: string) {
+  try {
+    const candidates: string[] = []
+    if (Array.isArray(tags)) for (const t of tags) if (t && t.trim()) candidates.push(t)
+    if (keyphrase && keyphrase.trim()) candidates.push(keyphrase)
+    const candN = candidates.map(norm)
+    for (const pa of PRACTICE_AREAS) {
+      const labelN = norm(pa.label)
+      for (const c of candN) {
+        if (!c) continue
+        if (c.includes(labelN) || labelN.includes(c)) return pa.label
+        const labelTokens = labelN.split(' ')
+        let hits = 0
+        for (const tok of labelTokens) { if (tok && c.includes(tok)) hits++ }
+        if (hits >= Math.min(2, labelTokens.length)) return pa.label
+      }
+    }
+  } catch {}
+  return undefined
+}
+
 function enforceSeo(input: { title: string; body: string; metaTitle?: string; metaDescription?: string; keyphrase?: string; tags?: string[]; canonicalUrl?: string; }) {
   const kp = deriveKeyphrase(input.title, input.keyphrase, input.tags)
   let title = input.title || 'Untitled'
@@ -62,6 +84,19 @@ function enforceSeo(input: { title: string; body: string; metaTitle?: string; me
     .replace(/^\s*Further guidance on\s+.*$/gim, '')
     .replace(/^(\s*(?:#{1,6}\s*)?[^\n]+?)\s[–—-]\s*(Introduction|Conclusion)\s*$/gim, '$1')
     .replace(/\n{3,}/g, '\n\n')
+  try {
+    const blocks = body.split(/\n\n+/)
+    const out: string[] = []
+    let prev = ''
+    for (const b of blocks) {
+      const norm = b.replace(/\s+/g, ' ').trim().toLowerCase()
+      if (!norm) continue
+      if (norm === prev) continue
+      out.push(b)
+      prev = norm
+    }
+    if (out.length) body = out.join('\n\n')
+  } catch {}
   // Do not inject additional density lines; rely on authoring and CTA
   let metaTitle = (input.metaTitle || title).trim()
   if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(metaTitle)) metaTitle = `${kp} — ${metaTitle}`
@@ -73,9 +108,10 @@ function enforceSeo(input: { title: string; body: string; metaTitle?: string; me
   }
   if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(metaDescription)) metaDescription = `${kp}: ` + metaDescription
   metaDescription = ensureMaxLen(metaDescription, 160)
-  let category = (input.tags && input.tags[0] ? String(input.tags[0]) : kp).toLowerCase().trim()
-  if (/holiday/i.test(category) && !/issue/i.test(category)) category = 'issues during the holiday season'
-  const cta = `If you or someone you know has been a victim of ${category}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
+  const matchedLabel = findPracticeAreaLabel(input.tags, kp)
+  const cta = matchedLabel
+    ? `If you or someone you know has been a victim of ${matchedLabel.toLowerCase()}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
+    : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
   const trimmed = body.replace(/\s+$/, '')
   if (!trimmed.toLowerCase().endsWith(cta.toLowerCase())) {
     body = trimmed + `\n\n` + cta

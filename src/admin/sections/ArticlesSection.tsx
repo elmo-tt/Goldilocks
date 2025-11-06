@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { bus } from '../utils/bus'
+import { PRACTICE_AREAS } from '../data/goldlaw'
 import { ArticlesStore, type Article, slugify } from '../../shared/articles/store'
 import { AssetStore, type AssetMeta } from '../../shared/assets/store'
 import { getBackend } from '../../shared/config'
@@ -195,7 +196,8 @@ function EditorView({ initial, onBack }: { initial?: Article; onBack: () => void
     setSaving(true)
     try {
       // Enforce simple editorial rules (strip Intro/Conclusion headings; ensure CTA)
-      const enforcedBody = enforceEditorialRules(body, tags.split(',').map(s => s.trim()).filter(Boolean), title)
+      const enforcedBody = enforceEditorialRules(body, tags.split(',').map(s => s.trim()).filter(Boolean), title, excerpt)
+
       // For local backend, inline assets into body so it doesn't depend on local IndexedDB.
       // For Supabase, keep asset: tokens and resolve at render time via signed URLs.
       const processedBody = (getBackend() === 'supabase') ? enforcedBody : await inlineAssetsInBody(enforcedBody)
@@ -754,11 +756,40 @@ function looksLikeHtml(s: string) {
   return /<\w+[^>]*>/i.test(s)
 }
 
-function enforceEditorialRules(body: string, tags: string[], title: string): string {
+function norm(s: string) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() }
+function findPracticeAreaLabel(tags?: string[], keyphraseOrTitle?: string) {
+  try {
+    const candidates: string[] = []
+    if (Array.isArray(tags)) for (const t of tags) if (t && t.trim()) candidates.push(t)
+    if (keyphraseOrTitle && keyphraseOrTitle.trim()) candidates.push(keyphraseOrTitle)
+    const candN = candidates.map(norm)
+    for (const pa of PRACTICE_AREAS) {
+      const labelN = norm(pa.label)
+      for (const c of candN) {
+        if (!c) continue
+        if (c.includes(labelN) || labelN.includes(c)) return pa.label
+        const labelTokens = labelN.split(' ')
+        let hits = 0
+        for (const tok of labelTokens) { if (tok && c.includes(tok)) hits++ }
+        if (hits >= Math.min(2, labelTokens.length)) return pa.label
+      }
+    }
+  } catch {}
+  return undefined
+}
+
+function enforceEditorialRules(body: string, tags: string[], title: string, excerpt?: string): string {
   try {
     if (looksLikeHtml(body)) {
       const c = document.createElement('div')
       c.innerHTML = body || ''
+      // Remove excerpt paragraph if it duplicates the first paragraph
+      try {
+        const firstP = c.querySelector('p') as HTMLParagraphElement | null
+        const ex = (excerpt || '').trim().toLowerCase()
+        const ft = (firstP?.textContent || '').trim().toLowerCase()
+        if (ex && ft && ex === ft) firstP?.remove()
+      } catch {}
       const del = Array.from(c.querySelectorAll('h1,h2,h3,h4,h5,h6,p')).filter(el => {
         const t = (el.textContent || '').trim()
         if (/^introduction:?$/i.test(t) || /^conclusion:?$/i.test(t)) return true
@@ -769,8 +800,10 @@ function enforceEditorialRules(body: string, tags: string[], title: string): str
         return false
       })
       del.forEach(el => el.remove())
-      const category = (tags && tags[0] ? tags[0] : title || 'your case').toLowerCase()
-      const cta = `If you or someone you know has been a victim of ${category}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
+      const matched = findPracticeAreaLabel(tags, title)
+      const cta = matched
+        ? `If you or someone you know has been a victim of ${matched.toLowerCase()}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
+        : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
       const txt = (c.textContent || '').trim().toLowerCase()
       if (!txt.includes(cta.toLowerCase())) {
         const p = document.createElement('p')
@@ -780,6 +813,13 @@ function enforceEditorialRules(body: string, tags: string[], title: string): str
       return c.innerHTML
     } else {
       let s = body || ''
+      // Drop duplicate first paragraph if it matches excerpt
+      try {
+        const parts = s.trim().split(/\n\n+/)
+        const a = (parts[0] || '').trim().toLowerCase()
+        const b = (excerpt || '').trim().toLowerCase()
+        if (a && b && a === b) { parts.shift(); s = parts.join('\n\n') }
+      } catch {}
       // Strip plain label/section lines (optionally with '#')
       s = s
         .replace(/^\s*(?:#{1,6}\s*)?(Introduction|Conclusion|Excerpt|Sources|References)\s*:?\s*$/gim, '')
@@ -787,8 +827,10 @@ function enforceEditorialRules(body: string, tags: string[], title: string): str
         .replace(/^\s*.*\bin focus:\b.*$/gim, '')
         .replace(/^\s*.*—\s*Article\s*:\s*.*$/gim, '')
         .replace(/\n{3,}/g, '\n\n')
-      const category = (tags && tags[0] ? tags[0] : title || 'your case').toLowerCase()
-      const cta = `If you or someone you know has been a victim of ${category}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
+      const matched = findPracticeAreaLabel(tags, title)
+      const cta = matched
+        ? `If you or someone you know has been a victim of ${matched.toLowerCase()}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
+        : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
       const trimmed = s.replace(/\s+$/, '')
       if (!trimmed.toLowerCase().includes(cta.toLowerCase())) {
         s = trimmed + '\n\n' + cta

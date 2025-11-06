@@ -27,10 +27,11 @@ export default function OverviewSection() {
 
       <div style={{ height: 16 }} />
 
-      <div className="card" style={{ height: 300 }}>
+      <div className="card" style={{ minWidth: 0 }}>
         <h3>Leads — Weekly trend</h3>
-        <ResponsiveContainer width="100%" height="90%">
-          <AreaChart data={trend} margin={{ top: 10, right: 8, bottom: 0, left: -18 }}>
+        <div className="chart-wrap">
+          <ResponsiveContainer width="100%" height="100%" minWidth={200}>
+            <AreaChart data={trend} margin={{ top: 10, right: 8, bottom: 0, left: -18 }}>
             <defs>
               <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#4ab3ff" stopOpacity={0.35} />
@@ -43,7 +44,8 @@ export default function OverviewSection() {
             <Tooltip contentStyle={{ background: 'var(--ops-blue-2)', border: '1px solid var(--ops-border)', borderRadius: 8, color: 'var(--ops-text)' }} />
             <Area type="monotone" dataKey="leads" stroke="#4ab3ff" strokeWidth={2} fill="url(#g)" />
           </AreaChart>
-        </ResponsiveContainer>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   )

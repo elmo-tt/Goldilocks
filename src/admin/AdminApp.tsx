@@ -124,7 +124,9 @@ export default function AdminApp() {
             {section}
           </section>
           <ToastHost />
-          <button className="ops-fab" onClick={() => setCopilotOpen(true)} title="Open Copilot"><Bot size={20} /></button>
+          {!copilotOpen && (
+            <button className="ops-fab" onClick={() => setCopilotOpen(true)} title="Open Copilot"><Bot size={20} /></button>
+          )}
           <CopilotOverlay
             open={copilotOpen}
             onClose={() => setCopilotOpen(false)}

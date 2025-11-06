@@ -7,12 +7,18 @@
 .ops .copilot-list button:hover{ background:var(--ops-blue-3); border-color:var(--ops-border); }
 .ops .copilot-main{ display:grid; grid-template-rows:auto 1fr auto; min-height:0; }
 .ops .copilot-main .bar{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--ops-border); }
+.ops .copilot-main .bar .copilot-min{ width:40px; height:40px; display:inline-flex; align-items:center; justify-content:center; border-radius:12px; background:#1b2a52; border:1px solid #27407a; color:#dfe8ff; cursor:pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.25); transition: transform .12s ease, filter .12s ease, background .12s ease, border-color .12s ease; }
+.ops .copilot-main .bar .copilot-min:hover{ filter: brightness(1.06); transform: translateY(-1px); }
+.ops .copilot-main .bar .copilot-min:active{ transform: translateY(0); }
+.ops .copilot-main .bar .copilot-min svg{ pointer-events:none; }
+.ops[data-theme='light'] .copilot-main .bar .copilot-min{ background:#eef2ff; border:1px solid #c7d2fe; color:#1e293b; }
+.ops[data-theme='light'] .copilot-main .bar .copilot-min:hover{ background:#e5e9ff; }
 .ops .messages{ padding:16px; overflow:auto; display:flex; flex-direction:column; gap:14px; min-height:0; max-height:100%; overscroll-behavior:contain; }
 .ops .msg{ display:grid; gap:8px; background:var(--ops-blue-2); border:1px solid var(--ops-border); border-radius:12px; padding:12px 14px; max-width:720px; word-break:break-word; line-height:1.6; }
 .ops .msg.me{ background:#18233d; border-color:#22315a; align-self:flex-end; margin-left:0; }
 .ops[data-theme='light'] .msg.me{ background:#eef2ff; border-color:#c7d2fe; }
 .ops .input-bar{ display:grid; grid-template-columns:1fr auto; gap:8px; padding:12px; border-top:1px solid var(--ops-border); background:var(--ops-blue-2); }
-.ops .input{ width:100%; background:var(--ops-blue-3); color:var(--ops-text); border:1px solid var(--ops-border); border-radius:10px; padding:10px 12px; }
+.ops .input{ width:100%; background:var(--ops-blue-3); color: var(--ops-text); border:1px solid var(--ops-border); border-radius:10px; padding:10px 12px; }
 @media (max-width: 960px){ .ops .copilot-overlay{ grid-template-columns:1fr; } .ops .copilot-sidebar{ display:none; } }
 
 /* Typing dots */
@@ -38,3 +44,11 @@
 .ops .msg .md ol{ margin:0; padding-left:20px; }
 .ops .msg .md li{ margin:0 0 6px; }
 .ops .msg .md a{ text-decoration: underline; }
+
+/* Sleek minimize icon button */
+.ops .copilot-min{ width:40px; height:40px; display:inline-flex; align-items:center; justify-content:center; border-radius:12px; background:#1b2a52; border:1px solid #27407a; color:#dfe8ff; cursor:pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.25); transition: transform .12s ease, filter .12s ease, background .12s ease, border-color .12s ease; }
+.ops .copilot-min:hover{ filter: brightness(1.06); transform: translateY(-1px); }
+.ops .copilot-min:active{ transform: translateY(0); }
+.ops .copilot-min svg{ pointer-events:none; }
+.ops[data-theme='light'] .copilot-min{ background:#eef2ff; border:1px solid #c7d2fe; color:#1e293b; }
+.ops[data-theme='light'] .copilot-min:hover{ background:#e5e9ff; }

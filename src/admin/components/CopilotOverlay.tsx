@@ -455,7 +455,7 @@ export default function CopilotOverlay({
               <input type="checkbox" checked={autoMinimize} onChange={e => setAutoMinimize(e.target.checked)} />
               Auto-minimize on navigate
             </label>
-            <button className="ops-btn" onClick={onClose}><X size={16} /> Minimize</button>
+            <button className="copilot-min" onClick={onClose} title="Minimize"><X size={16} /></button>
           </div>
         </div>
 

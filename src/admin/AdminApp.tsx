@@ -50,7 +50,7 @@ export default function AdminApp() {
   }, [theme])
 
   useEffect(() => {
-    const KEY = 'gl_migr_2025_11_06_cta_excerpt_v2'
+    const KEY = 'gl_migr_2025_11_06_cta_excerpt_v3'
     try { if (localStorage.getItem(KEY) === 'done') return }
     catch {}
     const norm = (s: string) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
@@ -95,6 +95,13 @@ export default function AdminApp() {
       } catch {}
       return undefined
     }
+    const transformLabel = (label: string) => {
+      const clean = String(label || '').replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s+/g, ' ').trim()
+      const n = clean.toLowerCase()
+      if (n === 'premises liability') return 'Negligent Security'
+      if (n === 'human trafficking liability') return 'Human Trafficking'
+      return clean
+    }
     const cleanHtml = (html: string, excerpt: string, tags: string[], title: string, keyphrase?: string) => {
       const c = document.createElement('div') as HTMLDivElement
       c.innerHTML = html || ''
@@ -113,7 +120,7 @@ export default function AdminApp() {
         if (/[–—-]\s*Article\s*:\s*/i.test(t)) { node.remove(); continue }
       }
       const matched = findPALabel(tags, keyphrase || title, c.textContent || '')
-      const display = matched ? norm(matched.replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s+/g, ' ')) : ''
+      const display = matched ? transformLabel(matched) : ''
       const cta = matched
         ? `If you or someone you know has been a victim of ${display}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
         : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
@@ -139,9 +146,10 @@ export default function AdminApp() {
         .replace(/^\s*.*\bin focus:\b.*$/gim, '')
         .replace(/^\s*.*[–—-]\s*Article\s*:\s*.*$/gim, '')
         .replace(/\n{3,}/g, '\n\n')
-      const matched = findPALabel(tags, keyphrase || title)
+      const matched = findPALabel(tags, keyphrase || title, s)
+      const display = matched ? transformLabel(matched) : ''
       const cta = matched
-        ? `If you or someone you know has been a victim of ${matched.toLowerCase()}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
+        ? `If you or someone you know has been a victim of ${display}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
         : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
       const trimmed = s.replace(/\s+$/, '')
       if (!trimmed.toLowerCase().endsWith(cta.toLowerCase())) s = trimmed + '\n\n' + cta

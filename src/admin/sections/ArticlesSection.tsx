@@ -758,6 +758,13 @@ function looksLikeHtml(s: string) {
 
 function norm(s: string) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() }
 function sanitizeAreaLabel(s: string) { return String(s || '').replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s+/g, ' ').trim() }
+function transformAreaLabelForCta(label: string) {
+  const clean = sanitizeAreaLabel(label)
+  const n = clean.toLowerCase()
+  if (n === 'premises liability') return 'Negligent Security'
+  if (n === 'human trafficking liability') return 'Human Trafficking'
+  return clean
+}
 function findPracticeAreaLabel(tags?: string[], keyphraseOrTitle?: string, context?: string) {
   try {
     const candidates: string[] = []
@@ -825,7 +832,7 @@ function enforceEditorialRules(body: string, tags: string[], title: string, exce
       })
       del.forEach(el => el.remove())
       const matched = findPracticeAreaLabel(tags, title, c.textContent || '')
-      const display = matched ? sanitizeAreaLabel(matched).toLowerCase() : ''
+      const display = matched ? transformAreaLabelForCta(matched) : ''
       const cta = matched
         ? `If you or someone you know has been a victim of ${display}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
         : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
@@ -853,7 +860,7 @@ function enforceEditorialRules(body: string, tags: string[], title: string, exce
         .replace(/^\s*.*—\s*Article\s*:\s*.*$/gim, '')
         .replace(/\n{3,}/g, '\n\n')
       const matched = findPracticeAreaLabel(tags, title, s)
-      const display = matched ? sanitizeAreaLabel(matched).toLowerCase() : ''
+      const display = matched ? transformAreaLabelForCta(matched) : ''
       const cta = matched
         ? `If you or someone you know has been a victim of ${display}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
         : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`

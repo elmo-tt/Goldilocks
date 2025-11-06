@@ -47,6 +47,13 @@ function ensureMaxLen(s: string, n: number) {
 
 function norm(s: string) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() }
 function sanitizeAreaLabel(s: string) { return String(s || '').replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s+/g, ' ').trim() }
+function transformAreaLabelForCta(label: string) {
+  const clean = sanitizeAreaLabel(label)
+  const n = clean.toLowerCase()
+  if (n === 'premises liability') return 'Negligent Security'
+  if (n === 'human trafficking liability') return 'Human Trafficking'
+  return clean
+}
 function findPracticeAreaLabel(tags?: string[], keyphraseOrTitle?: string, context?: string) {
   try {
     const candidates: string[] = []
@@ -133,7 +140,7 @@ function enforceSeo(input: { title: string; body: string; metaTitle?: string; me
   if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(metaDescription)) metaDescription = `${kp}: ` + metaDescription
   metaDescription = ensureMaxLen(metaDescription, 160)
   const matchedLabel = findPracticeAreaLabel(input.tags, kp, input.body)
-  const displayLabel = matchedLabel ? sanitizeAreaLabel(matchedLabel) : ''
+  const displayLabel = matchedLabel ? transformAreaLabelForCta(matchedLabel) : ''
   const cta = matchedLabel
     ? `If you or someone you know has been a victim of ${displayLabel}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
     : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`

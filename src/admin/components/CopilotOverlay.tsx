@@ -65,7 +65,10 @@ function enforceSeo(input: { title: string; body: string; metaTitle?: string; me
     body = body.replace(/^(#{2,3})\s.*$/m, (m) => `## ${kp} — ${m.replace(/^#{2,3}\s+/, '')}`)
     if (!/^(#{2,3})\s.*$/m.test(body)) body = `## ${kp} overview\n\n` + body
   }
-  body = body.replace(/^\s*#{1,6}\s*(Introduction|Conclusion)\s*$/gim, '').replace(/\n{3,}/g, '\n\n')
+  // Remove generic headings like Introduction/Conclusion even if not marked with '#'
+  body = body
+    .replace(/^\s*(?:#{1,6}\s*)?(Introduction|Conclusion)\s*:?\s*$/gim, '')
+    .replace(/\n{3,}/g, '\n\n')
   const words = wordCount(body)
   if (words < 300) {
     const add = `\n\nFurther guidance on ${kp}: If you were involved in an incident, document the scene, seek medical care, report the event, and consult an attorney experienced in ${kp}. Understanding negligence, liability, and damages helps protect your rights and strengthen your claim.`
@@ -388,7 +391,24 @@ export default function CopilotOverlay({
                   const providedTitle = c.args?.title ? String(c.args.title) : undefined
                   const fields: any = { id: art.id, slug: art.slug, title: providedTitle || art.title }
                   if (typeof c.args?.excerpt === 'string') fields.excerpt = String(c.args.excerpt)
-                  if (typeof c.args?.body === 'string') fields.body = normalizeAiMarkdown(String(c.args.body))
+                  if (typeof c.args?.body === 'string') {
+                    const normalized = normalizeAiMarkdown(String(c.args.body))
+                    const enforced = enforceSeo({
+                      title: fields.title,
+                      body: normalized,
+                      metaTitle: fields.metaTitle,
+                      metaDescription: fields.metaDescription,
+                      keyphrase: fields.keyphrase,
+                      tags: Array.isArray(fields.tags) ? fields.tags : art.tags,
+                      canonicalUrl: fields.canonicalUrl,
+                    })
+                    fields.title = enforced.title
+                    fields.body = enforced.body
+                    fields.keyphrase = enforced.keyphrase
+                    fields.metaTitle = enforced.metaTitle
+                    fields.metaDescription = enforced.metaDescription
+                    // Note: slug remains existing unless explicitly changing slug elsewhere
+                  }
                   if (Array.isArray(c.args?.tags)) fields.tags = c.args.tags.map((t: any) => String(t)).slice(0, 8)
                   if (typeof c.args?.keyphrase === 'string') fields.keyphrase = String(c.args.keyphrase)
                   if (typeof c.args?.metaTitle === 'string') fields.metaTitle = String(c.args.metaTitle)

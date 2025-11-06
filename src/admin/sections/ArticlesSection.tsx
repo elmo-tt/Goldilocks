@@ -194,9 +194,11 @@ function EditorView({ initial, onBack }: { initial?: Article; onBack: () => void
   const save = async (nextStatus?: Article['status']) => {
     setSaving(true)
     try {
+      // Enforce simple editorial rules (strip Intro/Conclusion headings; ensure CTA)
+      const enforcedBody = enforceEditorialRules(body, tags.split(',').map(s => s.trim()).filter(Boolean), title)
       // For local backend, inline assets into body so it doesn't depend on local IndexedDB.
       // For Supabase, keep asset: tokens and resolve at render time via signed URLs.
-      const processedBody = (getBackend() === 'supabase') ? body : await inlineAssetsInBody(body)
+      const processedBody = (getBackend() === 'supabase') ? enforcedBody : await inlineAssetsInBody(enforcedBody)
       const saved = ArticlesStore.save({
         id: initial?.id,
         title: title.trim() || 'Untitled',
@@ -750,6 +752,44 @@ function applyImage(
 
 function looksLikeHtml(s: string) {
   return /<\w+[^>]*>/i.test(s)
+}
+
+function enforceEditorialRules(body: string, tags: string[], title: string): string {
+  try {
+    if (looksLikeHtml(body)) {
+      const c = document.createElement('div')
+      c.innerHTML = body || ''
+      const del = Array.from(c.querySelectorAll('h1,h2,h3,h4,h5,h6,p')).filter(el => {
+        const t = (el.textContent || '').trim().replace(/:$/, '')
+        return /^introduction$/i.test(t) || /^conclusion$/i.test(t)
+      })
+      del.forEach(el => el.remove())
+      const category = (tags && tags[0] ? tags[0] : title || 'your case').toLowerCase()
+      const cta = `If you or someone you know has been a victim of ${category}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
+      const txt = (c.textContent || '').trim().toLowerCase()
+      if (!txt.includes(cta.toLowerCase())) {
+        const p = document.createElement('p')
+        p.textContent = cta
+        c.appendChild(p)
+      }
+      return c.innerHTML
+    } else {
+      let s = body || ''
+      // Strip plain headings/lines labeled Introduction/Conclusion (optionally with '#')
+      s = s.replace(/^\s*(?:#{1,6}\s*)?(Introduction|Conclusion)\s*:?\s*$/gim, '').replace(/\n{3,}/g, '\n\n')
+      const category = (tags && tags[0] ? tags[0] : title || 'your case').toLowerCase()
+      const cta = `If you or someone you know has been a victim of ${category}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
+      const trimmed = s.replace(/\s+$/, '')
+      if (!trimmed.toLowerCase().includes(cta.toLowerCase())) {
+        s = trimmed + '\n\n' + cta
+      } else {
+        s = trimmed
+      }
+      return s
+    }
+  } catch {
+    return body
+  }
 }
 
 function stampAssetIds(html: string) {

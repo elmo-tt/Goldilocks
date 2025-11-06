@@ -400,8 +400,8 @@ function EditorView({ initial, onBack }: { initial?: Article; onBack: () => void
             <button className="button" onClick={() => save('draft')} disabled={saving}>Save Draft</button>
             <button className="button" onClick={() => save('published')} disabled={saving}>Publish</button>
             <button className="button" onClick={onBack}>Back to List</button>
-            <button className="button" onClick={del}>Delete</button>
-            <button className="button" onClick={runCtaCleanup} disabled={saving}>Run CTA Cleanup</button>
+            <button className="btn red" onClick={del}>Delete</button>
+            <button className="btn teal" onClick={runCtaCleanup} disabled={saving}>Run CTA Cleanup</button>
           </div>
         </div>
       </div>

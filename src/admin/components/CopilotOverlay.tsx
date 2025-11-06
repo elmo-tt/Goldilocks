@@ -38,10 +38,6 @@ function stripMd(s: string) {
   return x.trim()
 }
 
-function wordCount(s: string) {
-  return (stripMd(s).match(/[a-z0-9]+/gi) || []).length
-}
-
 function ensureMaxLen(s: string, n: number) {
   if (!s) return ''
   if (s.length <= n) return s
@@ -63,12 +59,9 @@ function enforceSeo(input: { title: string; body: string; metaTitle?: string; me
     .replace(/^\s*(?:#{1,6}\s*)?Article\s*:\s*.*$/gim, '')
     .replace(/^\s*.*\bin focus:\b.*$/gim, '')
     .replace(/^\s*.*—\s*Article\s*:\s*.*$/gim, '')
+    .replace(/^\s*Further guidance on\s+.*$/gim, '')
+    .replace(/^(\s*(?:#{1,6}\s*)?[^\n]+?)\s[–—-]\s*(Introduction|Conclusion)\s*$/gim, '$1')
     .replace(/\n{3,}/g, '\n\n')
-  const words = wordCount(body)
-  if (words < 300) {
-    const add = `\n\nFurther guidance on ${kp}: If you were involved in an incident, document the scene, seek medical care, report the event, and consult an attorney experienced in ${kp}. Understanding negligence, liability, and damages helps protect your rights and strengthen your claim.`
-    body += add
-  }
   // Do not inject additional density lines; rely on authoring and CTA
   let metaTitle = (input.metaTitle || title).trim()
   if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(metaTitle)) metaTitle = `${kp} — ${metaTitle}`
@@ -80,7 +73,8 @@ function enforceSeo(input: { title: string; body: string; metaTitle?: string; me
   }
   if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(metaDescription)) metaDescription = `${kp}: ` + metaDescription
   metaDescription = ensureMaxLen(metaDescription, 160)
-  const category = (input.tags && input.tags[0] ? input.tags[0] : kp).toLowerCase()
+  let category = (input.tags && input.tags[0] ? String(input.tags[0]) : kp).toLowerCase().trim()
+  if (/holiday/i.test(category) && !/issue/i.test(category)) category = 'issues during the holiday season'
   const cta = `If you or someone you know has been a victim of ${category}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
   const trimmed = body.replace(/\s+$/, '')
   if (!trimmed.toLowerCase().endsWith(cta.toLowerCase())) {

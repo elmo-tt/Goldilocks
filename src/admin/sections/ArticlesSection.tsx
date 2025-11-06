@@ -4,6 +4,7 @@ import { PRACTICE_AREAS } from '../data/goldlaw'
 import { ArticlesStore, type Article, slugify } from '../../shared/articles/store'
 import { AssetStore, type AssetMeta } from '../../shared/assets/store'
 import { getBackend } from '../../shared/config'
+import { CloudArticlesStore } from '../../shared/articles/cloud'
 import RichTextEditor from '../components/RichTextEditor'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -83,6 +84,33 @@ function ListView({ onCreate, onEdit }: { onCreate: () => void; onEdit: (id: str
   const [items, setItems] = useState<Article[]>([])
   const reload = () => setItems(ArticlesStore.all())
   useEffect(reload, [])
+  const [syncing, setSyncing] = useState(false)
+
+  // Push all local articles to Supabase (when enabled)
+  const syncAll = async () => {
+    if (getBackend() !== 'supabase') {
+      try { bus.emit('toast', { message: 'Enable Supabase in env to sync (VITE_BACKEND, VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY).', type: 'error' }) } catch { alert('Enable Supabase in env to sync.') }
+      return
+    }
+    const all = ArticlesStore.all()
+    if (all.length === 0) {
+      try { bus.emit('toast', { message: 'No articles to sync.', type: 'info' }) } catch { alert('No articles to sync.') }
+      return
+    }
+    setSyncing(true)
+    let ok = 0, fail = 0
+    for (const a of all) {
+      try {
+        await (CloudArticlesStore as any).save(a as any)
+        ok++
+      } catch {
+        fail++
+      }
+    }
+    setSyncing(false)
+    reload()
+    try { bus.emit('toast', { message: `Sync complete: ${ok}/${all.length} succeeded` + (fail ? `, ${fail} failed` : ''), type: fail ? 'error' : 'success' }) } catch { /* no-op */ }
+  }
 
   return (
     <div className="section">
@@ -91,7 +119,10 @@ function ListView({ onCreate, onEdit }: { onCreate: () => void; onEdit: (id: str
           <strong>Articles</strong>
           <span className="ops-sub"> Manage and publish articles for the public site</span>
         </div>
-        <button className="ops-btn" onClick={onCreate}>Create Article</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="ops-btn" onClick={onCreate}>Create Article</button>
+          <button className="ops-btn" onClick={syncAll} disabled={syncing}>{syncing ? 'Syncing…' : 'Sync Articles'}</button>
+        </div>
       </div>
 
       <div className="card">

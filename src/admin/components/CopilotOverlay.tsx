@@ -22,6 +22,25 @@ function summarizeTitle(text: string) {
   return t.length > 40 ? t.slice(0, 40) + '…' : t
 }
 
+// Clean and normalize Markdown returned by the model so the source data is well-structured
+function normalizeAiMarkdown(text: string) {
+  if (!text) return ''
+  let s = text.replace(/\r\n?/g, '\n')
+  // Convert list markers like "1) " to "1. " when at line start
+  s = s.replace(/(^|\n)\s*(\d+)\)\s+/g, '$1$2. ')
+  // Ensure ordered list markers and bullets start at a new line (if they appeared inline)
+  s = s.replace(/([^\n])\s+(\d+)\.\s/g, '$1\n$2. ')
+  s = s.replace(/([^\n])\s+-\s/g, '$1\n- ')
+  s = s.replace(/([^\n])\s+\*\s/g, '$1\n* ')
+  // Ensure a blank line before list blocks for proper Markdown parsing
+  s = s.replace(/([^\n])\n(\s*(?:- |\d+\. ))/g, '$1\n\n$2')
+  // Normalize multiple blank lines to max two
+  s = s.replace(/\n{3,}/g, '\n\n')
+  // Trim trailing spaces on lines
+  s = s.replace(/[\t ]+$/gm, '')
+  return s.trim()
+}
+
 export default function CopilotOverlay({
   open,
   onClose,
@@ -164,7 +183,7 @@ export default function CopilotOverlay({
               try {
                 const title = String(c.args?.title || 'Untitled')
                 const excerpt = String(c.args?.excerpt || '')
-                let body = String(c.args?.body || '')
+                let body = normalizeAiMarkdown(String(c.args?.body || ''))
                 const tags = Array.isArray(c.args?.tags) ? c.args.tags.map((t: any) => String(t)).slice(0, 8) : []
                 let keyphrase = c.args?.keyphrase ? String(c.args.keyphrase) : undefined
                 let metaTitle = c.args?.metaTitle ? String(c.args.metaTitle) : undefined
@@ -274,7 +293,7 @@ export default function CopilotOverlay({
                   const providedTitle = c.args?.title ? String(c.args.title) : undefined
                   const fields: any = { id: art.id, slug: art.slug, title: providedTitle || art.title }
                   if (typeof c.args?.excerpt === 'string') fields.excerpt = String(c.args.excerpt)
-                  if (typeof c.args?.body === 'string') fields.body = String(c.args.body)
+                  if (typeof c.args?.body === 'string') fields.body = normalizeAiMarkdown(String(c.args.body))
                   if (Array.isArray(c.args?.tags)) fields.tags = c.args.tags.map((t: any) => String(t)).slice(0, 8)
                   if (typeof c.args?.keyphrase === 'string') fields.keyphrase = String(c.args.keyphrase)
                   if (typeof c.args?.metaTitle === 'string') fields.metaTitle = String(c.args.metaTitle)

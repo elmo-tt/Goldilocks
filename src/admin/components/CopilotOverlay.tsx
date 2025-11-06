@@ -12,6 +12,94 @@ import remarkGfm from 'remark-gfm'
 import { PanelLeft, Plus, X, Send, Bot, Trash2 } from 'lucide-react'
 
 export type Message = { id: string; role: 'user' | 'assistant'; content: string; ts: number; typing?: boolean }
+
+function deriveKeyphrase(title: string, provided?: string, tags?: string[]) {
+  const p = (provided || '').trim()
+  if (p) return p
+  const t = (tags && tags.find(x => x.trim().length >= 4)) || ''
+  if (t) return t
+  const words = (title || '').toLowerCase().match(/[a-z0-9]+/g) || []
+  const stop = new Set(['the','and','for','with','that','this','from','about','into','onto','within','your','you','our','are','will','can','how','what','why','when'])
+  const picks = words.filter(w => w.length >= 4 && !stop.has(w)).slice(0, 3)
+  return picks.join(' ').trim() || (title || '').trim()
+}
+
+function stripMd(s: string) {
+  let x = String(s || '')
+  x = x.replace(/`{1,3}[\s\S]*?`{1,3}/g, ' ')
+  x = x.replace(/\!\[[^\]]*\]\([^\)]*\)/g, ' ')
+  x = x.replace(/\[[^\]]*\]\([^\)]*\)/g, ' ')
+  x = x.replace(/^>\s+/gm, ' ')
+  x = x.replace(/^\s{0,3}[-*+]\s+/gm, ' ')
+  x = x.replace(/^\s*\d+\.\s+/gm, ' ')
+  x = x.replace(/^#{1,6}\s+/gm, ' ')
+  x = x.replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, '$1')
+  x = x.replace(/\s+/g, ' ')
+  return x.trim()
+}
+
+function wordCount(s: string) {
+  return (stripMd(s).match(/[a-z0-9]+/gi) || []).length
+}
+
+function ensureMaxLen(s: string, n: number) {
+  if (!s) return ''
+  if (s.length <= n) return s
+  const cut = s.slice(0, n)
+  return cut.replace(/\s+\S*$/, '')
+}
+
+function enforceSeo(input: { title: string; body: string; metaTitle?: string; metaDescription?: string; keyphrase?: string; tags?: string[]; canonicalUrl?: string; }) {
+  const kp = deriveKeyphrase(input.title, input.keyphrase, input.tags)
+  let title = input.title || 'Untitled'
+  if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(title)) {
+    title = `${kp.charAt(0).toUpperCase()}${kp.slice(1)} — ${title}`
+  }
+  let slug = slugify(`${title} ${kp}`)
+  let body = input.body || ''
+  if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(body.slice(0, 300))) {
+    body = `${kp.charAt(0).toUpperCase()}${kp.slice(1)} in focus: ${kp} and key considerations for Florida victims.\n\n` + body
+  }
+  const hasHeadingWithKp = /^(#{2,3})\s.*$/gim.test((body.match(/^(#{2,3})\s.*$/gim) || []).find(h => new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(h)) || '')
+  if (!hasHeadingWithKp) {
+    body = body.replace(/^(#{2,3})\s.*$/m, (m) => `## ${kp} — ${m.replace(/^#{2,3}\s+/, '')}`)
+    if (!/^(#{2,3})\s.*$/m.test(body)) body = `## ${kp} overview\n\n` + body
+  }
+  body = body.replace(/^\s*#{1,6}\s*(Introduction|Conclusion)\s*$/gim, '').replace(/\n{3,}/g, '\n\n')
+  const words = wordCount(body)
+  if (words < 300) {
+    const add = `\n\nFurther guidance on ${kp}: If you were involved in an incident, document the scene, seek medical care, report the event, and consult an attorney experienced in ${kp}. Understanding negligence, liability, and damages helps protect your rights and strengthen your claim.`
+    body += add
+  }
+  const cur = (stripMd(body).toLowerCase().match(new RegExp(kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi')) || []).length
+  const total = wordCount(body)
+  const minHits = Math.ceil(Math.max(1, 0.005 * total))
+  if (cur < minHits) {
+    const need = minHits - cur
+    let extra = ''
+    for (let i=0; i<need; i++) extra += `\n\nIf you need legal help related to ${kp}, contact GOLDLAW.`
+    body += extra
+  }
+  let metaTitle = (input.metaTitle || title).trim()
+  if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(metaTitle)) metaTitle = `${kp} — ${metaTitle}`
+  metaTitle = ensureMaxLen(metaTitle, 65)
+  let metaDescription = (input.metaDescription || '').trim()
+  if (!metaDescription) {
+    const base = stripMd(body).slice(0, 140).replace(/\s+\S*$/, '')
+    metaDescription = `${kp}: ${base}`
+  }
+  if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(metaDescription)) metaDescription = `${kp}: ` + metaDescription
+  metaDescription = ensureMaxLen(metaDescription, 160)
+  const category = (input.tags && input.tags[0] ? input.tags[0] : kp).toLowerCase()
+  const cta = `If you or someone you know has been a victim of ${category}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
+  const trimmed = body.replace(/\s+$/, '')
+  if (!trimmed.toLowerCase().endsWith(cta.toLowerCase())) {
+    body = trimmed + `\n\n` + cta
+  } else {
+    body = trimmed
+  }
+  return { title, slug, body, metaTitle, metaDescription, keyphrase: kp }
+}
 export type Conversation = { id: string; title: string; messages: Message[] }
 
 function newId(prefix = 'id') { return prefix + '-' + Math.random().toString(36).slice(2, 9) }
@@ -181,7 +269,7 @@ export default function CopilotOverlay({
               setTimeout(() => { bus.emit('create-task', { title: created.title }) }, 0)
             } else if (c.name === 'createArticle') {
               try {
-                const title = String(c.args?.title || 'Untitled')
+                let title = String(c.args?.title || 'Untitled')
                 const excerpt = String(c.args?.excerpt || '')
                 let body = normalizeAiMarkdown(String(c.args?.body || ''))
                 const tags = Array.isArray(c.args?.tags) ? c.args.tags.map((t: any) => String(t)).slice(0, 8) : []
@@ -217,7 +305,14 @@ export default function CopilotOverlay({
                     canonicalUrl = origin ? `${origin}/articles/${baseSlug}` : `/articles/${baseSlug}`
                   }
                 } catch {}
-                const saved = ArticlesStore.save({ title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, noindex, status })
+                // Enforce SEO rules on the final content and fields
+                const enforced = enforceSeo({ title, body, metaTitle, metaDescription, keyphrase, tags, canonicalUrl })
+                title = enforced.title
+                body = enforced.body
+                keyphrase = enforced.keyphrase
+                metaTitle = enforced.metaTitle
+                metaDescription = enforced.metaDescription
+                const saved = ArticlesStore.save({ title, slug: enforced.slug, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, noindex, status })
                 // If slug changed due to uniqueness, correct canonical to the final slug
                 try {
                   const origin = (typeof window !== 'undefined' ? window.location.origin : '')

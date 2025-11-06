@@ -127,6 +127,16 @@
   .magic-bento-card {
     width: 100%;
     min-height: 180px;
+    aspect-ratio: auto;
+  }
+  .magic-bento-card--text-autohide .magic-bento-card__title,
+  .magic-bento-card--text-autohide .magic-bento-card__description {
+    display: block;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
   }
   /* Review (rating) tile mobile tweaks */
   .magic-bento-card.is-rating .wreath { width: clamp(150px, 46vw, 200px); }

@@ -857,11 +857,23 @@ function SeoChecks(props: { title: string; slug: string; body: string; excerpt: 
   const first = firstParagraphText(props.body)
   const titleUse = includesWord(props.metaTitle || props.title, props.keyphrase)
   const slugUse = includesWord(props.slug, props.keyphrase)
-  const firstUse = includesWord(first, props.keyphrase)
+  const firstUse = (() => {
+    const tokens = (props.keyphrase || '').toLowerCase().match(/[a-z0-9]+/g) || []
+    const need = Math.min(2, tokens.length || 1)
+    let hits = 0
+    const base = (first || '').toLowerCase()
+    for (const t of tokens) {
+      const re = new RegExp(`(^|[^a-z0-9])${escapeRegExp(t)}([^a-z0-9]|$)`, 'i')
+      if (re.test(base)) hits++
+    }
+    return hits >= need
+  })()
   const descUse = includesWord(props.metaDescription || props.excerpt, props.keyphrase)
   const headUse = includesHeadings(props.body, props.keyphrase)
-  const words = (txt.trim().match(/\b\w+\b/g) || []).length
-  const density = props.keyphrase ? (countWord(txt, props.keyphrase) / Math.max(1, words)) : 0
+  const words = ((txt || '').toLowerCase().replace(/[-_]+/g, ' ').trim().match(/\b[a-z0-9]+\b/g) || []).length
+  const hits = countWord(txt, props.keyphrase)
+  const density = props.keyphrase ? (hits / Math.max(1, words)) : 0
+  const densityOk = density >= 0.005 || (words >= 400 && hits >= 2 && density >= 0.0035)
   const items = [
     { label: 'Keyphrase in title', ok: !!props.keyphrase && titleUse },
     { label: 'Keyphrase in slug', ok: !!props.keyphrase && slugUse },
@@ -869,7 +881,7 @@ function SeoChecks(props: { title: string; slug: string; body: string; excerpt: 
     { label: 'Keyphrase in headings', ok: !!props.keyphrase && headUse },
     { label: 'Keyphrase in meta description', ok: !!props.keyphrase && descUse },
     { label: 'Word count ≥ 300', ok: words >= 300 },
-    { label: 'Keyphrase density ~0.5%–2.5%', ok: density >= 0.005 && density <= 0.025 },
+    { label: 'Keyphrase density ~0.5%–2.5%', ok: densityOk && density <= 0.025 },
     { label: 'Meta title ≤ 65 chars', ok: (props.metaTitle || props.title).length <= 65 },
     { label: 'Meta description ≤ 160 chars', ok: (props.metaDescription || props.excerpt).length <= 160 },
   ]
@@ -902,23 +914,49 @@ function firstParagraphText(body: string) {
 
 function includesWord(text: string, key: string) {
   if (!text || !key) return false
-  const re = new RegExp(`(^|[^a-z0-9])${escapeRegExp(key)}([^a-z0-9]|$)`, 'i')
-  return re.test(text)
+  const t = String(text || '').toLowerCase().replace(/[-_]+/g, ' ')
+  const tokens = (String(key || '').toLowerCase().match(/[a-z0-9]+/g) || []).filter(w => w.length >= 3)
+  if (tokens.length === 0) return false
+  const pattern = tokens.map(escapeRegExp).join('[^a-z0-9]+')
+  const re = new RegExp(`(^|[^a-z0-9])${pattern}([^a-z0-9]|$)`, 'i')
+  return re.test(t)
 }
 
 function countWord(text: string, key: string) {
   if (!text || !key) return 0
-  const re = new RegExp(`(^|[^a-z0-9])${escapeRegExp(key)}([^a-z0-9]|$)`, 'ig')
-  return (text.match(re) || []).length
+  const t = String(text || '').toLowerCase().replace(/[-_]+/g, ' ')
+  const tokens = (String(key || '').toLowerCase().match(/[a-z0-9]+/g) || []).filter(w => w.length >= 3)
+  let hits = 0
+  for (const tok of tokens) {
+    const re = new RegExp(`(^|[^a-z0-9])${escapeRegExp(tok)}([^a-z0-9]|$)`, 'ig')
+    hits += (t.match(re) || []).length
+  }
+  return hits
 }
 
 function includesHeadings(body: string, key: string) {
   if (!key) return false
-  if (!looksLikeHtml(body)) return false
-  const el = document.createElement('div')
-  el.innerHTML = body
-  const hs = Array.from(el.querySelectorAll('h1,h2,h3'))
-  return hs.some(h => includesWord(h.textContent || '', key))
+  if (looksLikeHtml(body)) {
+    const el = document.createElement('div')
+    el.innerHTML = body
+    const hs = Array.from(el.querySelectorAll('h1,h2,h3'))
+    return hs.some(h => includesWord(h.textContent || '', key))
+  }
+  // Markdown / plain: consider #/##/### lines and short standalone lines as headings
+  const blocks = String(body || '').split(/\n\n+/)
+  for (const b of blocks) {
+    const line = (b.split('\n')[0] || '').trim()
+    if (!line) continue
+    let heading = ''
+    if (/^#{1,6}\s+/.test(line)) heading = line.replace(/^#{1,6}\s+/, '').trim()
+    else if (!/^(-|\*|\d+\.)\s/.test(line)) {
+      const words = (line.match(/\b[a-z0-9]+\b/gi) || []).length
+      const looksHeading = words > 0 && words <= 10 && !/[.!?:]$/.test(line)
+      if (looksHeading) heading = line
+    }
+    if (heading && includesWord(heading, key)) return true
+  }
+  return false
 }
 
 function escapeRegExp(s: string) {

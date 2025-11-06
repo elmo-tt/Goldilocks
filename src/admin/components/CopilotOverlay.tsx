@@ -46,23 +46,47 @@ function ensureMaxLen(s: string, n: number) {
 }
 
 function norm(s: string) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() }
-function findPracticeAreaLabel(tags?: string[], keyphrase?: string) {
+function sanitizeAreaLabel(s: string) { return String(s || '').replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s+/g, ' ').trim() }
+function findPracticeAreaLabel(tags?: string[], keyphraseOrTitle?: string, context?: string) {
   try {
     const candidates: string[] = []
     if (Array.isArray(tags)) for (const t of tags) if (t && t.trim()) candidates.push(t)
-    if (keyphrase && keyphrase.trim()) candidates.push(keyphrase)
+    if (keyphraseOrTitle && keyphraseOrTitle.trim()) candidates.push(keyphraseOrTitle)
+    if (context && context.trim()) candidates.push(context.slice(0, 800))
     const candN = candidates.map(norm)
-    for (const pa of PRACTICE_AREAS) {
-      const labelN = norm(pa.label)
-      for (const c of candN) {
-        if (!c) continue
-        if (c.includes(labelN) || labelN.includes(c)) return pa.label
-        const labelTokens = labelN.split(' ')
-        let hits = 0
-        for (const tok of labelTokens) { if (tok && c.includes(tok)) hits++ }
-        if (hits >= Math.min(2, labelTokens.length)) return pa.label
+    const aliases: Array<{ target: string; patterns: string[] }> = [
+      { target: 'Trucking Accidents', patterns: ['truck accident', 'truck accidents', 'trucking accident', 'trucking accidents', 'semi truck', 'tractor trailer', '18 wheeler'] },
+      { target: 'Negligent Security', patterns: ['negligent security', 'inadequate security', 'premises security'] },
+    ]
+    let bestLabel: string | undefined
+    let bestScore = 0
+    const score = (label: string, c: string) => {
+      const ln = norm(label)
+      if (!ln || !c) return 0
+      if (c === ln) return 95
+      if (c.includes(ln)) return 90
+      const toks = ln.split(' ').filter(Boolean)
+      let hits = 0
+      for (const tk of toks) if (c.includes(tk)) hits++
+      const ratio = toks.length ? hits / toks.length : 0
+      return Math.round(60 + 30 * ratio + Math.min(10, toks.length))
+    }
+    for (const c of candN) {
+      for (const a of aliases) {
+        for (const p of a.patterns) {
+          const pn = norm(p)
+          if (pn && c.includes(pn)) {
+            const sc = 100
+            if (sc > bestScore) { bestScore = sc; bestLabel = a.target }
+          }
+        }
+      }
+      for (const pa of PRACTICE_AREAS) {
+        const sc = score(pa.label, c)
+        if (sc > bestScore) { bestScore = sc; bestLabel = pa.label }
       }
     }
+    return bestLabel
   } catch {}
   return undefined
 }
@@ -108,9 +132,10 @@ function enforceSeo(input: { title: string; body: string; metaTitle?: string; me
   }
   if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(metaDescription)) metaDescription = `${kp}: ` + metaDescription
   metaDescription = ensureMaxLen(metaDescription, 160)
-  const matchedLabel = findPracticeAreaLabel(input.tags, kp)
+  const matchedLabel = findPracticeAreaLabel(input.tags, kp, input.body)
+  const displayLabel = matchedLabel ? sanitizeAreaLabel(matchedLabel).toLowerCase() : ''
   const cta = matchedLabel
-    ? `If you or someone you know has been a victim of ${matchedLabel.toLowerCase()}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
+    ? `If you or someone you know has been a victim of ${displayLabel}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
     : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
   const trimmed = body.replace(/\s+$/, '')
   if (!trimmed.toLowerCase().endsWith(cta.toLowerCase())) {

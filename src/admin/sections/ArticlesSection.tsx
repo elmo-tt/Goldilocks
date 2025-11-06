@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
+import { bus } from '../utils/bus'
 import { ArticlesStore, type Article, slugify } from '../../shared/articles/store'
 import { AssetStore, type AssetMeta } from '../../shared/assets/store'
 import { getBackend } from '../../shared/config'
@@ -46,21 +47,22 @@ async function inlineAssetsInBody(body: string): Promise<string> {
     }
     return container.innerHTML
   }
-  // Markdown mode: ![alt](asset:ID) -> ![alt](data:...)
+  // Markdown mode: ![alt](asset:ID "title") -> ![alt](data:... "title")
   let out = body
-  const mdImgRe = /!\[([^\]]*)\]\((asset:[^)]+)\)/g
+  const mdImgRe = /!\[([^\]]*)\]\((asset:[^\s\)]+)(?:\s+"([^"]*)")?\)/g
   const matches = Array.from(body.matchAll(mdImgRe))
   for (const m of matches) {
     const full = m[0]
     const alt = m[1]
     const token = m[2]
+    const title = (m[3] || '').trim()
     const id = token.replace(/^asset:/, '')
     try {
       const blob = await AssetStore.getBlob(id)
       if (blob) {
         const dataUrl = await blobToDataUrl(blob)
         const compressed = await compressDataUrl(dataUrl, 1600, 0.82)
-        const replacement = `![${alt}](${compressed})`
+        const replacement = title ? `![${alt}](${compressed} "${title}")` : `![${alt}](${compressed})`
         out = out.replace(full, replacement)
       }
     } catch {}
@@ -493,6 +495,11 @@ function MediaPicker({ open, items, onClose, onSelect }: { open: boolean; items:
     init()
     return () => { cancelled = true }
   }, [selected?.id])
+  // Hide Copilot FAB while picker is open
+  useEffect(() => {
+    try { bus.emit('fab', { hidden: open }) } catch {}
+    return () => { try { bus.emit('fab', { hidden: false }) } catch {} }
+  }, [open])
   const onFile = (file: File) => {
     const reader = new FileReader()
     reader.onload = async () => {
@@ -514,7 +521,7 @@ function MediaPicker({ open, items, onClose, onSelect }: { open: boolean; items:
   }
   if (!open) return null
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'grid', placeItems: 'center', zIndex: 50 }} onClick={onClose}>
+    <div className="ops-picker-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'grid', placeItems: 'center', zIndex: 50 }} onClick={onClose}>
       <div className="card" style={{ width: 'min(900px, 96vw)', maxHeight: '80vh', overflowY: 'auto', overflowX: 'hidden', padding: 16 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ margin: 0 }}>Media Library</h3>
@@ -546,7 +553,7 @@ function MediaPicker({ open, items, onClose, onSelect }: { open: boolean; items:
       </div>
       {selected && (
         // Off-canvas details drawer for media metadata and actions
-        <div style={{ position: 'fixed', top: 0, right: 0, height: '100vh', width: 360, background: 'var(--ops-blue-2)', color: 'var(--ops-text)', borderLeft: '1px solid var(--ops-border)', zIndex: 60, display: 'grid', gridTemplateRows: 'auto 1fr auto' }} onClick={(e) => e.stopPropagation()}>
+        <div className="ops-picker-drawer" style={{ position: 'fixed', top: 0, right: 0, height: '100vh', width: 360, background: 'var(--ops-blue-2)', color: 'var(--ops-text)', borderLeft: '1px solid var(--ops-border)', zIndex: 60, display: 'grid', gridTemplateRows: 'auto 1fr auto' }} onClick={(e) => e.stopPropagation()}>
           <div style={{ padding: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--ops-border)' }}>
             <strong>Details</strong>
           </div>

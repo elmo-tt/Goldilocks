@@ -35,6 +35,8 @@
 .ops[data-theme='light'] .ops-fab{ background:#1d4ed8; }
 /* When media drawer is open, hide the FAB so it doesn't block the Save button */
 .ops .ops-main:has(.ops-media-drawer) .ops-fab{ display:none; }
+/* When article editor media picker drawer is open, hide FAB */
+.ops .ops-main:has(.ops-picker-drawer) .ops-fab{ display:none; }
 @media (max-width: 960px){ .ops-shell{ grid-template-columns:1fr; } .ops-sidebar{ display:none; } }
 
 /* Mobile helpers */

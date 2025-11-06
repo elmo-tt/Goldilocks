@@ -32,6 +32,7 @@ export default function AdminApp() {
   const [nav, setNav] = useState<NavId>('overview')
   const [copilotOpen, setCopilotOpen] = useState(false)
   const [navOpen, setNavOpen] = useState(false)
+  const [fabHidden, setFabHidden] = useState(false)
   const THEME_KEY = 'gl_admin_theme'
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try {
@@ -45,6 +46,14 @@ export default function AdminApp() {
   useEffect(() => {
     try { localStorage.setItem(THEME_KEY, theme) } catch {}
   }, [theme])
+
+  // Hide FAB when other overlays request it (e.g., article media picker)
+  useEffect(() => {
+    const off = bus.on('fab', ({ hidden }: { hidden: boolean }) => {
+      setFabHidden(!!hidden)
+    })
+    return off
+  }, [])
 
   // URL hash syncing (#overview, #cases, etc.)
   useEffect(() => {
@@ -124,7 +133,7 @@ export default function AdminApp() {
             {section}
           </section>
           <ToastHost />
-          {!copilotOpen && (
+          {!copilotOpen && !fabHidden && (
             <button className="ops-fab" onClick={() => setCopilotOpen(true)} title="Open Copilot"><Bot size={20} /></button>
           )}
           <CopilotOverlay

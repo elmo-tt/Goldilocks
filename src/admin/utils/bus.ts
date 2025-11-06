@@ -1,6 +1,7 @@
 type Events = {
   "create-task": { title: string };
   "toast": { message: string; type?: 'info' | 'success' | 'error' };
+  "fab": { hidden: boolean };
 };
 
 // Internals: store as any to avoid indexed access type narrowing issues in strict mode

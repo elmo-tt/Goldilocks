@@ -70,6 +70,31 @@ function HtmlBody({ html, heroMaxWidth }: { html: string; heroMaxWidth?: number 
               if (img.getAttribute('src') !== url) img.src = url
             }
           })
+          // Auto-caption from asset meta if no explicit caption present
+          try {
+            const next = img.nextElementSibling as HTMLElement | null
+            const hasParaCaption = !!(next && next.tagName.toLowerCase() === 'p' && next.getAttribute('data-caption-for') === id)
+            const hasFigureCaption = !!(img.parentElement && img.parentElement.tagName.toLowerCase() === 'figure' && !!img.parentElement.querySelector('figcaption'))
+            const already = hasParaCaption || hasFigureCaption || img.dataset.autoCaption === '1'
+            if (!already && (AssetStore as any).getMeta) {
+              ;(AssetStore as any).getMeta(id).then((meta: any) => {
+                if (cancelled) return
+                const cap = (meta?.caption || '').trim()
+                if (!cap) return
+                // Insert paragraph caption after image
+                const p = document.createElement('p')
+                p.setAttribute('data-caption-for', id)
+                p.className = 'auto-caption'
+                p.style.color = 'rgba(255,255,255,0.65)'
+                p.style.fontSize = '14px'
+                p.style.fontStyle = 'italic'
+                p.style.marginTop = '6px'
+                p.textContent = cap
+                img.insertAdjacentElement('afterend', p)
+                img.dataset.autoCaption = '1'
+              }).catch(() => {})
+            }
+          } catch {}
         }
       })
       // Style any paragraphs explicitly marked as captions
@@ -237,6 +262,15 @@ function normalizeMarkdown(text?: string) {
   s = s.replace(/([^\n])\s(\d+)\.\s/g, '$1\n$2. ')
   // Ensure bullet markers start at a new line
   s = s.replace(/([^\n])\s-\s/g, '$1\n- ')
+  // Convert a single caption line following an image into the image title
+  // Matches: ![alt](src)\n*Caption*  or _Caption_ or plain text up to 140 chars
+  s = s.replace(/!\[([^\]]*)\]\(([^)"\s]+)(?:\s+"([^"]*)")?\)\s*\n\s*(?:\*([^*\n]{1,140})\*|_([^_\n]{1,140})_|([^\n]{1,140}))(?=\n|$)/g,
+    (_m, alt: string, url: string, existing: string, em1?: string, em2?: string, plain?: string) => {
+      if (existing && String(existing).trim()) return `![${alt}](${url} "${String(existing).trim()}")`
+      const cap = (em1 || em2 || plain || '').trim()
+      if (!cap) return `![${alt}](${url})`
+      return `![${alt}](${url} "${cap}")`
+    })
   return s
 }
 
@@ -252,7 +286,7 @@ function BodyRenderer({ body }: { body?: string }) {
           const alt = String(props.alt || '')
           const caption = typeof props.title === 'string' && props.title.trim() ? props.title.trim() : ''
           const imgEl = src.startsWith('asset:')
-            ? <InlineAssetImage id={src.slice(6)} alt={alt} />
+            ? <InlineAssetImage id={src.slice(6)} alt={alt} title={caption} />
             : <img src={src} alt={alt} style={{ width: '100%', borderRadius: 8 }} />
           if (!caption) return imgEl
           return (
@@ -278,15 +312,26 @@ function BodyRenderer({ body }: { body?: string }) {
 
  
 
-function InlineAssetImage({ id, alt }: { id: string; alt?: string }) {
+function InlineAssetImage({ id, alt, title }: { id: string; alt?: string; title?: string }) {
   const [url, setUrl] = useState<string | undefined>()
+  const [metaCaption, setMetaCaption] = useState<string>('')
   useEffect(() => {
     let mounted = true
     AssetStore.getUrl(id).then(u => { if (mounted) setUrl(u) })
+    if ((AssetStore as any).getMeta) {
+      ;(AssetStore as any).getMeta(id).then((m: any) => { if (mounted) setMetaCaption((m?.caption || '').trim()) }).catch(() => {})
+    }
     return () => { mounted = false; AssetStore.revokeUrl(id) }
   }, [id])
   if (!url) return null
-  return <img src={url} alt={alt} style={{ width: '100%', borderRadius: 8 }} />
+  const cap = (title || metaCaption || '').trim()
+  if (!cap) return <img src={url} alt={alt} style={{ width: '100%', borderRadius: 8 }} />
+  return (
+    <figure style={{ margin: 0 }}>
+      <img src={url} alt={alt} style={{ width: '100%', borderRadius: 8 }} />
+      <figcaption style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, fontStyle: 'italic', marginTop: 6 }}>{cap}</figcaption>
+    </figure>
+  )
 }
 
 function formatDate(ts?: number) {

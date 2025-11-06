@@ -211,6 +211,21 @@ export const CloudAssetStore = {
     this._urlCache.delete(id)
   },
 
+  async exists(id: string): Promise<boolean> {
+    if (!supabase) return false
+    try {
+      const { data, error } = await (supabase.storage.from(bucket) as any).createSignedUrl(id, 1)
+      return !error && !!data?.signedUrl
+    } catch { return false }
+  },
+
+  async ensureBlob(id: string, blob: Blob & { type?: string }): Promise<void> {
+    if (!supabase) return
+    const present = await this.exists(id)
+    if (present) return
+    await supabase.storage.from(bucket).upload(id, blob, { upsert: false, contentType: (blob as any).type || 'application/octet-stream' })
+  },
+
   async remove(id: string): Promise<void> {
     if (!supabase) return
     await supabase.storage.from(bucket).remove([id])
@@ -219,22 +234,36 @@ export const CloudAssetStore = {
   },
   async updateMeta(id: string, patch: Partial<AssetMeta>): Promise<void> {
     if (!supabase) return
-    // Map "title" to display name if provided
-    const remotePatch: any = {}
+    // Prefer writing full metadata if the table supports these columns; fallback to name-only.
     const newName = (patch.name || patch.title)?.trim?.()
-    if (newName) remotePatch.name = newName
     try {
-      // Best-effort: avoid upsert/on_conflict to prevent 400 when PK/unique isn't configured.
       if (await this._ensureTable()) {
-        // Only update 'name' to remain compatible with minimal schemas.
-        const upd = Object.keys(remotePatch).length
-          ? await (supabase.from('assets') as any).update(remotePatch).eq('id', id).select().limit(1)
-          : { data: [], error: null }
-        const noRow = !!upd.error || !upd.data || (Array.isArray(upd.data) && upd.data.length === 0)
-        if (noRow) {
-          const insertRec: any = { id }
-          if (newName) insertRec.name = newName
-          await (supabase.from('assets') as any).insert(insertRec)
+        const full: any = {}
+        if (newName) full.name = newName
+        if (patch.title != null) full.title = patch.title
+        if (patch.alt != null) full.alt = patch.alt
+        if (patch.caption != null) full.caption = patch.caption
+        if (patch.description != null) full.description = patch.description
+        let didFull = false
+        if (Object.keys(full).length) {
+          const upd: any = await (supabase.from('assets') as any).update(full).eq('id', id).select().limit(1)
+          if (upd?.error) throw new Error('FULL_UPDATE_FAILED')
+          const noRow = !upd?.data || (Array.isArray(upd.data) && upd.data.length === 0)
+          if (noRow) {
+            const insertRec: any = { id, ...full }
+            const ins: any = await (supabase.from('assets') as any).insert(insertRec)
+            if (ins?.error) throw new Error('FULL_INSERT_FAILED')
+          }
+          didFull = true
+        }
+        if (!didFull && newName) {
+          // Fallback to name-only path
+          const minimal: any = { name: newName }
+          const upd2: any = await (supabase.from('assets') as any).update(minimal).eq('id', id).select().limit(1)
+          const noRow2 = !!upd2?.error || !upd2?.data || (Array.isArray(upd2.data) && upd2.data.length === 0)
+          if (noRow2) {
+            await (supabase.from('assets') as any).insert({ id, name: newName } as any)
+          }
         }
       }
     } catch {}

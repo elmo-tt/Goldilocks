@@ -18,8 +18,30 @@ function deriveKeyphrase(title: string, provided?: string, tags?: string[]) {
   if (p) return p
   const t = (tags && tags.find(x => x.trim().length >= 4)) || ''
   if (t) return t
-  const words = (title || '').toLowerCase().match(/[a-z0-9]+/g) || []
-  const stop = new Set(['the','and','for','with','that','this','from','about','into','onto','within','your','you','our','are','will','can','how','what','why','when'])
+  const raw = (title || '').toLowerCase()
+  const words = raw.match(/[a-z0-9]+/g) || []
+  const stop = new Set(['the','and','for','with','that','this','from','about','into','onto','within','your','you','our','are','will','can','how','what','why','when','of','a','in'])
+  const slug = slugify(title || '').replace(/-/g, ' ')
+  const cands: string[] = []
+  // collect trigrams and bigrams (prefer contiguous phrases from the title)
+  for (let n = 3; n >= 2; n--) {
+    for (let i = 0; i + n <= words.length; i++) {
+      const seq = words.slice(i, i + n).join(' ')
+      cands.push(seq)
+    }
+  }
+  let best = ''
+  let bestScore = -1
+  for (const c of cands) {
+    const toks = c.split(' ')
+    const content = toks.filter(w => w.length >= 3 && !stop.has(w)).length
+    if (content === 0) continue
+    let s = content * 10
+    if (slug.includes(c)) s += 50
+    if (toks.length === 2) s += 5
+    if (s > bestScore) { bestScore = s; best = c }
+  }
+  if (best) return best
   const picks = words.filter(w => w.length >= 4 && !stop.has(w)).slice(0, 3)
   return picks.join(' ').trim() || (title || '').trim()
 }
@@ -478,13 +500,24 @@ export default function CopilotOverlay({
                     const bodyText = stripHtml(fields.body ?? art.body)
                     const baseDesc = (fields.metaDescription || art.metaDescription || art.excerpt || bodyText.slice(0, 180))
                     const max155 = (s: string) => s.length > 155 ? s.slice(0, 155).replace(/\s+\S*$/, '') : s
-                    const titleForKP = (providedTitle || art.title || '').toLowerCase()
-                    const tokens = Array.from(new Set((titleForKP.match(/[a-z0-9]+/g) || []).filter(w => w.length >= 4 && !['the','and','for','with','that','this','from','about','into','onto','within','your','you','our','are','will'].includes(w))))
-                    const kp = tokens.slice(0, 3).join(' ')
+                    const kp = deriveKeyphrase(providedTitle || art.title || '', undefined, Array.isArray(fields.tags) ? fields.tags : art.tags)
                     const origin = (typeof window !== 'undefined' ? window.location.origin : '')
                     const canon = `${origin || ''}/articles/${art.slug}`
-                    if (!fields.metaTitle && baseTitle) fields.metaTitle = max60(baseTitle)
-                    if (!fields.metaDescription && baseDesc) fields.metaDescription = max155(baseDesc)
+                    const ensureHas = (text: string, key: string) => {
+                      const t = (text || '').toLowerCase().replace(/[-_]+/g, ' ')
+                      const ks = (key || '').toLowerCase().match(/[a-z0-9]+/g) || []
+                      if (ks.length === 0) return false
+                      const pattern = new RegExp(`(^|[^a-z0-9])${ks.map(x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('[^a-z0-9]+')}([^a-z0-9]|$)`, 'i')
+                      return pattern.test(t)
+                    }
+                    if (!fields.metaTitle && baseTitle) {
+                      const next = ensureHas(baseTitle, kp) ? baseTitle : `${kp.charAt(0).toUpperCase()}${kp.slice(1)} — ${baseTitle}`
+                      fields.metaTitle = max60(next)
+                    }
+                    if (!fields.metaDescription && baseDesc) {
+                      const nextDesc = ensureHas(baseDesc, kp) ? baseDesc : `${kp}: ${baseDesc}`
+                      fields.metaDescription = max155(nextDesc)
+                    }
                     if (!fields.keyphrase && kp) fields.keyphrase = kp
                     if (!fields.canonicalUrl) fields.canonicalUrl = canon
                   }
@@ -499,15 +532,14 @@ export default function CopilotOverlay({
           if (updateNote) {
             reply = reply ? `${reply}\n\n${updateNote}` : updateNote
           }
-          // If the model returned no meaningful content and no tool calls, provide a clarifying prompt with suggestions.
-          const isTrivial = (s: string) => /^(done|ok|okay|sure|noted)\.?$/i.test(s.trim())
-          if ((!reply || isTrivial(reply)) && calls.length === 0) {
+          // If no tool calls were returned, attempt a local fallback to identify and update an article when the user intent indicates edits/SEO.
+          if (calls.length === 0) {
             try {
               const raw = userMsg.content || ''
               const recentCtx = (active.messages.slice(-3).map(m => m.content).join(' ') + ' ' + raw).toLowerCase()
               const wantsSEO = /\b(seo|meta\s*title|meta\s*description|key\s*phrase|keyphrase|canonical)\b/i.test(recentCtx)
-              const mentionsArticle = /\b(article|post)\b/i.test(recentCtx) || /slug:\s*[a-z0-9-]+/i.test(raw) || /"[^"“”]{5,}"/.test(raw)
-              const wantsEdit = (/(update|edit|modify|append|revise|publish|unpublish)\b/i.test(recentCtx) || wantsSEO) && mentionsArticle
+              const mentionsArticle = /\b(article|post)\b/i.test(recentCtx) || /slug:\s*[a-z0-9-]+/i.test(raw) || /"[^"]{5,}"/.test(raw)
+              const wantsEdit = ((/(update|edit|modify|append|revise|publish|unpublish)\b/i.test(recentCtx) || wantsSEO) && mentionsArticle)
               // Try slug pattern first
               let art = undefined as undefined | ReturnType<typeof ArticlesStore.getBySlug>
               const sm = raw.match(/slug:\s*([a-z0-9-]+)/i)

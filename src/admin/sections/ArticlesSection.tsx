@@ -228,10 +228,9 @@ function EditorView({ initial, onBack }: { initial?: Article; onBack: () => void
     setSaving(true)
     try {
       // Enforce simple editorial rules (strip Intro/Conclusion headings; ensure CTA)
-      // Include category label in tag context for editorial normalization
-      const catLabel = (PRACTICE_AREAS.find(p => p.key === category)?.label || category || '').trim()
+      // Include category as preferred source for CTA; tags are secondary context
       const tagArr = tags.split(',').map(s => s.trim()).filter(Boolean)
-      const enforcedBody = enforceEditorialRules(body, [catLabel, ...tagArr].filter(Boolean), title, excerpt)
+      const enforcedBody = enforceEditorialRules(body, tagArr, title, excerpt, category || '')
 
       // For local backend, inline assets into body so it doesn't depend on local IndexedDB.
       // For Supabase, keep asset: tokens and resolve at render time via signed URLs.
@@ -291,7 +290,7 @@ function EditorView({ initial, onBack }: { initial?: Article; onBack: () => void
       let changed = 0
       for (const a of all) {
         try {
-          const nextBody = enforceEditorialRules(a.body || '', a.tags || [], a.title || '', a.excerpt || '')
+          const nextBody = enforceEditorialRules(a.body || '', a.tags || [], a.title || '', a.excerpt || '', (a as any).category || '')
           if (nextBody && nextBody !== a.body) {
             ArticlesStore.save({ id: a.id, title: a.title, body: nextBody })
             changed++
@@ -900,7 +899,7 @@ function findPracticeAreaLabel(tags?: string[], keyphraseOrTitle?: string, conte
   return undefined
 }
 
-function enforceEditorialRules(body: string, tags: string[], title: string, excerpt?: string): string {
+function enforceEditorialRules(body: string, tags: string[], title: string, excerpt?: string, categoryKey?: string): string {
   try {
     if (looksLikeHtml(body)) {
       const c = document.createElement('div')
@@ -922,7 +921,9 @@ function enforceEditorialRules(body: string, tags: string[], title: string, exce
         return false
       })
       del.forEach(el => el.remove())
-      const matched = findPracticeAreaLabel(tags, title, c.textContent || '')
+      // Prefer explicit category when provided; otherwise infer from tags/title/content
+      const preferred = categoryKey ? (PRACTICE_AREAS.find(p => p.key === categoryKey)?.label || categoryKey) : ''
+      const matched = preferred || findPracticeAreaLabel(tags, title, c.textContent || '')
       const display = matched ? transformAreaLabelForCta(matched).toLowerCase() : ''
       const cta = matched
         ? `If you or someone you know has been a victim of ${display}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
@@ -958,7 +959,8 @@ function enforceEditorialRules(body: string, tags: string[], title: string, exce
         .replace(/^\s*.*\bin focus:\b.*$/gim, '')
         .replace(/^\s*.*—\s*Article\s*:\s*.*$/gim, '')
         .replace(/\n{3,}/g, '\n\n')
-      const matched = findPracticeAreaLabel(tags, title, s)
+      const preferred = categoryKey ? (PRACTICE_AREAS.find(p => p.key === categoryKey)?.label || categoryKey) : ''
+      const matched = preferred || findPracticeAreaLabel(tags, title, s)
       const display = matched ? transformAreaLabelForCta(matched).toLowerCase() : ''
       const cta = matched
         ? `If you or someone you know has been a victim of ${display}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`

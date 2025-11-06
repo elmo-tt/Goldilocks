@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import type React from 'react'
 import { AssetStore, type AssetMeta } from '@/shared/assets/store'
+import { getBackend } from '@/shared/config'
+import { bus } from '../utils/bus'
 
 export default function MediaSection() {
   const [items, setItems] = useState<AssetMeta[]>([])
   const [persisted, setPersisted] = useState<boolean | null>(null)
   const [busy, setBusy] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   // Off-canvas state for media details
   const [selected, setSelected] = useState<AssetMeta | null>(null)
   const [altText, setAltText] = useState('')
@@ -48,6 +51,69 @@ export default function MediaSection() {
         alert(ok ? 'Persistent storage enabled for this site.' : 'Could not enable persistent storage in this browser.')
       }
     } catch {}
+  }
+
+  const syncMediaMeta = async () => {
+    if (getBackend() !== 'supabase') {
+      try { bus.emit('toast', { message: 'Enable Supabase to sync media (VITE_BACKEND, VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY).', type: 'error' }) } catch { alert('Enable Supabase to sync media.') }
+      return
+    }
+    setSyncing(true)
+    let ok = 0, fail = 0, skipped = 0, blobs = 0, migrated = 0
+    try {
+      const list = await AssetStore.list()
+      const presentIds = new Set(list.map(it => it.id))
+      // 1) Backfill metadata to Supabase for items already present in storage
+      for (const it of list) {
+        try {
+          const meta = await (AssetStore as any).getMeta?.(it.id)
+          const patch: any = {}
+          if (meta?.name != null) patch.name = meta.name
+          if (meta?.title != null) patch.title = meta.title
+          if (meta?.alt != null) patch.alt = meta.alt
+          if (meta?.caption != null) patch.caption = meta.caption
+          if (meta?.description != null) patch.description = meta.description
+          if (Object.keys(patch).length > 0) {
+            await (AssetStore as any).updateMeta?.(it.id, patch)
+          } else {
+            skipped++
+          }
+          // Ensure blob exists (should be true for listed items, but verify)
+          try {
+            const exists = await (AssetStore as any).exists?.(it.id)
+            if (!exists) {
+              const localBlob = await getLocalBlob(it.id)
+              if (localBlob) { await (AssetStore as any).ensureBlob?.(it.id, localBlob); blobs++ }
+            }
+          } catch {}
+          ok++
+        } catch {
+          fail++
+        }
+      }
+      // 2) Migrate local-only assets (from IndexedDB) that are not yet in Supabase storage
+      try {
+        const localList = await listLocalMeta()
+        for (const lm of localList) {
+          if (presentIds.has(lm.id)) continue
+          try {
+            const blob = await getLocalBlob(lm.id)
+            if (blob) {
+              await (AssetStore as any).ensureBlob?.(lm.id, blob)
+              blobs++
+              migrated++
+              const patch: any = { name: lm.name, title: lm.title, alt: lm.alt, caption: lm.caption, description: lm.description }
+              await (AssetStore as any).updateMeta?.(lm.id, patch)
+              ok++
+            }
+          } catch { fail++ }
+        }
+      } catch {}
+      const msg = `Media sync complete: ${ok} updated` + (migrated ? `, ${migrated} migrated` : '') + (blobs ? `, ${blobs} blobs uploaded` : '') + (skipped ? `, ${skipped} skipped` : '') + (fail ? `, ${fail} failed` : '')
+      try { bus.emit('toast', { message: msg, type: fail ? 'error' : 'success' }) } catch { alert(msg) }
+    } finally {
+      setSyncing(false)
+    }
   }
 
   const handleUpload = async (files: FileList | null) => {
@@ -111,7 +177,11 @@ export default function MediaSection() {
             Upload
             <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => handleUpload(e.target.files)} />
           </label>
-          <button className="ops-btn" onClick={enablePersistence}>Enable Persistence</button>
+          {getBackend() === 'supabase' ? (
+            <button className="ops-btn" onClick={syncMediaMeta} disabled={syncing}>{syncing ? 'Syncing…' : 'Sync Media'}</button>
+          ) : (
+            <button className="ops-btn" onClick={enablePersistence}>Enable Persistence</button>
+          )}
         </div>
       </div>
 
@@ -255,4 +325,48 @@ function formatBytes(n: number) {
   let i = 0; let v = n
   while (v >= 1024 && i < u.length - 1) { v /= 1024; i++ }
   return `${v.toFixed(1)} ${u[i]}`
+}
+
+// Local IndexedDB helpers for migrating existing local media to Supabase
+async function openLocalDB(): Promise<IDBDatabase> {
+  return await new Promise((resolve, reject) => {
+    const req = indexedDB.open('gl_assets', 1)
+    req.onupgradeneeded = () => {
+      const db = req.result
+      if (!db.objectStoreNames.contains('assets_meta')) db.createObjectStore('assets_meta', { keyPath: 'id' })
+      if (!db.objectStoreNames.contains('assets_blob')) db.createObjectStore('assets_blob')
+    }
+    req.onsuccess = () => resolve(req.result)
+    req.onerror = () => reject(req.error)
+  })
+}
+
+async function listLocalMeta(): Promise<AssetMeta[]> {
+  try {
+    const db = await openLocalDB()
+    return await new Promise<AssetMeta[]>((resolve, reject) => {
+      const out: AssetMeta[] = []
+      const t = db.transaction(['assets_meta'], 'readonly')
+      const store = t.objectStore('assets_meta')
+      const req = store.openCursor(null, 'prev')
+      req.onsuccess = () => {
+        const cur = req.result as IDBCursorWithValue | null
+        if (cur) { out.push(cur.value as AssetMeta); cur.continue() }
+        else resolve(out)
+      }
+      req.onerror = () => reject(req.error)
+    })
+  } catch { return [] }
+}
+
+async function getLocalBlob(id: string): Promise<Blob | undefined> {
+  try {
+    const db = await openLocalDB()
+    return await new Promise<Blob | undefined>((resolve, reject) => {
+      const t = db.transaction(['assets_blob'], 'readonly')
+      const req = t.objectStore('assets_blob').get(id)
+      req.onsuccess = () => resolve(req.result as Blob | undefined)
+      req.onerror = () => reject(req.error)
+    })
+  } catch { return undefined }
 }

@@ -238,6 +238,26 @@ function EditorView({ initial, onBack }: { initial?: Article; onBack: () => void
     onBack()
   }
 
+  const runCtaCleanup = async () => {
+    try {
+      setSaving(true)
+      const all = ArticlesStore.all()
+      let changed = 0
+      for (const a of all) {
+        try {
+          const nextBody = enforceEditorialRules(a.body || '', a.tags || [], a.title || '', a.excerpt || '')
+          if (nextBody && nextBody !== a.body) {
+            ArticlesStore.save({ id: a.id, title: a.title, body: nextBody })
+            changed++
+          }
+        } catch {}
+      }
+      try { bus.emit('toast', { message: `CTA cleanup: updated ${changed} article(s).`, type: 'success' }) } catch { window.alert(`CTA cleanup: updated ${changed} article(s).`) }
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div className="section marketing-layout">
       <div>
@@ -381,6 +401,7 @@ function EditorView({ initial, onBack }: { initial?: Article; onBack: () => void
             <button className="button" onClick={() => save('published')} disabled={saving}>Publish</button>
             <button className="button" onClick={onBack}>Back to List</button>
             <button className="button" onClick={del}>Delete</button>
+            <button className="button" onClick={runCtaCleanup} disabled={saving}>Run CTA Cleanup</button>
           </div>
         </div>
       </div>
@@ -836,8 +857,16 @@ function enforceEditorialRules(body: string, tags: string[], title: string, exce
       const cta = matched
         ? `If you or someone you know has been a victim of ${display}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
         : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
-      const txt = (c.textContent || '').trim().toLowerCase()
-      if (!txt.includes(cta.toLowerCase())) {
+      // Replace existing CTA paragraph (case-insensitive), or append if missing
+      let replaced = false
+      try {
+        const paras = Array.from(c.querySelectorAll('p')) as HTMLParagraphElement[]
+        for (let i = paras.length - 1; i >= 0; i--) {
+          const t = (paras[i].textContent || '').trim()
+          if (/^if you .*contact goldlaw today/i.test(t)) { paras[i].textContent = cta; replaced = true; break }
+        }
+      } catch {}
+      if (!replaced) {
         const p = document.createElement('p')
         p.textContent = cta
         c.appendChild(p)
@@ -865,10 +894,19 @@ function enforceEditorialRules(body: string, tags: string[], title: string, exce
         ? `If you or someone you know has been a victim of ${display}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
         : `If you need legal guidance regarding this topic, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
       const trimmed = s.replace(/\s+$/, '')
-      if (!trimmed.toLowerCase().includes(cta.toLowerCase())) {
+      try {
+        const parts = trimmed.split(/\n\n+/)
+        if (parts.length > 0) {
+          const lastIdx = parts.length - 1
+          const last = (parts[lastIdx] || '').trim()
+          if (/^if you .*contact goldlaw today/i.test(last)) parts[lastIdx] = cta
+          else parts.push(cta)
+          s = parts.join('\n\n')
+        } else {
+          s = cta
+        }
+      } catch {
         s = trimmed + '\n\n' + cta
-      } else {
-        s = trimmed
       }
       return s
     }

@@ -60,10 +60,13 @@ function HtmlBody({ html, heroMaxWidth }: { html: string; heroMaxWidth?: number 
         const src = img.getAttribute('src') || ''
         const isAssetSrc = src.startsWith('asset:')
         const id = dataId || (isAssetSrc ? src.slice(6) : '')
+        // Always resolve when we have an ID (handles both asset: tokens and expired signed URLs)
         if (id) {
           usedIds.add(id)
           AssetStore.getUrl(id).then(url => {
-            if (!cancelled && url) img.src = url
+            if (!cancelled && url) {
+              if (img.getAttribute('src') !== url) img.src = url
+            }
           })
         }
       })
@@ -88,7 +91,7 @@ function HtmlBody({ html, heroMaxWidth }: { html: string; heroMaxWidth?: number 
     apply()
     // Re-apply on attribute mutations so changes show without needing DevTools
     const mo = new MutationObserver(() => apply())
-    mo.observe(el, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-width', 'data-align', 'src'] })
+    mo.observe(el, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-width', 'data-align'] })
     // Style any paragraphs explicitly marked as captions
     return () => {
       cancelled = true

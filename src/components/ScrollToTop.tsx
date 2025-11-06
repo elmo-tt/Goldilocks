@@ -1,10 +1,12 @@
-import { useEffect } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 
 export default function ScrollToTop() {
   const { pathname, hash } = useLocation()
+  const prevPathRef = useRef(pathname)
+  const prevHashRef = useRef(hash)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     try {
       if ('scrollRestoration' in window.history) {
         window.history.scrollRestoration = 'manual'
@@ -12,12 +14,19 @@ export default function ScrollToTop() {
     } catch {}
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     let cancelled = false
+    const pathChanged = pathname !== prevPathRef.current
+    prevPathRef.current = pathname
+    prevHashRef.current = hash
 
     const scrollTop = () => {
       if (cancelled) return
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      try {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+        ;(document.scrollingElement || document.documentElement).scrollTop = 0
+        document.body.scrollTop = 0
+      } catch {}
     }
 
     const tryHash = () => {
@@ -35,21 +44,35 @@ export default function ScrollToTop() {
       const tick = () => {
         if (cancelled) return
         if (tryHash()) return
-        if (tries++ < 6) requestAnimationFrame(tick)
+        if (tries++ < 12) {
+          requestAnimationFrame(tick)
+        } else {
+          // Fallback: force top if anchor never appeared
+          let kicks = 0
+          const kick = () => {
+            if (cancelled) return
+            scrollTop()
+            if (kicks++ < 6) requestAnimationFrame(kick)
+          }
+          requestAnimationFrame(kick)
+          setTimeout(() => { if (!cancelled) scrollTop() }, 150)
+        }
       }
       requestAnimationFrame(tick)
       return () => { cancelled = true }
     }
 
-    requestAnimationFrame(() => {
-      if (cancelled) return
-      scrollTop()
-      requestAnimationFrame(() => {
+    // Only force top when the pathname actually changed.
+    if (pathChanged) {
+      let tries = 0
+      const tick = () => {
         if (cancelled) return
         scrollTop()
-        setTimeout(() => { if (!cancelled) scrollTop() }, 50)
-      })
-    })
+        if (tries++ < 8) requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+      setTimeout(() => { if (!cancelled) scrollTop() }, 120)
+    }
 
     return () => { cancelled = true }
   }, [pathname, hash])

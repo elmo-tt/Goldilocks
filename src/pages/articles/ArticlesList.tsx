@@ -4,7 +4,7 @@ import '@/components/StickyNav.css'
 import FooterSection from '@/sections/FooterSection'
 import '@/sections/FooterSection.css'
 import { useSearchParams, Link } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useLayoutEffect } from 'react'
 import { ArticlesStore, type Article } from '@/shared/articles/store'
 import { AssetStore } from '@/shared/assets/store'
 import { PRACTICE_AREAS } from '@/admin/data/goldlaw'
@@ -91,6 +91,49 @@ function Hero({ a }: { a: Article }) {
 }
 
 export default function ArticlesList() {
+  useLayoutEffect(() => {
+    let cancelled = false
+    const hadHash = typeof window !== 'undefined' ? window.location.hash : ''
+    let stripped = false
+    const stripHash = () => {
+      if (!hadHash || stripped) return
+      try { window.history.replaceState({}, '', window.location.pathname + window.location.search); stripped = true } catch {}
+    }
+    const top = () => {
+      if (cancelled) return
+      try {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+        ;(document.scrollingElement || document.documentElement).scrollTop = 0
+        document.body.scrollTop = 0
+      } catch {}
+    }
+    const tryHash = () => {
+      const h = window.location.hash
+      if (!h) return false
+      const el = document.querySelector(h) as HTMLElement | null
+      if (el && typeof (el as any).scrollIntoView === 'function') { el.scrollIntoView({ block: 'start' }); stripHash(); return true }
+      return false
+    }
+    // If hash anchor is present and found, handle immediately and stop here
+    if (tryHash()) {
+      return () => { cancelled = true }
+    }
+    let tries = 0
+    const tick = () => {
+      if (cancelled) return
+      if (tryHash()) return
+      if (tries++ < 12) requestAnimationFrame(tick)
+      else {
+        let kicks = 0
+        const kick = () => { if (cancelled) return; top(); if (kicks++ < 6) requestAnimationFrame(kick) }
+        stripHash()
+        requestAnimationFrame(kick)
+        setTimeout(() => { if (!cancelled) top() }, 150)
+      }
+    }
+    requestAnimationFrame(tick)
+    return () => { cancelled = true }
+  }, [])
   const items = usePublished()
   const [sp, setSp] = useSearchParams()
   const pageSize = 9
@@ -136,7 +179,7 @@ export default function ArticlesList() {
     <>
       <StickyNav />
       {/* Anchor to preserve StickyNav topbar behavior */}
-      <div id="hero" style={{ position: 'absolute', top: 0, height: 1, width: 1, overflow: 'hidden' }} />
+      <div id="hero" style={{ height: 1, width: 1, overflow: 'hidden' }} />
       <main className="blog">
         {featured && <Hero a={featured} />}
 

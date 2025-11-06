@@ -220,6 +220,9 @@ export default function CopilotOverlay({
   const [input, setInput] = useState('')
   const [autoMinimize, setAutoMinimize] = useState(true)
   const messagesRef = useRef<HTMLDivElement | null>(null)
+  const inputBarRef = useRef<HTMLDivElement | null>(null)
+  const [inputH, setInputH] = useState(72)
+  const [drawerOpen, setDrawerOpen] = useState(false)
   // Inline rename state for chat titles
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
@@ -251,7 +254,18 @@ export default function CopilotOverlay({
     const el = messagesRef.current
     if (!el) return
     try { el.scrollTop = el.scrollHeight } catch {}
-  }, [active.messages.length, activeId, open])
+  }, [active.messages.length, activeId, open, inputH])
+
+  useEffect(() => {
+    const measure = () => {
+      try { setInputH(inputBarRef.current?.offsetHeight || 72) } catch { setInputH(72) }
+    }
+    measure()
+    const onResize = () => measure()
+    window.addEventListener('resize', onResize)
+    const t = setTimeout(measure, 0)
+    return () => { window.removeEventListener('resize', onResize); clearTimeout(t) }
+  }, [])
 
   if (!open) return null
 
@@ -633,7 +647,7 @@ export default function CopilotOverlay({
   }
 
   return (
-    <div className="copilot-overlay">
+    <div className="copilot-overlay" style={{ ['--copilot-inpb' as any]: `${inputH}px` }}>
       <aside className="copilot-sidebar">
         <div className="top">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -699,6 +713,9 @@ export default function CopilotOverlay({
       <main className="copilot-main">
         <div className="bar">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button className="copilot-menu" aria-label="Open chats" onClick={() => setDrawerOpen(true)}>
+              <PanelLeft size={18} />
+            </button>
             <Bot size={18} />
             <strong>GOLDLAW Copilot</strong>
           </div>
@@ -740,11 +757,40 @@ export default function CopilotOverlay({
           ))}
         </div>
 
-        <div className="input-bar">
+        <div className="input-bar" ref={inputBarRef}>
           <input className="input" placeholder="Ask anything or use /overview /intake /cases /tasks /calendar /marketing /settings, /call, /contact, /map wpb|psl, /task 'Call client'" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') send() }} />
           <button className="ops-btn" onClick={send}><Send size={16} /> Send</button>
         </div>
       </main>
+
+      <div className={`copilot-scrim${drawerOpen ? ' open' : ''}`} onClick={() => setDrawerOpen(false)} />
+      <div className={`copilot-drawer${drawerOpen ? ' open' : ''}`} role="dialog" aria-modal="true">
+        <div className="drawer-head">
+          <strong>Chats</strong>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="ops-btn" onClick={newChat} title="New chat"><Plus size={16} /> New</button>
+            <button className="copilot-min" onClick={() => setDrawerOpen(false)} title="Close"><X size={16} /></button>
+          </div>
+        </div>
+        <div className="copilot-list">
+          {convos.map(c => (
+            <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '1fr min-content', alignItems: 'center' }}>
+              <button onClick={() => { setActiveId(c.id); setDrawerOpen(false) }} className={`list-item${c.id === activeId ? ' active' : ''}`} style={{ minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Bot size={16} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, cursor: 'pointer', margin: '0 0 2px' }}>{c.title}</div>
+                    <div className="copilot-excerpt" style={{ width: '28ch', marginTop: 0 }}>{c.messages[c.messages.length - 1]?.content || ''}</div>
+                  </div>
+                </div>
+              </button>
+              <button className="icon-btn danger" onClick={() => deleteChat(c.id)} title="Delete chat" style={{ marginLeft: 0 }}>
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

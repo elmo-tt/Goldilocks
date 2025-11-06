@@ -53,4 +53,7 @@
   .blog-grid { grid-template-columns: 1fr; }
   .blog-title { font-size: 32px; }
   .blog-hero-h2 { font-size: 28px; }
+  .blog-filters { gap: 10px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -24px; padding: 0 24px 4px; }
+  .blog-filters::-webkit-scrollbar { display: none; }
+  .blog-chip { flex: 0 0 auto; height: 36px; padding: 0 14px; font-size: 15px; }
 }

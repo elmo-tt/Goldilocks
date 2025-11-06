@@ -19,7 +19,7 @@
 .ops .copilot-main .bar .copilot-min svg{ pointer-events:none; }
 .ops[data-theme='light'] .copilot-main .bar .copilot-min{ background:#eef2ff; border:1px solid #c7d2fe; color:#1e293b; }
 .ops[data-theme='light'] .copilot-main .bar .copilot-min:hover{ background:#e5e9ff; }
-.ops .messages{ padding:16px; overflow:auto; display:flex; flex-direction:column; gap:14px; min-height:0; max-height:100%; overscroll-behavior:contain; }
+.ops .messages{ padding:16px; overflow:auto; display:flex; flex-direction:column; gap:14px; min-height:0; max-height:100%; overscroll-behavior:contain; padding-bottom: calc(var(--copilot-inpb, 72px) + 16px); }
 .ops .msg{ display:grid; gap:8px; background:var(--ops-blue-2); border:1px solid var(--ops-border); border-radius:12px; padding:12px 14px; max-width:720px; word-break:break-word; line-height:1.6; }
 .ops .msg.me{ background:#18233d; border-color:#22315a; align-self:flex-end; margin-left:0; }
 .ops[data-theme='light'] .msg.me{ background:#eef2ff; border-color:#c7d2fe; }
@@ -43,7 +43,16 @@
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
   }
+  .ops .copilot-main .bar .copilot-menu{ display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:8px; background:transparent; border:1px solid var(--ops-border); color:var(--ops-text); }
 }
+
+/* Off-canvas drawer for chats (mobile) */
+.ops .copilot-scrim{ position:fixed; inset:0; background:rgba(0,0,0,0.3); opacity:0; pointer-events:none; transition: opacity .18s ease; z-index: 101; }
+.ops .copilot-scrim.open{ opacity:1; pointer-events:auto; }
+.ops .copilot-drawer{ position:fixed; top:0; left:0; bottom:0; width:84%; max-width:360px; background:var(--ops-blue-2); border-right:1px solid var(--ops-border); transform: translateX(-100%); transition: transform .22s ease; z-index: 102; display:flex; flex-direction:column; }
+.ops[data-theme='light'] .copilot-drawer{ background:#f8fafc; }
+.ops .copilot-drawer.open{ transform: translateX(0); }
+.ops .copilot-drawer .drawer-head{ display:flex; align-items:center; justify-content:space-between; padding:12px; border-bottom:1px solid var(--ops-border); }
 
 /* Typing dots */
 .ops .typing{ display:inline-flex; gap:6px; align-items:center; height:1em; }

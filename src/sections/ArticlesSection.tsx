@@ -83,7 +83,7 @@ export default function ArticlesSection() {
             ))}
           </div>
           <div className="articles-nav">
-            <Link className="view-all" to="/articles">View all</Link>
+            <Link className="view-all" to="/articles#hero">View all</Link>
             <div className="arrows">
               <button className="nav-btn" aria-label="Previous" onClick={() => go(-1)}>←</button>
               <button className="nav-btn" aria-label="Next" onClick={() => go(1)}>→</button>

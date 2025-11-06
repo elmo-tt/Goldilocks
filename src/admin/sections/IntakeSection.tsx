@@ -34,13 +34,13 @@ export default function IntakeSection() {
         <h3>Today’s calls & consults</h3>
         <div style={{ display: 'grid', gap: 8 }}>
           {today.map(item => (
-            <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '100px 1fr auto', alignItems: 'center', gap: 12, border: '1px solid var(--ops-border)', background: 'var(--ops-blue-2)', borderRadius: 10, padding: '10px 12px' }}>
-              <div style={{ fontSize: 12, color: 'var(--ops-muted)' }}>{item.time}</div>
+            <div key={item.id} className="ops-list-row">
               <div style={{ display: 'grid', gap: 2 }}>
+                <div style={{ fontSize: 12, color: 'var(--ops-muted)' }}>{item.time}</div>
                 <div style={{ fontWeight: 600 }}>{item.name}</div>
                 <div style={{ fontSize: 12, color: 'var(--ops-muted)' }}>{item.topic}</div>
               </div>
-              <OutcomeBadge outcome={item.outcome} />
+              <div className="ops-list-status"><OutcomeBadge outcome={item.outcome} /></div>
             </div>
           ))}
         </div>

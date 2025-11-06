@@ -18,12 +18,21 @@
 .ops-header-inner{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; }
 .ops-sub{ margin-left:8px; font-size:12px; color:var(--ops-muted); }
 .ops-actions{ display:flex; gap:8px; }
+.ops-icon-btn{ display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:8px; background:#12306a; border:1px solid #1b3d84; color:#dfe8ff; cursor:pointer; }
+.ops-icon-btn:hover{ filter: brightness(1.05); }
+.ops[data-theme='light'] .ops-icon-btn{ background:#eef2ff; border:1px solid #c7d2fe; color:#1e293b; }
+.ops[data-theme='light'] .ops-icon-btn:hover{ background:#e5e9ff; }
 .ops-btn{ background:#12306a; border:1px solid #1b3d84; color:#dfe8ff; padding:10px 12px; border-radius:10px; cursor:pointer; }
 .ops .ops-btn:hover{ filter: brightness(1.05); }
 .ops[data-theme='light'] .ops-btn{ background:#eef2ff; border:1px solid #c7d2fe; color:#1e293b; }
 .ops[data-theme='light'] .ops-btn:hover{ background:#e5e9ff; }
 .ops-section{ padding:24px; }
 .ops-card{ background:var(--ops-blue-2); border:1px solid var(--ops-border); border-radius:12px; padding:16px; }
+
+/* Floating Copilot button */
+.ops .ops-fab{ position:fixed; right:16px; bottom:16px; width:44px; height:44px; display:grid; place-items:center; border-radius:999px; background:#2563eb; color:#fff; border:0; cursor:pointer; box-shadow: 0 8px 24px rgba(0,0,0,0.35); z-index: 9998; }
+.ops .ops-fab:hover{ filter: brightness(1.05); }
+.ops[data-theme='light'] .ops-fab{ background:#1d4ed8; }
 @media (max-width: 960px){ .ops-shell{ grid-template-columns:1fr; } .ops-sidebar{ display:none; } }
 
 /* Mobile helpers */

@@ -47,12 +47,14 @@ export default function TasksSection() {
         <div style={{ display: 'grid', gap: 8 }}>
           {open.length === 0 && <div style={{ color: 'var(--ops-muted)' }}>No open tasks.</div>}
           {open.map(t => (
-            <div key={t.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid var(--ops-border)', borderRadius: 10, padding: '8px 10px', background: 'var(--ops-blue-2)' }}>
+            <div key={t.id} className="ops-list-row">
               <div style={{ display: 'grid', gap: 4 }}>
                 <strong>{t.title}</strong>
                 <span style={{ fontSize: 12, color: 'var(--ops-muted)' }}>Assignee: {t.assignee || '—'}</span>
               </div>
-              <button className="button" onClick={() => toggle(t.id)}>Mark done</button>
+              <div className="ops-list-actions">
+                <button className="button" onClick={() => toggle(t.id)}>Mark done</button>
+              </div>
             </div>
           ))}
         </div>
@@ -65,12 +67,14 @@ export default function TasksSection() {
         <div style={{ display: 'grid', gap: 8 }}>
           {done.length === 0 && <div style={{ color: 'var(--ops-muted)' }}>No completed tasks.</div>}
           {done.map(t => (
-            <div key={t.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid var(--ops-border)', borderRadius: 10, padding: '8px 10px', background: 'var(--ops-blue-2)', opacity: 0.9 }}>
+            <div key={t.id} className="ops-list-row" style={{ opacity: 0.9 }}>
               <div style={{ display: 'grid', gap: 4 }}>
                 <strong>{t.title}</strong>
                 <span style={{ fontSize: 12, color: 'var(--ops-muted)' }}>Assignee: {t.assignee || '—'}</span>
               </div>
-              <button className="button" onClick={() => toggle(t.id)}>Reopen</button>
+              <div className="ops-list-actions">
+                <button className="button" onClick={() => toggle(t.id)}>Reopen</button>
+              </div>
             </div>
           ))}
         </div>

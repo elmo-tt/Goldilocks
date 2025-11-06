@@ -11,7 +11,7 @@ import SettingsSection from './sections/SettingsSection'
 import type { NavId } from './utils/intentParser'
 import CopilotOverlay from './components/CopilotOverlay'
 import './components/Copilot.css'
-import { Moon, Sun, Menu } from 'lucide-react'
+import { Moon, Sun, Menu, LogOut, Bot, Home } from 'lucide-react'
 import ArticlesSection from './sections/ArticlesSection'
 import MediaSection from './sections/MediaSection'
 import { bus } from './utils/bus'
@@ -107,16 +107,16 @@ export default function AdminApp() {
                 <span className="ops-sub">Presentation mock</span>
               </div>
               <div className="ops-actions">
-                <button className="ops-btn mobile-only" onClick={() => setNavOpen(true)} title="Open menu"><Menu size={16} /> Menu</button>
-                <button className="ops-btn" onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} title="Toggle theme">
-                  {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />} {theme === 'light' ? 'Dark' : 'Light'} Mode
+                <button className="ops-icon-btn mobile-only" onClick={() => setNavOpen(true)} title="Menu"><Menu size={18} /></button>
+                <a className="ops-icon-btn" href="/" title="Home"><Home size={18} /></a>
+                <button className="ops-icon-btn" onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} title="Toggle theme">
+                  {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
                 </button>
-                <button className="ops-btn" onClick={() => setCopilotOpen(true)}>Open Copilot</button>
-                <button className="ops-btn" onClick={() => {
+                <button className="ops-icon-btn" onClick={() => {
                   const key = 'gl_auth'
                   try { localStorage.removeItem(key) } catch {}
                   window.location.href = '/'
-                }}>Logout</button>
+                }} title="Logout"><LogOut size={18} /></button>
               </div>
             </div>
           </div>
@@ -124,6 +124,7 @@ export default function AdminApp() {
             {section}
           </section>
           <ToastHost />
+          <button className="ops-fab" onClick={() => setCopilotOpen(true)} title="Open Copilot"><Bot size={20} /></button>
           <CopilotOverlay
             open={copilotOpen}
             onClose={() => setCopilotOpen(false)}

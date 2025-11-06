@@ -1,6 +1,10 @@
 export function getBackend(): 'local' | 'supabase' {
-  const v = (import.meta as any).env?.VITE_BACKEND || 'local'
-  return v === 'supabase' ? 'supabase' : 'local'
+  const env = (import.meta as any).env || {}
+  const raw = String(env?.VITE_BACKEND ?? '').trim().toLowerCase()
+  const supaFlag = ['supabase', '1', 'true', 'yes', 'on'].includes(raw)
+  const hasCreds = !!(String(env?.VITE_SUPABASE_URL || '').trim() && String(env?.VITE_SUPABASE_ANON_KEY || '').trim())
+  // Prefer explicit flag; otherwise auto-detect when Supabase creds are present
+  return (supaFlag || (!raw && hasCreds)) ? 'supabase' : 'local'
 }
 
 export function getSupabaseEnv() {

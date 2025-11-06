@@ -57,32 +57,19 @@ function enforceSeo(input: { title: string; body: string; metaTitle?: string; me
   }
   let slug = slugify(`${title} ${kp}`)
   let body = input.body || ''
-  if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(body.slice(0, 300))) {
-    body = `${kp.charAt(0).toUpperCase()}${kp.slice(1)} in focus: ${kp} and key considerations for Florida victims.\n\n` + body
-  }
-  const hasHeadingWithKp = /^(#{2,3})\s.*$/gim.test((body.match(/^(#{2,3})\s.*$/gim) || []).find(h => new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(h)) || '')
-  if (!hasHeadingWithKp) {
-    body = body.replace(/^(#{2,3})\s.*$/m, (m) => `## ${kp} — ${m.replace(/^#{2,3}\s+/, '')}`)
-    if (!/^(#{2,3})\s.*$/m.test(body)) body = `## ${kp} overview\n\n` + body
-  }
   // Remove generic headings like Introduction/Conclusion even if not marked with '#'
   body = body
-    .replace(/^\s*(?:#{1,6}\s*)?(Introduction|Conclusion)\s*:?\s*$/gim, '')
+    .replace(/^\s*(?:#{1,6}\s*)?(Introduction|Conclusion|Excerpt|Sources|References)\s*:?\s*$/gim, '')
+    .replace(/^\s*(?:#{1,6}\s*)?Article\s*:\s*.*$/gim, '')
+    .replace(/^\s*.*\bin focus:\b.*$/gim, '')
+    .replace(/^\s*.*—\s*Article\s*:\s*.*$/gim, '')
     .replace(/\n{3,}/g, '\n\n')
   const words = wordCount(body)
   if (words < 300) {
     const add = `\n\nFurther guidance on ${kp}: If you were involved in an incident, document the scene, seek medical care, report the event, and consult an attorney experienced in ${kp}. Understanding negligence, liability, and damages helps protect your rights and strengthen your claim.`
     body += add
   }
-  const cur = (stripMd(body).toLowerCase().match(new RegExp(kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi')) || []).length
-  const total = wordCount(body)
-  const minHits = Math.ceil(Math.max(1, 0.005 * total))
-  if (cur < minHits) {
-    const need = minHits - cur
-    let extra = ''
-    for (let i=0; i<need; i++) extra += `\n\nIf you need legal help related to ${kp}, contact GOLDLAW.`
-    body += extra
-  }
+  // Do not inject additional density lines; rely on authoring and CTA
   let metaTitle = (input.metaTitle || title).trim()
   if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(metaTitle)) metaTitle = `${kp} — ${metaTitle}`
   metaTitle = ensureMaxLen(metaTitle, 65)

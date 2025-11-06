@@ -760,8 +760,13 @@ function enforceEditorialRules(body: string, tags: string[], title: string): str
       const c = document.createElement('div')
       c.innerHTML = body || ''
       const del = Array.from(c.querySelectorAll('h1,h2,h3,h4,h5,h6,p')).filter(el => {
-        const t = (el.textContent || '').trim().replace(/:$/, '')
-        return /^introduction$/i.test(t) || /^conclusion$/i.test(t)
+        const t = (el.textContent || '').trim()
+        if (/^introduction:?$/i.test(t) || /^conclusion:?$/i.test(t)) return true
+        if (/^excerpt:?$/i.test(t) || /^sources:?$/i.test(t) || /^references:?$/i.test(t)) return true
+        if (/^article\s*:\s*/i.test(t)) return true
+        if (/\bin focus:\b/i.test(t)) return true
+        if (/—\s*article\s*:\s*/i.test(t)) return true
+        return false
       })
       del.forEach(el => el.remove())
       const category = (tags && tags[0] ? tags[0] : title || 'your case').toLowerCase()
@@ -775,8 +780,13 @@ function enforceEditorialRules(body: string, tags: string[], title: string): str
       return c.innerHTML
     } else {
       let s = body || ''
-      // Strip plain headings/lines labeled Introduction/Conclusion (optionally with '#')
-      s = s.replace(/^\s*(?:#{1,6}\s*)?(Introduction|Conclusion)\s*:?\s*$/gim, '').replace(/\n{3,}/g, '\n\n')
+      // Strip plain label/section lines (optionally with '#')
+      s = s
+        .replace(/^\s*(?:#{1,6}\s*)?(Introduction|Conclusion|Excerpt|Sources|References)\s*:?\s*$/gim, '')
+        .replace(/^\s*(?:#{1,6}\s*)?Article\s*:\s*.*$/gim, '')
+        .replace(/^\s*.*\bin focus:\b.*$/gim, '')
+        .replace(/^\s*.*—\s*Article\s*:\s*.*$/gim, '')
+        .replace(/\n{3,}/g, '\n\n')
       const category = (tags && tags[0] ? tags[0] : title || 'your case').toLowerCase()
       const cta = `If you or someone you know has been a victim of ${category}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
       const trimmed = s.replace(/\s+$/, '')

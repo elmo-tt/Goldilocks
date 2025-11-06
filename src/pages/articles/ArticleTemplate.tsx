@@ -29,6 +29,17 @@ function HtmlBody({ html, heroMaxWidth }: { html: string; heroMaxWidth?: number 
     let cancelled = false
     const usedIds = new Set<string>()
     const apply = () => {
+      // Remove label-only or scaffolding lines that models may output
+      try {
+        const nodes = Array.from(el.querySelectorAll('p,h1,h2,h3,h4,h5,h6')) as HTMLElement[]
+        for (const node of nodes) {
+          const t = (node.textContent || '').trim()
+          if (/^(Introduction|Conclusion|Excerpt|Sources|References)\s*:?\s*$/i.test(t)) { node.remove(); continue }
+          if (/^Article\s*:\s*/i.test(t)) { node.remove(); continue }
+          if (/\bin focus:\b/i.test(t)) { node.remove(); continue }
+          if (/[–—-]\s*Article\s*:\s*/i.test(t)) { node.remove(); continue }
+        }
+      } catch {}
       const imgs = Array.from(el.querySelectorAll('img')) as HTMLImageElement[]
       imgs.forEach(img => {
         // Constrain images to hero width (if provided) and apply optional data-width percentage
@@ -258,6 +269,13 @@ export default function ArticleTemplate({ article }: { article: Article }) {
 function normalizeMarkdown(text?: string) {
   if (!text) return ''
   let s = text.replace(/\r\n?/g, '\n')
+  // Remove label-only or scaffolding lines that models may output
+  s = s
+    .replace(/^\s*(?:#{1,6}\s*)?(Introduction|Conclusion|Excerpt|Sources|References)\s*:?\s*$/gim, '')
+    .replace(/^\s*(?:#{1,6}\s*)?Article\s*:\s*.*$/gim, '')
+    .replace(/^\s*.*\bin focus:\b.*$/gim, '')
+    .replace(/^\s*.*[–—-]\s*Article\s*:\s*.*$/gim, '')
+    .replace(/\n{3,}/g, '\n\n')
   // Ensure ordered list markers start at a new line when embedded in a sentence
   s = s.replace(/([^\n])\s(\d+)\.\s/g, '$1\n$2. ')
   // Ensure bullet markers start at a new line

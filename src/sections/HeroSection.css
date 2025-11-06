@@ -363,7 +363,7 @@
     /* preserve top padding compensation; adjust bottom spacing */
     padding-top: calc(var(--nav-stack-h, 84px) + 24px);
     padding-bottom: 40px;
-    background-position: var(--hero-pos-mobile, 31% center);
+    background-position: calc(31% - 15px) center;
     background-size: cover;
   }
   .hero-inner {

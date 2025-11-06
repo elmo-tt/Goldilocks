@@ -263,8 +263,37 @@ export default function CopilotOverlay({
     measure()
     const onResize = () => measure()
     window.addEventListener('resize', onResize)
+    // iOS/mobile: visual viewport changes when keyboard shows/hides
+    const vv = (window as any).visualViewport as any | undefined
+    const onVv = () => measure()
+    try { vv?.addEventListener('resize', onVv); vv?.addEventListener('scroll', onVv) } catch {}
+    // Observe input bar height changes (button wraps, safe-area, etc.)
+    let ro: ResizeObserver | null = null
+    try {
+      if ('ResizeObserver' in window && inputBarRef.current) {
+        ro = new ResizeObserver(() => measure())
+        ro.observe(inputBarRef.current)
+      }
+    } catch {}
     const t = setTimeout(measure, 0)
-    return () => { window.removeEventListener('resize', onResize); clearTimeout(t) }
+    return () => {
+      window.removeEventListener('resize', onResize)
+      try { vv?.removeEventListener('resize', onVv); vv?.removeEventListener('scroll', onVv) } catch {}
+      try { ro?.disconnect() } catch {}
+      clearTimeout(t)
+    }
+  }, [])
+
+  // Ensure latest message remains visible when the input receives focus (mobile keyboard up)
+  useEffect(() => {
+    const onFocusIn = (e: Event) => {
+      if (inputBarRef.current && (e.target instanceof Element) && inputBarRef.current.contains(e.target)) {
+        const el = messagesRef.current
+        if (el) { try { el.scrollTop = el.scrollHeight } catch {} }
+      }
+    }
+    window.addEventListener('focusin', onFocusIn)
+    return () => { window.removeEventListener('focusin', onFocusIn) }
   }, [])
 
   if (!open) return null

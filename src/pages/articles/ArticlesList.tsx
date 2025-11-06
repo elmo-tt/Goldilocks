@@ -3,7 +3,7 @@ import StickyNav from '@/components/StickyNav'
 import '@/components/StickyNav.css'
 import FooterSection from '@/sections/FooterSection'
 import '@/sections/FooterSection.css'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { ArticlesStore, type Article } from '@/shared/articles/store'
 import { AssetStore } from '@/shared/assets/store'
@@ -75,7 +75,7 @@ function Hero({ a }: { a: Article }) {
           <div className="blog-hero-content">
             <Eyebrow a={a} />
             <h2 className="blog-hero-h2">
-              <a href={`/articles/${a.slug}`}>{a.title}</a>
+              <Link to={`/articles/${a.slug}`}>{a.title}</Link>
             </h2>
             {a.excerpt && <p className="blog-hero-excerpt">{a.excerpt}</p>}
             <div className="meta-row" style={{ marginTop: 6 }}>
@@ -183,7 +183,7 @@ function Card({ a }: { a: Article }) {
       <div style={{ display: 'grid', gap: 8 }}>
         <Eyebrow a={a} />
         <h3 className="blog-card-title">
-          <a href={`/articles/${a.slug}`}>{a.title}</a>
+          <Link to={`/articles/${a.slug}`}>{a.title}</Link>
         </h3>
       </div>
       <div className="meta-row" style={{ marginTop: 'auto' }}>

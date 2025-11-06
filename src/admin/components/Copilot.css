@@ -30,6 +30,21 @@
 .ops[data-theme='light'] .input{ background:#f8fafc; border-color:#e2e8f0; color:#0f172a; }
 @media (max-width: 960px){ .ops .copilot-overlay{ grid-template-columns:1fr; } .ops .copilot-sidebar{ display:none; } }
 
+/* Mobile refinements */
+@media (max-width: 720px){
+  .ops .messages{ padding:12px; gap:10px; }
+  .ops .input{ padding:12px; min-height:40px; }
+  .ops .copilot-main .bar{ padding:10px 12px; }
+  .ops .input-bar{
+    position: sticky;
+    bottom: 0;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    z-index: 2;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+}
+
 /* Typing dots */
 .ops .typing{ display:inline-flex; gap:6px; align-items:center; height:1em; }
 .ops .typing .dot{ width:6px; height:6px; border-radius:50%; background: currentColor; opacity:0.35; animation: gl-typing 1.2s infinite ease-in-out; }

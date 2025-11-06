@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 export type Article = {
   id: string
@@ -82,7 +83,7 @@ export default function ArticlesSection() {
             ))}
           </div>
           <div className="articles-nav">
-            <a className="view-all" href="/articles">View all</a>
+            <Link className="view-all" to="/articles">View all</Link>
             <div className="arrows">
               <button className="nav-btn" aria-label="Previous" onClick={() => go(-1)}>←</button>
               <button className="nav-btn" aria-label="Next" onClick={() => go(1)}>→</button>

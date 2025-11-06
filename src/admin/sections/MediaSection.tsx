@@ -100,13 +100,13 @@ export default function MediaSection() {
 
   return (
     <div className="section">
-      <div className="ops-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, marginBottom: 12 }}>
-        <div>
+      <div className="card ops-media-head" style={{ marginBottom: 12 }}>
+        <div className="ops-media-info">
           <strong>Media Library</strong>
           <span className="ops-sub"> Store and manage images locally (IndexedDB)</span>
-          <div style={{ fontSize: 12, color: 'var(--ops-muted)' }}>Usage: {usage} {persisted === true ? '• Persistent' : persisted === false ? '• Volatile' : ''}</div>
+          <div className="ops-media-usage" style={{ fontSize: 12, color: 'var(--ops-muted)' }}>Usage: {usage} {persisted === true ? '• Persistent' : persisted === false ? '• Volatile' : ''}</div>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div className="ops-media-actions">
           <label className="ops-btn" style={{ cursor: 'pointer' }}>
             Upload
             <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => handleUpload(e.target.files)} />
@@ -119,7 +119,7 @@ export default function MediaSection() {
         <h3>Library</h3>
         {busy && <div style={{ color: 'var(--ops-muted)' }}>Uploading…</div>}
         {items.length === 0 && <div style={{ color: 'var(--ops-muted)' }}>No media yet. Upload images to get started.</div>}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
+        <div className="ops-media-grid">
           {items.map(meta => (
             <div key={meta.id} onClick={() => setSelected(meta)}>
               <MediaItem
@@ -132,62 +132,63 @@ export default function MediaSection() {
         </div>
       </div>
       {selected && (
-        // Off-canvas media details drawer (with metadata persistence)
-        <div style={{ position: 'fixed', top: 0, right: 0, width: 360, height: '100vh', background: 'var(--ops-blue-2)', color: 'var(--ops-text)', borderLeft: '1px solid var(--ops-border)', zIndex: 60, display: 'grid', gridTemplateRows: 'auto 1fr auto' }}>
-          <div style={{ padding: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--ops-border)' }}>
-            <strong>Details</strong>
-          </div>
-          <div style={{ padding: 12, display: 'grid', gap: 10, overflowY: 'auto' }}>
-            <MediaDetailsPreview id={selected.id} name={selected.name} />
-            <div style={{ display: 'grid', gap: 6 }}>
-              <span style={{ fontSize: 12, color: 'var(--ops-muted)' }}>Alt Text</span>
-              <input className="input" value={altText} onChange={(e) => setAltText(e.target.value)} placeholder="Describe the image" />
+        <>
+          <div className="ops-media-overlay" onClick={() => setSelected(null)} />
+          <div className="ops-media-drawer">
+            <div style={{ padding: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--ops-border)' }}>
+              <strong>Details</strong>
             </div>
-            <div style={{ display: 'grid', gap: 6 }}>
-              <span style={{ fontSize: 12, color: 'var(--ops-muted)' }}>File name / Title</span>
-              <input className="input" value={titleText} onChange={(e) => setTitleText(e.target.value)} placeholder="Title" />
-            </div>
-            <div style={{ display: 'grid', gap: 6 }}>
-              <span style={{ fontSize: 12, color: 'var(--ops-muted)' }}>Caption</span>
-              <input className="input" value={captionText} onChange={(e) => setCaptionText(e.target.value)} placeholder="Shown below the image" />
-            </div>
-            <div style={{ display: 'grid', gap: 6 }}>
-              <span style={{ fontSize: 12, color: 'var(--ops-muted)' }}>Description</span>
-              <textarea value={descText} onChange={(e) => setDescText(e.target.value)} placeholder="Optional description" />
-            </div>
-            <div style={{ display: 'grid', gap: 6 }}>
-              <span style={{ fontSize: 12, color: 'var(--ops-muted)' }}>File URL</span>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input className="input" value={fileUrl} onChange={() => {}} readOnly placeholder="https://..." />
-                <button className="button" onClick={async () => { try { await navigator.clipboard.writeText(fileUrl || ''); setCopied(true); setTimeout(()=>setCopied(false), 1000) } catch {} }} disabled={!fileUrl}>{copied ? 'Copied' : 'Copy'}</button>
+            <div style={{ padding: 12, display: 'grid', gap: 10, overflowY: 'auto' }}>
+              <MediaDetailsPreview id={selected.id} name={selected.name} />
+              <div style={{ display: 'grid', gap: 6 }}>
+                <span style={{ fontSize: 12, color: 'var(--ops-muted)' }}>Alt Text</span>
+                <input className="input" value={altText} onChange={(e) => setAltText(e.target.value)} placeholder="Describe the image" />
               </div>
-              {!!fileUrl && <a href={fileUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>Open</a>}
+              <div style={{ display: 'grid', gap: 6 }}>
+                <span style={{ fontSize: 12, color: 'var(--ops-muted)' }}>File name / Title</span>
+                <input className="input" value={titleText} onChange={(e) => setTitleText(e.target.value)} placeholder="Title" />
+              </div>
+              <div style={{ display: 'grid', gap: 6 }}>
+                <span style={{ fontSize: 12, color: 'var(--ops-muted)' }}>Caption</span>
+                <input className="input" value={captionText} onChange={(e) => setCaptionText(e.target.value)} placeholder="Shown below the image" />
+              </div>
+              <div style={{ display: 'grid', gap: 6 }}>
+                <span style={{ fontSize: 12, color: 'var(--ops-muted)' }}>Description</span>
+                <textarea value={descText} onChange={(e) => setDescText(e.target.value)} placeholder="Optional description" />
+              </div>
+              <div style={{ display: 'grid', gap: 6 }}>
+                <span style={{ fontSize: 12, color: 'var(--ops-muted)' }}>File URL</span>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input className="input" value={fileUrl} onChange={() => {}} readOnly placeholder="https://..." />
+                  <button className="button" onClick={async () => { try { await navigator.clipboard.writeText(fileUrl || ''); setCopied(true); setTimeout(()=>setCopied(false), 1000) } catch {} }} disabled={!fileUrl}>{copied ? 'Copied' : 'Copy'}</button>
+                </div>
+                {!!fileUrl && <a href={fileUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>Open</a>}
+              </div>
+            </div>
+            <div style={{ padding: 12, borderTop: '1px solid var(--ops-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <div>
+                <button className="button" onClick={() => setSelected(null)}>Close</button>
+              </div>
+              <div>
+                <button className="button" onClick={async () => {
+                  if (!selected) return
+                  try {
+                    setSavingMeta(true)
+                    const patch: any = {
+                      alt: altText.trim() || undefined,
+                      title: titleText.trim() || undefined,
+                      name: titleText.trim() || undefined,
+                      caption: captionText.trim() || undefined,
+                      description: descText.trim() || undefined,
+                    }
+                    await (AssetStore as any).updateMeta?.(selected.id, patch)
+                    setItems(prev => prev.map(x => x.id === selected.id ? { ...x, name: patch.name || x.name } : x))
+                  } finally { setSavingMeta(false) }
+                }}>{savingMeta ? 'Saving…' : 'Save'}</button>
+              </div>
             </div>
           </div>
-          <div style={{ padding: 12, borderTop: '1px solid var(--ops-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <div>
-              <button className="button" onClick={() => setSelected(null)}>Close</button>
-            </div>
-            <div>
-              <button className="button" onClick={async () => {
-                if (!selected) return
-                try {
-                  setSavingMeta(true)
-                  const patch: any = {
-                    alt: altText.trim() || undefined,
-                    title: titleText.trim() || undefined,
-                    name: titleText.trim() || undefined,
-                    caption: captionText.trim() || undefined,
-                    description: descText.trim() || undefined,
-                  }
-                  await (AssetStore as any).updateMeta?.(selected.id, patch)
-                  // Reflect updated name in list and selection
-                  setItems(prev => prev.map(x => x.id === selected.id ? { ...x, name: patch.name || x.name } : x))
-                } finally { setSavingMeta(false) }
-              }}>{savingMeta ? 'Saving…' : 'Save'}</button>
-            </div>
-          </div>
-        </div>
+        </>
       )}
     </div>
   )

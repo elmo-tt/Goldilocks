@@ -16,9 +16,11 @@ export default function OverviewSection() {
     <div className="section">
       <div className="card-grid">
         {kpi.map((item, i) => (
-          <div key={i} className="card" style={{ gridColumn: 'span 2' }}>
-            <h3>{item.label}</h3>
-            <div className="value">{item.value}</div>
+          <div key={i} className="card kpi-card">
+            <div className="kpi">
+              <div className="kpi-value">{item.value}</div>
+              <div className="kpi-label">{item.label}</div>
+            </div>
           </div>
         ))}
       </div>

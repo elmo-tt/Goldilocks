@@ -67,7 +67,7 @@ export default function StickyNav() {
             <li><a href="#about">About</a></li>
             <li><a href="#services">Services</a></li>
             <li><a href="#team">Team</a></li>
-            <li><Link to="/articles">Articles</Link></li>
+            <li><Link to="/articles">Blog</Link></li>
             <li><a href="#contact">Contact</a></li>
             <li>
               <Link to={authed ? '/admin' : '/login'}>{authed ? 'Admin' : 'Login'}</Link>
@@ -96,7 +96,7 @@ export default function StickyNav() {
           <li><a href="#about" onClick={() => setMenuOpen(false)}>About</a></li>
           <li><a href="#services" onClick={() => setMenuOpen(false)}>Services</a></li>
           <li><a href="#team" onClick={() => setMenuOpen(false)}>Team</a></li>
-          <li><Link to="/articles" onClick={() => setMenuOpen(false)}>Articles</Link></li>
+          <li><Link to="/articles" onClick={() => setMenuOpen(false)}>Blog</Link></li>
           <li><a href="#contact" onClick={() => setMenuOpen(false)}>Contact</a></li>
           <li>
             <Link to={authed ? '/admin' : '/login'} onClick={() => setMenuOpen(false)}>

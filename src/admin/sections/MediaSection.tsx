@@ -158,9 +158,20 @@ export default function MediaSection() {
               </div>
               <div style={{ display: 'grid', gap: 6 }}>
                 <span style={{ fontSize: 12, color: 'var(--ops-muted)' }}>File URL</span>
-                <div style={{ display: 'flex', gap: 6 }}>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   <input className="input" value={fileUrl} onChange={() => {}} readOnly placeholder="https://..." />
-                  <button className="button" onClick={async () => { try { await navigator.clipboard.writeText(fileUrl || ''); setCopied(true); setTimeout(()=>setCopied(false), 1000) } catch {} }} disabled={!fileUrl}>{copied ? 'Copied' : 'Copy'}</button>
+                  <button
+                    aria-label={copied ? 'Copied' : 'Copy URL'}
+                    title={copied ? 'Copied' : 'Copy URL'}
+                    onClick={async () => { try { await navigator.clipboard.writeText(fileUrl || ''); setCopied(true); setTimeout(()=>setCopied(false), 1000) } catch {} }}
+                    disabled={!fileUrl}
+                    style={{ width: 36, height: 36, borderRadius: 8, border: '1px solid var(--ops-border)', background: 'var(--ops-blue-2)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ops-text)' }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
                 </div>
                 {!!fileUrl && <a href={fileUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>Open</a>}
               </div>

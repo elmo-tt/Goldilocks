@@ -1,10 +1,16 @@
 .ops .copilot-overlay{ position:fixed; inset:0; height:100vh; background:rgba(8,12,22,0.92); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); display:grid; grid-template-columns:280px 1fr; z-index:100; }
 .ops[data-theme='light'] .copilot-overlay{ background:rgba(255,255,255,0.92); }
 .ops .copilot-sidebar{ border-right:1px solid var(--ops-border); background:var(--ops-blue-2); display:flex; flex-direction:column; }
+.ops[data-theme='light'] .copilot-sidebar{ background:#f8fafc; }
 .ops .copilot-sidebar .top{ display:flex; align-items:center; justify-content:space-between; padding:14px 12px; border-bottom:1px solid var(--ops-border); }
-.ops .copilot-list{ flex:1; overflow:auto; padding:8px; display:grid; gap:6px; align-content:start; grid-auto-rows:min-content; }
-.ops .copilot-list button{ width:100%; text-align:left; padding:10px 12px; background:transparent; border:1px solid transparent; border-radius:10px; color:var(--ops-text); }
-.ops .copilot-list button:hover{ background:var(--ops-blue-3); border-color:var(--ops-border); }
+.ops .copilot-list{ flex:1; overflow-y:auto; overflow-x:hidden; padding:8px; display:grid; gap:6px; align-content:start; grid-auto-rows:min-content; }
+.ops .copilot-list .list-item{ width:100%; text-align:left; padding:10px 8px 10px 12px; background:transparent; border:1px solid transparent; border-radius:10px; color:var(--ops-text); min-width:0; }
+.ops .copilot-list .list-item:hover{ background:var(--ops-blue-3); border-color:var(--ops-border); }
+.ops .copilot-list .list-item.active{ background:var(--ops-blue-3); border-color:var(--ops-border); }
+.ops[data-theme='light'] .copilot-list .list-item:hover{ background:#eef2ff; border-color:#c7d2fe; }
+.ops[data-theme='light'] .copilot-list .list-item.active{ background:#eaf1ff; border-color:#c7d2fe; color:#0f172a; }
+.ops .copilot-list .copilot-excerpt{ display:block; font-size:12px; color:var(--ops-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:36ch; max-width:100%; }
+@media (max-width: 720px){ .ops .copilot-list .copilot-excerpt{ width:28ch; } }
 .ops .copilot-main{ display:grid; grid-template-rows:auto 1fr auto; min-height:0; }
 .ops .copilot-main .bar{ display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--ops-border); }
 .ops .copilot-main .bar .copilot-min{ width:40px; height:40px; display:inline-flex; align-items:center; justify-content:center; border-radius:12px; background:#1b2a52; border:1px solid #27407a; color:#dfe8ff; cursor:pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.25); transition: transform .12s ease, filter .12s ease, background .12s ease, border-color .12s ease; }
@@ -17,8 +23,11 @@
 .ops .msg{ display:grid; gap:8px; background:var(--ops-blue-2); border:1px solid var(--ops-border); border-radius:12px; padding:12px 14px; max-width:720px; word-break:break-word; line-height:1.6; }
 .ops .msg.me{ background:#18233d; border-color:#22315a; align-self:flex-end; margin-left:0; }
 .ops[data-theme='light'] .msg.me{ background:#eef2ff; border-color:#c7d2fe; }
+.ops[data-theme='light'] .msg{ background:#ffffff; border-color:#e2e8f0; }
 .ops .input-bar{ display:grid; grid-template-columns:1fr auto; gap:8px; padding:12px; border-top:1px solid var(--ops-border); background:var(--ops-blue-2); }
 .ops .input{ width:100%; background:var(--ops-blue-3); color: var(--ops-text); border:1px solid var(--ops-border); border-radius:10px; padding:10px 12px; }
+.ops[data-theme='light'] .input-bar{ background:#ffffff; }
+.ops[data-theme='light'] .input{ background:#f8fafc; border-color:#e2e8f0; color:#0f172a; }
 @media (max-width: 960px){ .ops .copilot-overlay{ grid-template-columns:1fr; } .ops .copilot-sidebar{ display:none; } }
 
 /* Typing dots */
@@ -52,3 +61,17 @@
 .ops .copilot-min svg{ pointer-events:none; }
 .ops[data-theme='light'] .copilot-min{ background:#eef2ff; border:1px solid #c7d2fe; color:#1e293b; }
 .ops[data-theme='light'] .copilot-min:hover{ background:#e5e9ff; }
+
+/* Compact icon buttons (used for Trash etc.) */
+.ops .icon-btn{ width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; border:none; background:transparent; color:var(--ops-text); cursor:pointer; transition: color .12s ease, filter .12s ease; }
+.ops .icon-btn:hover{ background: transparent; }
+.ops .icon-btn:active{ filter: brightness(1.05); }
+.ops[data-theme='light'] .icon-btn:hover{ background: transparent; }
+.ops .icon-btn.danger:hover{ background: transparent; color:#ef4444; }
+.ops .icon-btn.danger:active{ background: transparent; color:#ef4444; }
+/* Ensure no UA/override background sneaks in */
+.ops .icon-btn,
+.ops .icon-btn:hover,
+.ops .icon-btn:focus,
+.ops .icon-btn:focus-visible,
+.ops .icon-btn:active{ background: transparent !important; box-shadow: none !important; }

@@ -198,6 +198,9 @@ export default function CopilotOverlay({
   const [input, setInput] = useState('')
   const [autoMinimize, setAutoMinimize] = useState(true)
   const messagesRef = useRef<HTMLDivElement | null>(null)
+  // Inline rename state for chat titles
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
 
   const active = useMemo(() => convos.find(c => c.id === activeId)!, [convos, activeId])
 
@@ -609,17 +612,51 @@ export default function CopilotOverlay({
         </div>
         <div className="copilot-list">
           {convos.map(c => (
-            <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center' }}>
-              <button onClick={() => setActiveId(c.id)} style={{ background: c.id === activeId ? '#112044' : 'transparent', borderColor: c.id === activeId ? '#17306b' : 'transparent' }}>
+            <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '1fr min-content', alignItems: 'center' }}>
+              <button onClick={() => setActiveId(c.id)} className={`list-item${c.id === activeId ? ' active' : ''}`} style={{ minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Bot size={16} />
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{c.title}</div>
-                    <div style={{ fontSize: 12, color: 'var(--ops-muted)' }}>{c.messages[c.messages.length - 1]?.content.slice(0, 42)}</div>
+                  <div style={{ minWidth: 0 }}>
+                    {renamingId === c.id ? (
+                      <input
+                        value={renameValue}
+                        autoFocus
+                        onClick={e => e.stopPropagation()}
+                        onChange={e => setRenameValue(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            const v = (renameValue || '').trim() || 'New chat'
+                            setConvos(prev => prev.map(x => x.id === c.id ? { ...x, title: v } : x))
+                            setRenamingId(null)
+                          } else if (e.key === 'Escape') {
+                            setRenamingId(null)
+                          }
+                        }}
+                        onBlur={() => {
+                          const v = (renameValue || '').trim() || c.title || 'New chat'
+                          setConvos(prev => prev.map(x => x.id === c.id ? { ...x, title: v } : x))
+                          setRenamingId(null)
+                        }}
+                        style={{ height: 24, padding: '2px 6px', fontWeight: 600, border: '1px solid var(--ops-border)', borderRadius: 6, background: 'transparent', color: 'var(--ops-text)', margin: '0 0 2px' }}
+                      />
+                    ) : (
+                      <div
+                        style={{ fontWeight: 600, cursor: 'text', margin: '0 0 2px' }}
+                        onClick={e => {
+                          e.stopPropagation()
+                          setActiveId(c.id)
+                          setRenamingId(c.id)
+                          setRenameValue(c.title || '')
+                        }}
+                      >
+                        {c.title}
+                      </div>
+                    )}
+                    <div className="copilot-excerpt" style={{ width: '32ch', marginTop: 0 }}>{c.messages[c.messages.length - 1]?.content || ''}</div>
                   </div>
                 </div>
               </button>
-              <button className="ops-btn" onClick={() => deleteChat(c.id)} title="Delete chat" style={{ padding: 6, marginLeft: 6 }}>
+              <button className="icon-btn danger" onClick={() => deleteChat(c.id)} title="Delete chat" style={{ marginLeft: 0 }}>
                 <Trash2 size={14} />
               </button>
             </div>

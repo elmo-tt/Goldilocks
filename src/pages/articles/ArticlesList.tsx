@@ -1,37 +1,196 @@
-import { Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { ArticlesStore } from '@/shared/articles/store'
+import './ArticlesList.css'
+import StickyNav from '@/components/StickyNav'
+import '@/components/StickyNav.css'
+import FooterSection from '@/sections/FooterSection'
+import '@/sections/FooterSection.css'
+import { useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { ArticlesStore, type Article } from '@/shared/articles/store'
+import { AssetStore } from '@/shared/assets/store'
+import { PRACTICE_AREAS } from '@/admin/data/goldlaw'
 
-export default function ArticlesList() {
-  const [items, setItems] = useState(() => ArticlesStore.published())
+function formatDate(ts?: number) {
+  if (!ts) return ''
+  const d = new Date(ts)
+  return d.toLocaleDateString(undefined, { month: 'long', day: 'numeric' })
+}
+function readTime(text?: string) {
+  if (!text) return '1 min read'
+  const words = text.trim().split(/\s+/).length
+  const mins = Math.max(1, Math.round(words / 225))
+  return `${mins} min read`
+}
+
+function usePublished() {
+  const [items, setItems] = useState<Article[]>(() => ArticlesStore.published())
   useEffect(() => {
     const on = () => setItems(ArticlesStore.published())
     window.addEventListener('gl:articles-updated', on as any)
     return () => window.removeEventListener('gl:articles-updated', on as any)
   }, [])
+  return items
+}
+
+function useAssetUrl(src?: string) {
+  const [url, setUrl] = useState<string | undefined>(undefined)
+  useEffect(() => {
+    let mounted = true
+    let revokeId: string | null = null
+    const run = async () => {
+      if (!src) { setUrl(undefined); return }
+      if (src.startsWith('asset:')) {
+        const id = src.slice(6)
+        revokeId = id
+        const u = await AssetStore.getUrl(id)
+        if (mounted) setUrl(u)
+      } else {
+        setUrl(src)
+      }
+    }
+    run()
+    return () => { mounted = false; if (revokeId) AssetStore.revokeUrl(revokeId) }
+  }, [src])
+  return url
+}
+
+function Eyebrow({ a }: { a: Article }) {
+  const label = useMemo(() => PRACTICE_AREAS.find(p => p.key === a.category)?.label || 'Article', [a.category])
+  return <div className="eyebrow">{label}</div>
+}
+
+function Hero({ a }: { a: Article }) {
+  const heroSrc = useAssetUrl(a.heroDataUrl || a.heroUrl)
   return (
-    <main style={{ padding: '80px 24px 24px' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <h1 style={{ marginBottom: 16 }}>Articles</h1>
-        {items.length === 0 && (
-          <div style={{ color: '#64748b' }}>No articles yet. Publish from the admin panel.</div>
-        )}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
-          {items.map(a => (
-            <article key={a.id} style={{ border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', background: '#fff' }}>
-              {(a.heroDataUrl || a.heroUrl) && (
-                <img src={a.heroDataUrl || a.heroUrl} alt="hero" style={{ width: '100%', height: 160, objectFit: 'cover' }} />
-              )}
-              <div style={{ padding: 12 }}>
-                <h3 style={{ margin: '0 0 8px' }}>
-                  <Link to={`/articles/${a.slug}`}>{a.title}</Link>
-                </h3>
-                {a.excerpt && <p style={{ margin: 0, color: '#475569' }}>{a.excerpt}</p>}
-              </div>
-            </article>
-          ))}
+    <section className="blog blog-hero">
+      <div className="blog-inner">
+        <h1 className="blog-title">Blog</h1>
+        <div className="blog-hero-grid">
+          <div className="blog-hero-media">
+            {heroSrc ? (
+              <img src={heroSrc} alt="featured" className="blog-hero-img" />
+            ) : (
+              <div className="blog-hero-fallback" />
+            )}
+          </div>
+          <div className="blog-hero-content">
+            <Eyebrow a={a} />
+            <h2 className="blog-hero-h2">
+              <a href={`/articles/${a.slug}`}>{a.title}</a>
+            </h2>
+            {a.excerpt && <p className="blog-hero-excerpt">{a.excerpt}</p>}
+            <div className="meta-row" style={{ marginTop: 6 }}>
+              <span>{formatDate(a.updatedAt || a.createdAt)}</span>
+              <span>•</span>
+              <span>{readTime(a.body)}</span>
+            </div>
+          </div>
         </div>
       </div>
-    </main>
+    </section>
+  )
+}
+
+export default function ArticlesList() {
+  const items = usePublished()
+  const [sp, setSp] = useSearchParams()
+  const pageSize = 9
+  const categorySel = (sp.get('category') || sp.get('tag') || '').trim()
+  const page = Math.max(1, parseInt(sp.get('page') || '1', 10) || 1)
+
+  const featured = useMemo(() => {
+    const exp = items.find(a => a.featured && a.status === 'published')
+    if (exp) return exp
+    const sorted = [...items].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+    return sorted[0]
+  }, [items])
+
+  const presentCats = useMemo(() => {
+    const s = new Set<string>()
+    for (const a of items) { const k = a.category?.trim(); if (k) s.add(k) }
+    return s
+  }, [items])
+  const chips = useMemo(() => PRACTICE_AREAS.filter(p => presentCats.has(p.key)), [presentCats])
+
+  const filtered = useMemo(() => {
+    const base = items.filter(a => !featured || a.id !== featured.id)
+    if (!categorySel) return base
+    return base.filter(a => (a.category || '') === categorySel)
+  }, [items, featured, categorySel])
+
+  const shown = filtered.slice(0, page * pageSize)
+  const hasMore = filtered.length > shown.length
+
+  const setCategory = (key: string) => {
+    const next = new URLSearchParams(sp)
+    if (key) { next.set('category', key); next.delete('tag') } else { next.delete('category'); next.delete('tag') }
+    next.set('page', '1')
+    setSp(next, { replace: false })
+  }
+  const loadMore = () => {
+    const next = new URLSearchParams(sp)
+    next.set('page', String(page + 1))
+    setSp(next, { replace: false })
+  }
+
+  return (
+    <>
+      <StickyNav />
+      {/* Anchor to preserve StickyNav topbar behavior */}
+      <div id="hero" style={{ position: 'absolute', top: 0, height: 1, width: 1, overflow: 'hidden' }} />
+      <main className="blog">
+        {featured && <Hero a={featured} />}
+
+        <section>
+          <div className="blog-inner">
+            <div className="blog-content">
+              {/* Filters */}
+              <div className="blog-filters">
+                <button className={`blog-chip ${categorySel ? '' : 'active'}`} onClick={() => setCategory('')}>All</button>
+                {chips.map(p => (
+                  <button key={p.key} className={`blog-chip ${categorySel === p.key ? 'active' : ''}`} onClick={() => setCategory(p.key)}>{p.label}</button>
+                ))}
+              </div>
+
+              {/* Grid */}
+              {shown.length === 0 ? (
+                <div style={{ color: 'rgba(255,255,255,0.7)' }}>No articles for this filter yet.</div>
+              ) : (
+                <div className="blog-grid">
+                  {shown.map(a => (
+                    <Card key={a.id} a={a} />
+                  ))}
+                </div>
+              )}
+
+              {/* Load more */}
+              {hasMore && (
+                <div className="blog-more">
+                  <button className="btn blue" onClick={loadMore}>Load more</button>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      </main>
+      <FooterSection />
+    </>
+  )
+}
+
+function Card({ a }: { a: Article }) {
+  return (
+    <article className="blog-card">
+      <div style={{ display: 'grid', gap: 8 }}>
+        <Eyebrow a={a} />
+        <h3 className="blog-card-title">
+          <a href={`/articles/${a.slug}`}>{a.title}</a>
+        </h3>
+      </div>
+      <div className="meta-row" style={{ marginTop: 'auto' }}>
+        <span>{formatDate(a.updatedAt || a.createdAt)}</span>
+        <span>•</span>
+        <span>{readTime(a.body)}</span>
+      </div>
+    </article>
   )
 }

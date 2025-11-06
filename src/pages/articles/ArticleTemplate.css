@@ -28,3 +28,9 @@
     line-height: 1.4;
   }
 }
+
+/* Match Blog page top spacing under the fixed navbar */
+.article-shell { padding-top: 100px; }
+@media (min-width: 769px) {
+  .article-shell { padding-top: 152px; }
+}

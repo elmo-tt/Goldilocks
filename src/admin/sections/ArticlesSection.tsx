@@ -105,7 +105,10 @@ function ListView({ onCreate, onEdit }: { onCreate: () => void; onEdit: (id: str
                 <div style={{ fontWeight: 600 }}>{a.title}</div>
                 <div style={{ fontSize: 12, color: 'var(--ops-muted)' }}>{a.slug} • {new Date(a.updatedAt).toLocaleString()}</div>
               </div>
-              <div className="ops-list-status"><StatusBadge status={a.status} /></div>
+              <div className="ops-list-status" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                {a.featured && <span style={{ background: 'rgba(59,130,246,0.18)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.35)', padding: '4px 8px', borderRadius: 999, fontSize: 12 }}>Featured</span>}
+                <StatusBadge status={a.status} />
+              </div>
               <div className="ops-list-actions">
                 <button className="button" onClick={() => onEdit(a.id)}>Edit</button>
                 {a.status === 'published' && <a className="button" href={`/articles/${a.slug}`} target="_blank" rel="noreferrer">View</a>}
@@ -122,6 +125,7 @@ function EditorView({ initial, onBack }: { initial?: Article; onBack: () => void
   const [title, setTitle] = useState(initial?.title || '')
   const [slug, setSlug] = useState(initial?.slug || '')
   const [tags, setTags] = useState((initial?.tags || []).join(', '))
+  const [category, setCategory] = useState<string>(initial?.category || '')
   const [heroUrl, setHeroUrl] = useState(initial?.heroUrl || '')
   const [heroDataUrl, setHeroDataUrl] = useState(initial?.heroDataUrl || '')
   const [excerpt, setExcerpt] = useState(initial?.excerpt || '')
@@ -143,6 +147,7 @@ function EditorView({ initial, onBack }: { initial?: Article; onBack: () => void
   const [keyphrase, setKeyphrase] = useState(initial?.keyphrase || '')
   const [canonicalUrl, setCanonicalUrl] = useState(initial?.canonicalUrl || '')
   const [noindex, setNoindex] = useState<boolean>(!!initial?.noindex)
+  const [featured, setFeatured] = useState<boolean>(!!initial?.featured)
 
   useEffect(() => { if (!slug && title) setSlug(slugify(title)) }, [title, slug])
 
@@ -186,17 +191,16 @@ function EditorView({ initial, onBack }: { initial?: Article; onBack: () => void
     reader.readAsDataURL(file)
   }
 
-  const aiDraft = () => {
-    const now = new Date().toLocaleDateString()
-    if (!excerpt) setExcerpt(`Summary: Legal takeaways and practical steps after recent events (${now}).`)
-    if (!body) setBody(`# ${title || 'Untitled'}\n\nIntro — put the headline in context and explain why it matters for Florida injury victims.\n\n1) Facts and what we know\n2) What Florida law says (duty, negligence, damages)\n3) What to do next (evidence, medical, report)\n\nCTA: Call GOLDLAW now or request a free consultation.\n\nDisclaimer: This post is for educational purposes and is not legal advice.`)
-  }
+  // removed aiDraft helper per request; editor no longer exposes AI panel
 
   const save = async (nextStatus?: Article['status']) => {
     setSaving(true)
     try {
       // Enforce simple editorial rules (strip Intro/Conclusion headings; ensure CTA)
-      const enforcedBody = enforceEditorialRules(body, tags.split(',').map(s => s.trim()).filter(Boolean), title, excerpt)
+      // Include category label in tag context for editorial normalization
+      const catLabel = (PRACTICE_AREAS.find(p => p.key === category)?.label || category || '').trim()
+      const tagArr = tags.split(',').map(s => s.trim()).filter(Boolean)
+      const enforcedBody = enforceEditorialRules(body, [catLabel, ...tagArr].filter(Boolean), title, excerpt)
 
       // For local backend, inline assets into body so it doesn't depend on local IndexedDB.
       // For Supabase, keep asset: tokens and resolve at render time via signed URLs.
@@ -205,7 +209,8 @@ function EditorView({ initial, onBack }: { initial?: Article; onBack: () => void
         id: initial?.id,
         title: title.trim() || 'Untitled',
         slug: slug.trim() || slugify(title || 'post'),
-        tags: tags.split(',').map(s => s.trim()).filter(Boolean),
+        tags: tagArr,
+        category: category || undefined,
         heroUrl: heroUrl.trim() || undefined,
         heroDataUrl: heroDataUrl || undefined,
         excerpt,
@@ -216,7 +221,17 @@ function EditorView({ initial, onBack }: { initial?: Article; onBack: () => void
         keyphrase: keyphrase.trim() || undefined,
         canonicalUrl: canonicalUrl.trim() || undefined,
         noindex,
+        featured,
       })
+      // Ensure only one featured article at a time
+      if (featured) {
+        const all = ArticlesStore.all()
+        for (const a of all) {
+          if (a.id !== saved.id && a.featured) {
+            try { ArticlesStore.save({ id: a.id, title: a.title, featured: false }) } catch {}
+          }
+        }
+      }
       if (!saved.heroDataUrl && heroDataUrl && !heroUrl) {
         window.alert('Your uploaded image was too large to store and was not saved. Please use the Image URL field or upload a smaller image.')
       }
@@ -272,8 +287,13 @@ function EditorView({ initial, onBack }: { initial?: Article; onBack: () => void
               <Field label="Slug">
                 <input className="input" value={slug} onChange={e => setSlug(slugify(e.target.value))} placeholder="auto-from-title" />
               </Field>
-              <Field label="Tags (comma-separated)">
-                <input className="input" value={tags} onChange={e => setTags(e.target.value)} placeholder="truck, safety, litigation" />
+              <Field label="Category">
+                <select className="input" value={category} onChange={e => setCategory(e.target.value)}>
+                  <option value="">— Select —</option>
+                  {PRACTICE_AREAS.map(p => (
+                    <option key={p.key} value={p.key}>{p.label}</option>
+                  ))}
+                </select>
               </Field>
             </div>
 
@@ -387,11 +407,19 @@ function EditorView({ initial, onBack }: { initial?: Article; onBack: () => void
         </div>
 
         <div className="panel">
-          <h4>AI Helpers (stub)</h4>
-          <div className="actions">
-            <button className="button" onClick={aiDraft}>Generate Draft</button>
+          <h4>Tags</h4>
+          <Field label="Tags (comma-separated)">
+            <input className="input" value={tags} onChange={e => setTags(e.target.value)} placeholder="truck, safety, litigation" />
+          </Field>
+        </div>
+
+        <div className="panel">
+          <h4>Featured</h4>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input id="featured" type="checkbox" checked={featured} onChange={e => setFeatured(e.target.checked)} />
+            <label htmlFor="featured">Feature this article</label>
           </div>
-          <div style={{ fontSize: 12, color: 'var(--ops-muted)', marginTop: 6 }}>This is a placeholder; no external AI calls yet.</div>
+          <div style={{ fontSize: 12, color: 'var(--ops-muted)', marginTop: 6 }}>Only one article can be featured. Enabling this will un-feature any other.</div>
         </div>
 
         <div className="panel">
@@ -604,9 +632,20 @@ function MediaPicker({ open, items, onClose, onSelect }: { open: boolean; items:
             </div>
             <div style={{ display: 'grid', gap: 6 }}>
               <span style={{ fontSize: 12, color: 'var(--ops-muted)' }}>File URL</span>
-              <div style={{ display: 'flex', gap: 6 }}>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <input className="input" value={fileUrl} onChange={() => {}} readOnly placeholder="https://..." />
-                <button className="button" onClick={async () => { try { await navigator.clipboard.writeText(fileUrl || ''); setCopied(true); setTimeout(()=>setCopied(false), 1000) } catch {} }} disabled={!fileUrl}>{copied ? 'Copied' : 'Copy'}</button>
+                <button
+                  aria-label={copied ? 'Copied' : 'Copy URL'}
+                  title={copied ? 'Copied' : 'Copy URL'}
+                  onClick={async () => { try { await navigator.clipboard.writeText(fileUrl || ''); setCopied(true); setTimeout(()=>setCopied(false), 1000) } catch {} }}
+                  disabled={!fileUrl}
+                  style={{ width: 36, height: 36, borderRadius: 8, border: '1px solid var(--ops-border)', background: 'var(--ops-blue-2)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ops-text)' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                </button>
               </div>
               {!!fileUrl && <a href={fileUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12 }}>Open</a>}
             </div>

@@ -6,6 +6,7 @@ export type Article = {
   slug: string
   title: string
   tags: string[]
+  category?: string
   heroUrl?: string
   heroDataUrl?: string
   excerpt: string
@@ -18,6 +19,7 @@ export type Article = {
   keyphrase?: string
   canonicalUrl?: string
   noindex?: boolean
+  featured?: boolean
 }
 
 function slugify(s: string) {
@@ -93,6 +95,7 @@ export const CloudArticlesStore = {
       slug: uniqueSlug || (prev.slug as string) || slugify(input.title),
       title: input.title || (prev.title as string) || 'Untitled',
       tags: (input.tags !== undefined ? input.tags : prev.tags) || [],
+      category: (input as any).category !== undefined ? (input as any).category : (prev as any)?.category,
       heroUrl: (input.heroUrl !== undefined ? input.heroUrl : prev.heroUrl),
       heroDataUrl: (input.heroDataUrl !== undefined ? input.heroDataUrl : prev.heroDataUrl),
       excerpt: (input.excerpt !== undefined ? input.excerpt : prev.excerpt) || '',
@@ -105,6 +108,7 @@ export const CloudArticlesStore = {
       keyphrase: (input as any).keyphrase !== undefined ? (input as any).keyphrase : (prev as any).keyphrase,
       canonicalUrl: (input as any).canonicalUrl !== undefined ? (input as any).canonicalUrl : (prev as any).canonicalUrl,
       noindex: (input as any).noindex !== undefined ? (input as any).noindex : (prev as any).noindex,
+      featured: (input as any).featured !== undefined ? (input as any).featured : (prev as any)?.featured,
     }
     let { data, error } = await supabase.from('articles').upsert(next as any, { onConflict: 'id' }).select().limit(1)
     if (error) {
@@ -126,6 +130,8 @@ export const CloudArticlesStore = {
         keyphrase: (next as any).keyphrase,
         canonicalUrl: (next as any).canonicalUrl,
         noindex: (next as any).noindex,
+        // intentionally omitting 'category' to avoid schema errors when column is absent
+        // intentionally omitting 'featured' to avoid schema errors when column is absent
       }
       const res = await supabase.from('articles').upsert(minimal as any, { onConflict: 'id' }).select().limit(1)
       if (res.error) throw res.error

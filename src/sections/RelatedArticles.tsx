@@ -1,5 +1,6 @@
 // Use full page navigation for reliable top-of-page scroll
 import { ArticlesStore } from '@/shared/articles/store'
+import { PRACTICE_AREAS } from '@/admin/data/goldlaw'
 
 function formatDate(ts: number) {
   const d = new Date(ts)
@@ -28,7 +29,7 @@ export default function RelatedArticles({ currentSlug, limit = 3 }: { currentSlu
         {items.map(a => (
           <article key={a.id} className="related-card">
             <div className="related-top">
-              {a.tags?.length ? <div className="eyebrow">{a.tags[0]}</div> : <div className="eyebrow">Article</div>}
+              <div className="eyebrow">{PRACTICE_AREAS.find(p => p.key === (a as any).category)?.label || 'Article'}</div>
               <h3 className="related-h3"><a href={`/articles/${a.slug}`}>{a.title}</a></h3>
             </div>
             <div className="related-bottom">

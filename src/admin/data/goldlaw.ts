@@ -17,7 +17,7 @@ export const LAWYERS: Lawyer[] = [
 ];
 
 export const PRACTICE_AREAS: PracticeArea[] = [
-  { key: "personal-injury-wpb", label: "Personal Injury (West Palm Beach)", url: "https://goldlaw.com/west-palm-beach-personal-injury-lawyer/" },
+  { key: "personal-injury-wpb", label: "Personal Injury", url: "https://goldlaw.com/west-palm-beach-personal-injury-lawyer/" },
   { key: "accidental-drownings", label: "Accidental Drownings", url: "https://goldlaw.com/accidental-drownings/" },
   { key: "addiction-rehab", label: "Addiction Rehab Abuse Injuries", url: "https://goldlaw.com/addiction-rehab-abuse-injuries/" },
   { key: "aed-liability", label: "AED Liability", url: "https://goldlaw.com/aed-liability/" },
@@ -31,7 +31,7 @@ export const PRACTICE_AREAS: PracticeArea[] = [
   { key: "construction", label: "Construction Site Accidents", url: "https://goldlaw.com/west-palm-beach-construction-site-injury-attorney/" },
   { key: "cruise", label: "Cruise Ship Injury", url: "https://goldlaw.com/cruise-ship-accident-injury/" },
   { key: "heavy-machinery", label: "Heavy Machinery Accident", url: "https://goldlaw.com/heavy-machinery-accident-injury/" },
-  { key: "human-trafficking", label: "Human Trafficking Liability", url: "https://goldlaw.com/west-palm-beach-human-trafficking-liability-lawyer/" },
+  { key: "human-trafficking", label: "Human Trafficking", url: "https://goldlaw.com/west-palm-beach-human-trafficking-liability-lawyer/" },
   { key: "legal-malpractice", label: "Legal Malpractice", url: "https://goldlaw.com/legal-malpractice/" },
   { key: "medical-malpractice", label: "Medical Malpractice", url: "https://goldlaw.com/medical-malpractice/" },
   { key: "motorcycle", label: "Motorcycle Accidents", url: "https://goldlaw.com/motorcycle-accident-injury/" },
@@ -48,8 +48,8 @@ export const PRACTICE_AREAS: PracticeArea[] = [
   { key: "trucking", label: "Trucking Accidents", url: "https://goldlaw.com/trucking-accident-injury/" },
   { key: "wrongful-death", label: "Wrongful Death", url: "https://goldlaw.com/wrongful-death/" },
   { key: "uber-lyft", label: "Uber/Lyft Accidents", url: "https://goldlaw.com/west-palm-beach-uber-lyft-accident-lawyer/" },
-  { key: "workers-comp", label: "Workers’ Compensation (PSL)", url: "https://goldlaw.com/port-st-lucie-workers-compensation-lawyer/" },
-  { key: "catastrophic-injury", label: "Catastrophic Injury (PSL)", url: "https://goldlaw.com/port-st-lucie-catastrophic-injury-attorney/" }
+  { key: "workers-comp", label: "Workers’ Compensation", url: "https://goldlaw.com/port-st-lucie-workers-compensation-lawyer/" },
+  { key: "catastrophic-injury", label: "Catastrophic Injury", url: "https://goldlaw.com/port-st-lucie-catastrophic-injury-attorney/" }
 ];
 
 export const OFFICES: Office[] = [

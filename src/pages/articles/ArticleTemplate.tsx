@@ -1,7 +1,8 @@
 import '@/sections/HowItWorksSection.css'
 import '@/sections/HeroSection.css'
 import './ArticleTemplate.css'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { PRACTICE_AREAS } from '@/admin/data/goldlaw'
 import { AssetStore } from '@/shared/assets/store'
 import DOMPurify from 'dompurify'
 import ReactMarkdown from 'react-markdown'
@@ -229,7 +230,7 @@ export default function ArticleTemplate({ article }: { article: Article }) {
   }, [heroSrc])
   return (
     <>
-      <section className="hiw" style={{ paddingTop: 145 }}>
+      <section className="hiw article-shell">
         <div className="hiw-inner" style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ display: 'grid', rowGap: 16 }}>
             <div
@@ -243,7 +244,7 @@ export default function ArticleTemplate({ article }: { article: Article }) {
                 fontWeight: 700,
               }}
             >
-              {article.tags?.[0] || 'Article'}
+              {useMemo(() => PRACTICE_AREAS.find(p => p.key === article.category)?.label || 'Article', [article.category])}
             </div>
             <h1 className="hiw-title" style={{ margin: 0, fontSize: 40, fontWeight: 400, lineHeight: 1.25 }}>
               <span className="strong">{article.title}</span>

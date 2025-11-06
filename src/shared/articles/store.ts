@@ -8,6 +8,7 @@ export type Article = {
   slug: string
   title: string
   tags: string[]
+  category?: string
   heroUrl?: string
   heroDataUrl?: string
   excerpt: string
@@ -20,6 +21,7 @@ export type Article = {
   keyphrase?: string
   canonicalUrl?: string
   noindex?: boolean
+  featured?: boolean
 }
 
 const STORAGE_KEY = 'gl_articles'
@@ -65,6 +67,7 @@ const LocalArticlesStore = {
       slug,
       title: (input.title ?? existing?.title ?? 'Untitled') as string,
       tags: (input.tags !== undefined ? input.tags : (existing?.tags ?? [])) as string[],
+      category: (input as any).category !== undefined ? (input as any).category : (existing as any)?.category,
       heroUrl: (input.heroUrl !== undefined ? input.heroUrl : existing?.heroUrl),
       heroDataUrl: (input.heroDataUrl !== undefined ? input.heroDataUrl : existing?.heroDataUrl),
       excerpt: (input.excerpt !== undefined ? input.excerpt : (existing?.excerpt ?? '')) as string,
@@ -77,6 +80,7 @@ const LocalArticlesStore = {
       keyphrase: (input as any).keyphrase !== undefined ? (input as any).keyphrase : (existing as any)?.keyphrase,
       canonicalUrl: (input as any).canonicalUrl !== undefined ? (input as any).canonicalUrl : (existing as any)?.canonicalUrl,
       noindex: (input as any).noindex !== undefined ? (input as any).noindex : (existing as any)?.noindex,
+      featured: (input as any).featured !== undefined ? (input as any).featured : (existing as any)?.featured,
     }
     const applyIntoList = () => {
       if (existing) {
@@ -139,7 +143,7 @@ if (getBackend() === 'supabase') {
     if (!Array.isArray(remote)) return
     const local = readAll()
     if (local.length === 0) { writeAll(remote as Article[]); return }
-    // Merge by id, prefer the newer updatedAt
+    // Merge by id, prefer the newer updatedAt. Preserve local-only flags when remote schema lacks them.
     const map = new Map<string, Article>()
     for (const r of remote as Article[]) map.set(r.id, r)
     const merged: Article[] = []
@@ -147,7 +151,20 @@ if (getBackend() === 'supabase') {
     for (const l of local) {
       const r = map.get(l.id)
       if (r) {
-        merged.push((r.updatedAt >= l.updatedAt) ? r : l)
+        if (r.updatedAt >= l.updatedAt) {
+          const chosen: Article = { ...r }
+          // If remote doesn't carry 'featured' but local does, keep local value.
+          if ((chosen as any).featured === undefined && (l as any).featured !== undefined) {
+            (chosen as any).featured = (l as any).featured
+          }
+          // Preserve local-only 'category' if remote lacks it
+          if ((chosen as any).category === undefined && (l as any).category !== undefined) {
+            (chosen as any).category = (l as any).category
+          }
+          merged.push(chosen)
+        } else {
+          merged.push(l)
+        }
         seen.add(l.id)
       } else {
         merged.push(l)

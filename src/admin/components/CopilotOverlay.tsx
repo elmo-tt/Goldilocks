@@ -258,12 +258,25 @@ export default function CopilotOverlay({
       if (end && end.scrollIntoView) {
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            try { end.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'end' }) } catch { el.scrollTop = el.scrollHeight }
+            try { end.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'end' }) } catch {}
+            try { (el as any).scrollTo ? (el as any).scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' }) : (el.scrollTop = el.scrollHeight) } catch { el.scrollTop = el.scrollHeight }
           })
         })
       } else {
         el.scrollTop = el.scrollHeight
       }
+    } catch {}
+  }
+  const ensureBottom = (tries = 6, delay = 60) => {
+    try {
+      scrollToBottom(false)
+      if (tries <= 1) return
+      let t = 1
+      const tick = () => {
+        scrollToBottom(false)
+        if (++t <= tries) setTimeout(tick, delay)
+      }
+      setTimeout(tick, delay)
     } catch {}
   }
   // Auto-scroll to bottom on new messages / layout changes
@@ -278,11 +291,11 @@ export default function CopilotOverlay({
       try { setInputH(inputBarRef.current?.offsetHeight || 72) } catch { setInputH(72) }
     }
     measure()
-    const onResize = () => measure()
+    const onResize = () => { measure(); ensureBottom(4, 50) }
     window.addEventListener('resize', onResize)
     // iOS/mobile: visual viewport changes when keyboard shows/hides
     const vv = (window as any).visualViewport as any | undefined
-    const onVv = () => { measure(); scrollToBottom(false) }
+    const onVv = () => { measure(); ensureBottom(5, 60) }
     try { vv?.addEventListener('resize', onVv); vv?.addEventListener('scroll', onVv) } catch {}
     // Observe input bar height changes (button wraps, safe-area, etc.)
     let ro: ResizeObserver | null = null
@@ -292,7 +305,7 @@ export default function CopilotOverlay({
         ro.observe(inputBarRef.current)
       }
     } catch {}
-    const t = setTimeout(() => { measure(); scrollToBottom(false) }, 0)
+    const t = setTimeout(() => { measure(); ensureBottom(4, 50) }, 0)
     return () => {
       window.removeEventListener('resize', onResize)
       try { vv?.removeEventListener('resize', onVv); vv?.removeEventListener('scroll', onVv) } catch {}
@@ -305,7 +318,7 @@ export default function CopilotOverlay({
   useEffect(() => {
     const onFocusIn = (e: Event) => {
       if (inputBarRef.current && (e.target instanceof Element) && inputBarRef.current.contains(e.target)) {
-        requestAnimationFrame(() => { requestAnimationFrame(() => scrollToBottom(false)) })
+        requestAnimationFrame(() => { requestAnimationFrame(() => ensureBottom(5, 60)) })
       }
     }
     window.addEventListener('focusin', onFocusIn)
@@ -320,6 +333,7 @@ export default function CopilotOverlay({
     const userMsg: Message = { id: newId('m'), role: 'user', content: text, ts: Date.now() }
     const cmd = parseCommand(text, PRACTICE_AREAS)
     setConvos(prev => prev.map(c => c.id === activeId ? { ...c, title: c.messages.length <= 1 ? summarizeTitle(text) : c.title, messages: [...c.messages, userMsg] } : c))
+    setTimeout(() => scrollToBottom(true), 0)
     setInput('')
 
     let reply = ''
@@ -332,6 +346,7 @@ export default function CopilotOverlay({
       case 'NAVIGATE': {
         reply = `Navigating to ${cmd.target}.`
         setConvos(prev => prev.map(c => c.id === activeId ? { ...c, messages: [...c.messages, { id: newId('m'), role: 'assistant', content: reply, ts: Date.now() }] } : c))
+        setTimeout(() => scrollToBottom(true), 0)
         onNavigate(cmd.target, { minimize: autoMinimize })
         break
       }
@@ -378,6 +393,7 @@ export default function CopilotOverlay({
         const thinkingId = newId('m')
         const thinking: Message = { id: thinkingId, role: 'assistant', content: '', typing: true, ts: Date.now() }
         setConvos(prev => prev.map(c => c.id === activeId ? { ...c, messages: [...c.messages, thinking] } : c))
+        setTimeout(() => scrollToBottom(true), 0)
         try {
           const res = await fetch('/.netlify/functions/copilot', {
             method: 'POST',
@@ -668,6 +684,7 @@ export default function CopilotOverlay({
           reply = 'Sorry, I could not get a response right now.'
         }
         setConvos(prev => prev.map(c => c.id === activeId ? { ...c, messages: c.messages.map(m => m.id === thinkingId ? { ...m, content: reply, typing: false, ts: Date.now() } : m) } : c))
+        setTimeout(() => scrollToBottom(true), 0)
       }
     }
   }
@@ -800,7 +817,7 @@ export default function CopilotOverlay({
               )}
             </div>
           ))}
-          <div ref={endRef} style={{ height: 'calc(var(--copilot-inpb, 72px) + 16px)' }} />
+          <div ref={endRef} style={{ height: 'calc(var(--copilot-inpb, 72px) + 16px)', scrollMarginBottom: 'calc(var(--copilot-inpb, 72px) + 16px)' }} />
         </div>
 
         <div className="input-bar" ref={inputBarRef}>

@@ -28,6 +28,9 @@
   padding-inline: clamp(24px, 8vw, 160px);
 }
 
+.sticky-nav .left { display: inline-flex; align-items: center; gap: 22px; }
+.sticky-nav .right { display: inline-flex; align-items: center; gap: 10px; }
+
 .sticky-nav .brand {
   display: inline-flex;
   align-items: center;
@@ -42,12 +45,92 @@
   margin: 0;
   padding: 0;
 }
+.sticky-nav .nav-links > li { position: relative; }
+.sticky-nav .nav-links > li.has-dropdown > a { display: inline-flex; align-items: center; gap: 6px; }
+.sticky-nav .nav-links .caret { opacity: 0.8; }
+/* Hover buffer to prevent flicker when moving from trigger to dropdown */
+.sticky-nav .nav-links > li.has-dropdown::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 10px; /* small buffer area */
+}
+
+/* Dropdowns */
+.sticky-nav .dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 60;
+  background: rgba(3,5,53,0.96);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  padding: 10px 12px;
+  min-width: 240px;
+  transform: translateY(-6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+  overflow: hidden; /* clip child hover backgrounds to rounded corners */
+}
+.sticky-nav .dropdown ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 4px; }
+.sticky-nav .dropdown a { display: block; padding: 8px 10px; border-radius: 8px; color: #fff; text-decoration: none; white-space: nowrap; }
+.sticky-nav .dropdown a:hover { background: linear-gradient(90deg, #f2e0a9 0%, #d0ae63 100%); color: #0a0d48; }
+.sticky-nav .dropdown a:focus-visible { background: linear-gradient(90deg, #f2e0a9 0%, #d0ae63 100%); color: #0a0d48; outline: none; }
+.sticky-nav .nav-links > li.has-dropdown:hover .dropdown { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.sticky-nav .nav-links > li.has-dropdown:focus-within .dropdown { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.sticky-nav .dropdown:hover { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+.sticky-nav .dropdown.wide {
+  width: min(360px, 86vw);
+  max-height: min(60vh, 480px);
+  overflow: auto;
+  padding: 0;
+}
+.sticky-nav .dropdown.wide ul {
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+.sticky-nav .dropdown.wide ul > li { padding: 0; }
+.sticky-nav .dropdown.wide ul > li + li { border-top: 1px solid rgba(255,255,255,0.12); }
+.sticky-nav .dropdown.wide a { white-space: normal; padding: 12px 14px; display: block; border-radius: 0; }
+
+/* Full-bleed gold hover for Cases We Handle */
+.sticky-nav .dropdown.wide ul > li:hover { background: linear-gradient(90deg, #f2e0a9 0%, #d0ae63 100%); border-top-color: transparent; }
+.sticky-nav .dropdown.wide ul > li:hover a { color: #0a0d48; }
+.sticky-nav .dropdown.wide a:hover { background: none; color: #0a0d48; }
+.sticky-nav .dropdown.wide ul > li:hover + li { border-top-color: transparent; }
 
 .sticky-nav a {
   color: currentColor;
   text-decoration: none;
   font-weight: 500;
 }
+
+/* Lighter weight for menu items */
+.sticky-nav .nav-links a,
+.sticky-nav .dropdown a,
+.sticky-nav .mobile-menu a { font-weight: 400; }
+
+/* CTA */
+.sticky-nav .cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.2);
+  color: #0a0d48;
+  background: linear-gradient(90deg, #f2e0a9 0%, #d0ae63 100%);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.28);
+  text-shadow: none;
+}
+.sticky-nav .cta:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.32); background: linear-gradient(90deg, #f7e7b9 0%, #d8b86f 100%); }
 
 .sticky-nav a:hover {
   opacity: 0.8;
@@ -71,14 +154,26 @@
 @media (max-width: 768px) {
   .sticky-nav .nav-links { display: none; }
   .sticky-nav .menu-toggle { display: inline-flex; }
+  .sticky-nav .cta { padding: 8px 12px; font-size: 14px; }
+  .sticky-nav .right .cta { display: none; }
   .sticky-nav .mobile-menu { 
-    display: block; position: fixed; left: 0; right: 0; top: var(--navbar-h, 56px); z-index: 49;
-    background: rgba(0,0,0,0.86); color: #fff; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    display: block; position: fixed; left: 0; right: 0; top: var(--navbar-h, 56px); bottom: 0; z-index: 49;
+    background: rgba(3,5,53,0.96); color: #fff; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
     transform: translateY(-8px); opacity: 0; pointer-events: none; transition: transform 220ms ease, opacity 220ms ease;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
   }
   .sticky-nav .mobile-menu.open { transform: translateY(0); opacity: 1; pointer-events: auto; }
   .sticky-nav .mobile-menu ul { list-style: none; margin: 0; padding: 16px 24px 20px; display: grid; gap: 8px; }
   .sticky-nav .mobile-menu a { display: block; padding: 12px 2px; color: #fff; text-decoration: none; font-size: 18px; }
+  .sticky-nav .mobile-head { padding: 12px 24px 0; }
+  .sticky-nav .mobile-cta { display: block; text-align: center; width: 100%; padding: 12px 14px; font-size: 16px; color: #0a0d48 !important; }
+  .sticky-nav .mobile-menu .has-sub { border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; overflow: hidden; }
+  .sticky-nav .mobile-menu .acc-head { width: 100%; text-align: left; background: transparent; color: #fff; border: 0; display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; font-size: 18px; }
+  .sticky-nav .mobile-menu .acc-head .caret { transition: transform 160ms ease; opacity: 0.9; }
+  .sticky-nav .mobile-menu .acc-head.open .caret { transform: rotate(180deg); }
+  .sticky-nav .mobile-menu .sub { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 0; overflow: hidden; transition: max-height 220ms ease, padding 160ms ease; }
+  .sticky-nav .mobile-menu .sub.open { max-height: 60vh; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 8px 10px 14px; }
+  .sticky-nav .mobile-menu .sub a { color: rgba(255,255,255,0.92); font-size: 16px; padding: 8px 2px; }
 }
 
 /* Top info bar */

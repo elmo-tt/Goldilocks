@@ -1,12 +1,27 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { PRACTICE_AREAS } from '@/admin/data/goldlaw'
 import './StickyNav.css'
+
+const ABOUT_LINKS = [
+  { label: 'Testimonials', to: '/about/testimonials' },
+  { label: 'Careers', to: '/about/careers' },
+  { label: 'Community Events', to: '/about/community-events' },
+  { label: 'Press Releases', to: '/about/press' },
+  { label: 'Promos and Incentives', to: '/about/promos-and-incentives' },
+  { label: 'Newsletters', to: '/about/newsletters' },
+  { label: 'FAQ', to: '/about/faq' },
+  { label: '7 Big Reasons to Refer PI Cases to GOLDLAW', to: '/about/7-reasons-to-refer' },
+  { label: 'Product Recalls', to: '/about/product-recalls' },
+]
 
 export default function StickyNav() {
   const [scrolled, setScrolled] = useState(false)
   const [showTopbar, setShowTopbar] = useState(true)
   const [menuOpen, setMenuOpen] = useState(false)
   const [authed, setAuthed] = useState(false)
+  const [mAboutOpen, setMAboutOpen] = useState(false)
+  const [mCasesOpen, setMCasesOpen] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
@@ -60,42 +75,90 @@ export default function StickyNav() {
       </div>
       <div className="navbar">
         <div className="inner">
-          <Link className="brand" to="/" aria-label="GOLDLAW home">
-            <img className="logo" src="/SVG/GOLDLAW_logo.svg" alt="GOLDLAW" />
-          </Link>
-          <ul className="nav-links">
-            <li><Link to="/#about">About</Link></li>
-            <li><Link to="/#services">Services</Link></li>
-            <li><Link to="/#team">Team</Link></li>
-            <li><Link to="/articles#hero">Blog</Link></li>
-            <li><Link to="/#contact">Contact</Link></li>
-            <li>
-              <Link to={authed ? '/admin' : '/login'}>{authed ? 'Admin' : 'Login'}</Link>
-            </li>
-          </ul>
-          <button
-            className={`menu-toggle${menuOpen ? ' open' : ''}`}
-            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen(!menuOpen)}
-          >
-            <svg className="icon icon-menu" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <line x1="3" y1="6" x2="21" y2="6"/>
-              <line x1="3" y1="12" x2="21" y2="12"/>
-              <line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
-            <svg className="icon icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
+          <div className="left">
+            <Link className="brand" to="/" aria-label="GOLDLAW home">
+              <img className="logo" src="/SVG/GOLDLAW_logo.svg" alt="GOLDLAW" />
+            </Link>
+            <ul className="nav-links">
+              <li className="has-dropdown">
+                <Link to="/#about">About
+                  <svg className="caret" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 10l5 5 5-5z"/></svg>
+                </Link>
+                <div className="dropdown wide">
+                  <ul>
+                    {ABOUT_LINKS.map((it) => (
+                      <li key={it.to}><Link to={it.to}>{it.label}</Link></li>
+                    ))}
+                  </ul>
+                </div>
+              </li>
+              <li className="has-dropdown">
+                <Link to="/#services">Cases We Handle
+                  <svg className="caret" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 10l5 5 5-5z"/></svg>
+                </Link>
+                <div className="dropdown wide">
+                  <ul>
+                    {PRACTICE_AREAS.map((pa) => (
+                      <li key={pa.key}><a href={pa.url} target="_blank" rel="noreferrer">{pa.label}</a></li>
+                    ))}
+                  </ul>
+                </div>
+              </li>
+              <li><Link to="/articles#hero">Blog</Link></li>
+              <li><Link to="/#contact">Contact</Link></li>
+              <li>
+                <Link to={authed ? '/admin' : '/login'}>{authed ? 'Admin' : 'Login'}</Link>
+              </li>
+            </ul>
+          </div>
+          <div className="right">
+            <a className="cta" href="/#contact">Free case review</a>
+            <button
+              className={`menu-toggle${menuOpen ? ' open' : ''}`}
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
+              <svg className="icon icon-menu" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+              </svg>
+              <svg className="icon icon-close" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
       <div className={`mobile-menu${menuOpen ? ' open' : ''}`}>
+        <div className="mobile-head">
+          <a className="cta mobile-cta" href="/#contact" onClick={() => setMenuOpen(false)}>Free case review</a>
+        </div>
         <ul>
-          <li><Link to="/#about" onClick={() => setMenuOpen(false)}>About</Link></li>
-          <li><Link to="/#services" onClick={() => setMenuOpen(false)}>Services</Link></li>
-          <li><Link to="/#team" onClick={() => setMenuOpen(false)}>Team</Link></li>
+          <li className="has-sub">
+            <button className={`acc-head${mAboutOpen ? ' open' : ''}`} aria-expanded={mAboutOpen} onClick={() => setMAboutOpen(v => !v)}>
+              <span>About</span>
+              <svg className="caret" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 10l5 5 5-5z"/></svg>
+            </button>
+            <ul className={`sub${mAboutOpen ? ' open' : ''}`}>
+              {ABOUT_LINKS.map((it) => (
+                <li key={it.to}><Link to={it.to} onClick={() => setMenuOpen(false)}>{it.label}</Link></li>
+              ))}
+            </ul>
+          </li>
+          <li className="has-sub">
+            <button className={`acc-head${mCasesOpen ? ' open' : ''}`} aria-expanded={mCasesOpen} onClick={() => setMCasesOpen(v => !v)}>
+              <span>Cases We Handle</span>
+              <svg className="caret" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 10l5 5 5-5z"/></svg>
+            </button>
+            <ul className={`sub${mCasesOpen ? ' open' : ''}`}>
+              {PRACTICE_AREAS.map((pa) => (
+                <li key={pa.key}><a href={pa.url} target="_blank" rel="noreferrer" onClick={() => setMenuOpen(false)}>{pa.label}</a></li>
+              ))}
+            </ul>
+          </li>
           <li><Link to="/articles#hero" onClick={() => setMenuOpen(false)}>Blog</Link></li>
           <li><Link to="/#contact" onClick={() => setMenuOpen(false)}>Contact</Link></li>
           <li>

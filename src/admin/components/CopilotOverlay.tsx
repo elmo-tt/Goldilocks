@@ -223,6 +223,7 @@ export default function CopilotOverlay({
   const inputBarRef = useRef<HTMLDivElement | null>(null)
   const [inputH, setInputH] = useState(72)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const endRef = useRef<HTMLDivElement | null>(null)
   // Inline rename state for chat titles
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
@@ -249,12 +250,24 @@ export default function CopilotOverlay({
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(convos)) } catch {}
   }, [convos])
 
-  // Auto-scroll to bottom on new messages
-  useEffect(() => {
+  const scrollToBottom = (smooth = false) => {
     const el = messagesRef.current
+    const end = endRef.current
     if (!el) return
-    try { el.scrollTop = el.scrollHeight } catch {}
-  }, [active.messages.length, activeId, open, inputH])
+    try {
+      if (end && end.scrollIntoView) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            try { end.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'end' }) } catch { el.scrollTop = el.scrollHeight }
+          })
+        })
+      } else {
+        el.scrollTop = el.scrollHeight
+      }
+    } catch {}
+  }
+  // Auto-scroll to bottom on new messages / layout changes
+  useEffect(() => { scrollToBottom(false) }, [active.messages.length, activeId, open, inputH])
 
   useEffect(() => {
     const measure = () => {
@@ -265,7 +278,7 @@ export default function CopilotOverlay({
     window.addEventListener('resize', onResize)
     // iOS/mobile: visual viewport changes when keyboard shows/hides
     const vv = (window as any).visualViewport as any | undefined
-    const onVv = () => measure()
+    const onVv = () => { measure(); scrollToBottom(false) }
     try { vv?.addEventListener('resize', onVv); vv?.addEventListener('scroll', onVv) } catch {}
     // Observe input bar height changes (button wraps, safe-area, etc.)
     let ro: ResizeObserver | null = null
@@ -275,7 +288,7 @@ export default function CopilotOverlay({
         ro.observe(inputBarRef.current)
       }
     } catch {}
-    const t = setTimeout(measure, 0)
+    const t = setTimeout(() => { measure(); scrollToBottom(false) }, 0)
     return () => {
       window.removeEventListener('resize', onResize)
       try { vv?.removeEventListener('resize', onVv); vv?.removeEventListener('scroll', onVv) } catch {}
@@ -288,8 +301,7 @@ export default function CopilotOverlay({
   useEffect(() => {
     const onFocusIn = (e: Event) => {
       if (inputBarRef.current && (e.target instanceof Element) && inputBarRef.current.contains(e.target)) {
-        const el = messagesRef.current
-        if (el) { try { el.scrollTop = el.scrollHeight } catch {} }
+        requestAnimationFrame(() => { requestAnimationFrame(() => scrollToBottom(false)) })
       }
     }
     window.addEventListener('focusin', onFocusIn)
@@ -784,6 +796,7 @@ export default function CopilotOverlay({
               )}
             </div>
           ))}
+          <div ref={endRef} style={{ height: 'calc(var(--copilot-inpb, 72px) + 16px)' }} />
         </div>
 
         <div className="input-bar" ref={inputBarRef}>

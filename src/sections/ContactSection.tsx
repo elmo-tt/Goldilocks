@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { PRACTICE_AREAS } from '@/admin/data/goldlaw'
 import './ContactSection.css'
 
 type Review = {
@@ -42,17 +43,7 @@ export default function ContactSection() {
     return () => clearInterval(id)
   }, [reviews.length])
 
-  const areas = useMemo(
-    () => [
-      'Slip & Fall',
-      'Vehicle Accident',
-      'Negligent Security',
-      'Sexual Assault and Human Trafficking',
-      'Motorcycle Accident',
-      'Wrongful Death',
-    ],
-    []
-  )
+  const areas = useMemo(() => PRACTICE_AREAS.map(p => p.label), [])
 
   // Custom dropdown state for case type
   const [caseOpen, setCaseOpen] = useState(false)

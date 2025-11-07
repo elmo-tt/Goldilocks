@@ -1040,7 +1040,8 @@ function SerpPreview({ title, url, description }: { title: string; url: string; 
 function SeoChecks(props: { title: string; slug: string; body: string; excerpt: string; keyphrase: string; metaTitle: string; metaDescription: string }) {
   const txt = looksLikeHtml(props.body) ? htmlText(props.body) : props.body
   const first = firstParagraphText(props.body)
-  const titleUse = includesWord(props.metaTitle || props.title, props.keyphrase)
+  const titleUse = includesKeyphraseLoose(props.title, props.keyphrase)
+  const metaTitleUse = includesKeyphraseLoose(props.metaTitle, props.keyphrase)
   const slugUse = includesWord(props.slug, props.keyphrase)
   const firstUse = (() => {
     const tokens = (props.keyphrase || '').toLowerCase().match(/[a-z0-9]+/g) || []
@@ -1060,10 +1061,11 @@ function SeoChecks(props: { title: string; slug: string; body: string; excerpt: 
   const density = props.keyphrase ? (hits / Math.max(1, words)) : 0
   const densityOk = density >= 0.005 || (words >= 400 && hits >= 2 && density >= 0.0035)
   const items = [
-    { label: 'Keyphrase in title', ok: !!props.keyphrase && titleUse },
+    { label: 'Keyphrase in article title', ok: !!props.keyphrase && titleUse },
     { label: 'Keyphrase in slug', ok: !!props.keyphrase && slugUse },
     { label: 'Keyphrase early in body', ok: !!props.keyphrase && firstUse },
     { label: 'Keyphrase in headings', ok: !!props.keyphrase && headUse },
+    { label: 'Keyphrase in meta title', ok: !!props.keyphrase && metaTitleUse },
     { label: 'Keyphrase in meta description', ok: !!props.keyphrase && descUse },
     { label: 'Word count ≥ 300', ok: words >= 300 },
     { label: 'Keyphrase density ~0.5%–2.5%', ok: densityOk && density <= 0.025 },
@@ -1107,6 +1109,48 @@ function includesWord(text: string, key: string) {
   return re.test(t)
 }
 
+// Fuzzy keyphrase match for titles/headings: ordered subsequence (gaps allowed),
+// ignoring stopwords + light stemming, with a contiguous 2–3 token n-gram fallback.
+function includesKeyphraseLoose(text: string, key: string) {
+  if (!text || !key) return false
+  const norm = (s: string) => String(s || '').toLowerCase().replace(/[-_]+/g, ' ')
+  const tt = (norm(text).match(/[a-z0-9]+/g) || [])
+  const ktRaw = (norm(key).match(/[a-z0-9]+/g) || [])
+  const stop = new Set(['the','a','an','and','or','for','with','that','this','these','those','from','about','into','onto','within','your','you','our','are','will','can','how','what','why','when','of','in','to','on','at','by','during','may'])
+  const stem = (w: string) => {
+    if (w.endsWith('ies') && w.length > 4) return w.slice(0, -3) + 'y'
+    if (w.endsWith('ing') && w.length > 5) return w.slice(0, -3)
+    if (w.endsWith('ed') && w.length > 4) return w.slice(0, -2)
+    if (w.endsWith('s') && w.length > 3) return w.slice(0, -1)
+    return w
+  }
+  const kt = ktRaw.filter(w => w.length >= 3 && !stop.has(w)).map(stem)
+  if (kt.length === 0) return false
+  const ttStem = tt.map(stem)
+  // Ordered subsequence coverage
+  let i = 0
+  let matched = 0
+  for (const k of kt) {
+    while (i < ttStem.length && ttStem[i] !== k) i++
+    if (i < ttStem.length) { matched++; i++ }
+  }
+  const coverage = matched / kt.length
+  if (matched === kt.length || coverage >= 0.6) return true
+  // Contiguous n-gram fallback (3 then 2)
+  const mk = (arr: string[], n: number) => {
+    const out: string[] = []
+    for (let j = 0; j + n <= arr.length; j++) out.push(arr.slice(j, j + n).join(' '))
+    return out
+  }
+  const textBigrams = new Set(mk(ttStem, 2))
+  const textTrigrams = new Set(mk(ttStem, 3))
+  const keyBigrams = mk(kt, 2)
+  const keyTrigrams = mk(kt, 3)
+  for (const g of keyTrigrams) if (textTrigrams.has(g)) return true
+  for (const g of keyBigrams) if (textBigrams.has(g)) return true
+  return false
+}
+
 function countWord(text: string, key: string) {
   if (!text || !key) return 0
   const t = String(text || '').toLowerCase().replace(/[-_]+/g, ' ')
@@ -1125,7 +1169,7 @@ function includesHeadings(body: string, key: string) {
     const el = document.createElement('div')
     el.innerHTML = body
     const hs = Array.from(el.querySelectorAll('h1,h2,h3'))
-    return hs.some(h => includesWord(h.textContent || '', key))
+    return hs.some(h => includesKeyphraseLoose(h.textContent || '', key))
   }
   // Markdown / plain: consider #/##/### lines and short standalone lines as headings
   const blocks = String(body || '').split(/\n\n+/)
@@ -1139,7 +1183,7 @@ function includesHeadings(body: string, key: string) {
       const looksHeading = words > 0 && words <= 10 && !/[.!?:]$/.test(line)
       if (looksHeading) heading = line
     }
-    if (heading && includesWord(heading, key)) return true
+    if (heading && includesKeyphraseLoose(heading, key)) return true
   }
   return false
 }

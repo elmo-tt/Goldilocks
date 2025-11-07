@@ -269,6 +269,10 @@ export default function CopilotOverlay({
   // Auto-scroll to bottom on new messages / layout changes
   useEffect(() => { scrollToBottom(false) }, [active.messages.length, activeId, open, inputH])
 
+  // Also react to changes in the last message content/typing (length may stay the same)
+  const lastMsg = active.messages[active.messages.length - 1]
+  useEffect(() => { scrollToBottom(false) }, [lastMsg?.content, lastMsg?.typing])
+
   useEffect(() => {
     const measure = () => {
       try { setInputH(inputBarRef.current?.offsetHeight || 72) } catch { setInputH(72) }

@@ -36,10 +36,10 @@
   .ops .input{ padding:12px; min-height:40px; }
   .ops .copilot-main .bar{ padding:10px 12px; }
   .ops .input-bar{
-    position: sticky;
-    bottom: 0;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
     padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-    z-index: 2;
+    z-index: 102;
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
   }

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import './AdminStyles.css'
 import './AdminTheme.css'
 import OverviewSection from './sections/OverviewSection'
@@ -11,7 +12,7 @@ import SettingsSection from './sections/SettingsSection'
 import type { NavId } from './utils/intentParser'
 import CopilotOverlay from './components/CopilotOverlay'
 import './components/Copilot.css'
-import { Moon, Sun, Menu, LogOut, Bot, Home } from 'lucide-react'
+import { Moon, Sun, Menu, LogOut, Bot, Home, LayoutDashboard, Inbox, Briefcase, CheckSquare, Calendar as CalendarIcon, Megaphone, FileText, Image as ImageIcon, Settings as SettingsIcon } from 'lucide-react'
 import ArticlesSection from './sections/ArticlesSection'
 import MediaSection from './sections/MediaSection'
 import { bus } from './utils/bus'
@@ -30,11 +31,33 @@ const NAV: { id: NavId; label: string }[] = [
   { id: 'settings', label: 'Settings' },
 ]
 
+const NAV_ICONS: Record<NavId, ReactNode> = {
+  overview: <LayoutDashboard size={16} />, 
+  intake: <Inbox size={16} />, 
+  cases: <Briefcase size={16} />, 
+  tasks: <CheckSquare size={16} />, 
+  calendar: <CalendarIcon size={16} />, 
+  marketing: <Megaphone size={16} />, 
+  articles: <FileText size={16} />, 
+  media: <ImageIcon size={16} />, 
+  settings: <SettingsIcon size={16} />,
+}
+
+const NAV_GROUPS: Array<{ title: string; ids: NavId[] }> = [
+  { title: 'Operations', ids: ['overview', 'intake', 'cases'] },
+  { title: 'Workflow', ids: ['tasks', 'calendar'] },
+  { title: 'Content', ids: ['marketing', 'articles', 'media'] },
+  { title: 'Settings', ids: ['settings'] },
+]
+
 export default function AdminApp() {
   const [nav, setNav] = useState<NavId>('overview')
   const [copilotOpen, setCopilotOpen] = useState(false)
   const [navOpen, setNavOpen] = useState(false)
   const [fabHidden, setFabHidden] = useState(false)
+  const navRef = useRef<HTMLDivElement | null>(null)
+  const [navDragX, setNavDragX] = useState(0)
+  const navDragStart = useRef<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false })
   const THEME_KEY = 'gl_admin_theme'
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try {
@@ -216,18 +239,55 @@ export default function AdminApp() {
   return (
     <div className="ops" data-theme={theme === 'light' ? 'light' : undefined} data-nav-open={navOpen ? 'true' : undefined}>
       <div className="ops-shell">
-        <aside className="ops-sidebar">
+        <aside
+          className="ops-sidebar"
+          ref={navRef as any}
+          style={navOpen ? { transform: navDragX < 0 ? `translateX(${navDragX}px)` : undefined, touchAction: 'pan-y' as any } : undefined}
+          onTouchStart={(e) => {
+            if (!navOpen) return
+            const t = e.touches[0]
+            navDragStart.current = { x: t.clientX, y: t.clientY, active: true }
+            setNavDragX(0)
+          }}
+          onTouchMove={(e) => {
+            if (!navDragStart.current.active) return
+            const t = e.touches[0]
+            const dx = t.clientX - navDragStart.current.x
+            const dy = t.clientY - navDragStart.current.y
+            if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return
+            setNavDragX(Math.min(0, dx))
+          }}
+          onTouchEnd={() => {
+            if (!navDragStart.current.active) return
+            const w = (navRef.current?.offsetWidth || 280)
+            const shouldClose = navDragX < -Math.min(120, w * 0.33)
+            if (shouldClose) setNavOpen(false)
+            setNavDragX(0)
+            navDragStart.current.active = false
+          }}
+          onTouchCancel={() => { setNavDragX(0); navDragStart.current.active = false }}
+        >
           <div className="ops-brand">GOLDLAW Ops Studio</div>
           <nav className="ops-nav">
-            {NAV.map(n => (
-              <a
-                key={n.id}
-                href="#"
-                className={nav === n.id ? 'active' : ''}
-                onClick={(e) => { e.preventDefault(); setNav(n.id); setNavOpen(false) }}
-              >
-                {n.label}
-              </a>
+            {NAV_GROUPS.map(g => (
+              <div key={g.title} style={{ display: 'grid', gap: 6 }}>
+                <div style={{ margin: '6px 8px 2px', fontSize: 12, color: 'var(--ops-muted)' }}>{g.title}</div>
+                {g.ids.map(id => {
+                  const n = NAV.find(x => x.id === id)!
+                  return (
+                    <a
+                      key={n.id}
+                      href="#"
+                      className={nav === n.id ? 'active' : ''}
+                      onClick={(e) => { e.preventDefault(); setNav(n.id); setNavOpen(false) }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                    >
+                      <span aria-hidden style={{ display: 'inline-flex', width: 18, justifyContent: 'center' }}>{NAV_ICONS[n.id]}</span>
+                      <span>{n.label}</span>
+                    </a>
+                  )
+                })}
+              </div>
             ))}
           </nav>
         </aside>

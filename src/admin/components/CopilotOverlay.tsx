@@ -223,6 +223,9 @@ export default function CopilotOverlay({
   const inputBarRef = useRef<HTMLDivElement | null>(null)
   const [inputH, setInputH] = useState(72)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const drawerRef = useRef<HTMLDivElement | null>(null)
+  const [dragX, setDragX] = useState(0)
+  const dragStart = useRef<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false })
   const endRef = useRef<HTMLDivElement | null>(null)
   // Inline rename state for chat titles
   const [renamingId, setRenamingId] = useState<string | null>(null)
@@ -267,18 +270,6 @@ export default function CopilotOverlay({
       }
     } catch {}
   }
-  const ensureBottom = (tries = 6, delay = 60) => {
-    try {
-      scrollToBottom(false)
-      if (tries <= 1) return
-      let t = 1
-      const tick = () => {
-        scrollToBottom(false)
-        if (++t <= tries) setTimeout(tick, delay)
-      }
-      setTimeout(tick, delay)
-    } catch {}
-  }
   // Auto-scroll to bottom on new messages / layout changes
   useEffect(() => { scrollToBottom(false) }, [active.messages.length, activeId, open, inputH])
 
@@ -291,12 +282,8 @@ export default function CopilotOverlay({
       try { setInputH(inputBarRef.current?.offsetHeight || 72) } catch { setInputH(72) }
     }
     measure()
-    const onResize = () => { measure(); ensureBottom(4, 50) }
+    const onResize = () => { measure() }
     window.addEventListener('resize', onResize)
-    // iOS/mobile: visual viewport changes when keyboard shows/hides
-    const vv = (window as any).visualViewport as any | undefined
-    const onVv = () => { measure(); ensureBottom(5, 60) }
-    try { vv?.addEventListener('resize', onVv); vv?.addEventListener('scroll', onVv) } catch {}
     // Observe input bar height changes (button wraps, safe-area, etc.)
     let ro: ResizeObserver | null = null
     try {
@@ -305,25 +292,15 @@ export default function CopilotOverlay({
         ro.observe(inputBarRef.current)
       }
     } catch {}
-    const t = setTimeout(() => { measure(); ensureBottom(4, 50) }, 0)
+    const t = setTimeout(() => { measure() }, 0)
     return () => {
       window.removeEventListener('resize', onResize)
-      try { vv?.removeEventListener('resize', onVv); vv?.removeEventListener('scroll', onVv) } catch {}
       try { ro?.disconnect() } catch {}
       clearTimeout(t)
     }
   }, [])
 
-  // Ensure latest message remains visible when the input receives focus (mobile keyboard up)
-  useEffect(() => {
-    const onFocusIn = (e: Event) => {
-      if (inputBarRef.current && (e.target instanceof Element) && inputBarRef.current.contains(e.target)) {
-        requestAnimationFrame(() => { requestAnimationFrame(() => ensureBottom(5, 60)) })
-      }
-    }
-    window.addEventListener('focusin', onFocusIn)
-    return () => { window.removeEventListener('focusin', onFocusIn) }
-  }, [])
+  // Removed focus-in autoscroll; sticky input handles visibility on mobile
 
   if (!open) return null
 
@@ -355,6 +332,7 @@ export default function CopilotOverlay({
         openSafe(CTA.tel, '_self')
         doMinimize()
         setConvos(prev => prev.map(c => c.id === activeId ? { ...c, messages: [...c.messages, { id: newId('m'), role: 'assistant', content: reply, ts: Date.now() }] } : c))
+        setTimeout(() => scrollToBottom(true), 0)
         break
       }
       case 'CONTACT': {
@@ -362,6 +340,7 @@ export default function CopilotOverlay({
         openSafe(CTA.contactUrl, '_blank')
         doMinimize()
         setConvos(prev => prev.map(c => c.id === activeId ? { ...c, messages: [...c.messages, { id: newId('m'), role: 'assistant', content: reply, ts: Date.now() }] } : c))
+        setTimeout(() => scrollToBottom(true), 0)
         break
       }
       case 'MAP': {
@@ -372,6 +351,7 @@ export default function CopilotOverlay({
         if (office) openSafe(office.mapsUrl, '_blank')
         doMinimize()
         setConvos(prev => prev.map(c => c.id === activeId ? { ...c, messages: [...c.messages, { id: newId('m'), role: 'assistant', content: reply, ts: Date.now() }] } : c))
+        setTimeout(() => scrollToBottom(true), 0)
         break
       }
       case 'OPEN_PRACTICE': {
@@ -379,6 +359,7 @@ export default function CopilotOverlay({
         openSafe(cmd.url, '_blank')
         doMinimize()
         setConvos(prev => prev.map(c => c.id === activeId ? { ...c, messages: [...c.messages, { id: newId('m'), role: 'assistant', content: reply, ts: Date.now() }] } : c))
+        setTimeout(() => scrollToBottom(true), 0)
         break
       }
       case 'CREATE_TASK': {
@@ -387,6 +368,7 @@ export default function CopilotOverlay({
         reply = `Created task in Filevine: "${created.title}" (ID: ${created.id}).`
         doMinimize()
         setConvos(prev => prev.map(c => c.id === activeId ? { ...c, messages: [...c.messages, { id: newId('m'), role: 'assistant', content: reply, ts: Date.now() }] } : c))
+        setTimeout(() => scrollToBottom(true), 0)
         break
       }
       default: {
@@ -817,7 +799,7 @@ export default function CopilotOverlay({
               )}
             </div>
           ))}
-          <div ref={endRef} style={{ height: 'calc(var(--copilot-inpb, 72px) + 16px)', scrollMarginBottom: 'calc(var(--copilot-inpb, 72px) + 16px)' }} />
+          <div ref={endRef} style={{ height: 'calc(var(--copilot-inpb, 72px) + env(safe-area-inset-bottom) + 16px)', scrollMarginBottom: 'calc(var(--copilot-inpb, 72px) + env(safe-area-inset-bottom) + 16px)' }} />
         </div>
 
         <div className="input-bar" ref={inputBarRef}>
@@ -827,7 +809,36 @@ export default function CopilotOverlay({
       </main>
 
       <div className={`copilot-scrim${drawerOpen ? ' open' : ''}`} onClick={() => setDrawerOpen(false)} />
-      <div className={`copilot-drawer${drawerOpen ? ' open' : ''}`} role="dialog" aria-modal="true">
+      <div
+        className={`copilot-drawer${drawerOpen ? ' open' : ''}${dragX !== 0 ? ' dragging' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        ref={drawerRef}
+        style={{ transform: drawerOpen && dragX < 0 ? `translateX(${dragX}px)` : undefined, touchAction: 'pan-y' as any }}
+        onTouchStart={(e) => {
+          if (!drawerOpen) return
+          const t = e.touches[0]
+          dragStart.current = { x: t.clientX, y: t.clientY, active: true }
+          setDragX(0)
+        }}
+        onTouchMove={(e) => {
+          if (!dragStart.current.active) return
+          const t = e.touches[0]
+          const dx = t.clientX - dragStart.current.x
+          const dy = t.clientY - dragStart.current.y
+          if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return
+          setDragX(Math.min(0, dx))
+        }}
+        onTouchEnd={() => {
+          if (!dragStart.current.active) return
+          const w = drawerRef.current?.offsetWidth || 320
+          const shouldClose = dragX < -Math.min(120, w * 0.33)
+          if (shouldClose) setDrawerOpen(false)
+          setDragX(0)
+          dragStart.current.active = false
+        }}
+        onTouchCancel={() => { setDragX(0); dragStart.current.active = false }}
+      >
         <div className="drawer-head">
           <strong>Chats</strong>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -838,11 +849,45 @@ export default function CopilotOverlay({
         <div className="copilot-list">
           {convos.map(c => (
             <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '1fr min-content', alignItems: 'center' }}>
-              <button onClick={() => { setActiveId(c.id); setDrawerOpen(false) }} className={`list-item${c.id === activeId ? ' active' : ''}`} style={{ minWidth: 0 }}>
+              <button onClick={() => { setActiveId(c.id) }} className={`list-item${c.id === activeId ? ' active' : ''}`} style={{ minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Bot size={16} />
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, cursor: 'pointer', margin: '0 0 2px' }}>{c.title}</div>
+                    {renamingId === c.id ? (
+                      <input
+                        value={renameValue}
+                        autoFocus
+                        onClick={e => e.stopPropagation()}
+                        onChange={e => setRenameValue(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            const v = (renameValue || '').trim() || 'New chat'
+                            setConvos(prev => prev.map(x => x.id === c.id ? { ...x, title: v } : x))
+                            setRenamingId(null)
+                          } else if (e.key === 'Escape') {
+                            setRenamingId(null)
+                          }
+                        }}
+                        onBlur={() => {
+                          const v = (renameValue || '').trim() || c.title || 'New chat'
+                          setConvos(prev => prev.map(x => x.id === c.id ? { ...x, title: v } : x))
+                          setRenamingId(null)
+                        }}
+                        style={{ height: 24, padding: '2px 6px', fontWeight: 600, border: '1px solid var(--ops-border)', borderRadius: 6, background: 'transparent', color: 'var(--ops-text)', margin: '0 0 2px' }}
+                      />
+                    ) : (
+                      <div
+                        style={{ fontWeight: 600, cursor: 'text', margin: '0 0 2px' }}
+                        onClick={e => {
+                          e.stopPropagation()
+                          setActiveId(c.id)
+                          setRenamingId(c.id)
+                          setRenameValue(c.title || '')
+                        }}
+                      >
+                        {c.title}
+                      </div>
+                    )}
                     <div className="copilot-excerpt" style={{ width: '28ch', marginTop: 0 }}>{c.messages[c.messages.length - 1]?.content || ''}</div>
                   </div>
                 </div>

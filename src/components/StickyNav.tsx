@@ -64,11 +64,11 @@ export default function StickyNav() {
             <img className="logo" src="/SVG/GOLDLAW_logo.svg" alt="GOLDLAW" />
           </Link>
           <ul className="nav-links">
-            <li><a href="#about">About</a></li>
-            <li><a href="#services">Services</a></li>
-            <li><a href="#team">Team</a></li>
+            <li><Link to="/#about">About</Link></li>
+            <li><Link to="/#services">Services</Link></li>
+            <li><Link to="/#team">Team</Link></li>
             <li><Link to="/articles#hero">Blog</Link></li>
-            <li><a href="#contact">Contact</a></li>
+            <li><Link to="/#contact">Contact</Link></li>
             <li>
               <Link to={authed ? '/admin' : '/login'}>{authed ? 'Admin' : 'Login'}</Link>
             </li>
@@ -93,11 +93,11 @@ export default function StickyNav() {
       </div>
       <div className={`mobile-menu${menuOpen ? ' open' : ''}`}>
         <ul>
-          <li><a href="#about" onClick={() => setMenuOpen(false)}>About</a></li>
-          <li><a href="#services" onClick={() => setMenuOpen(false)}>Services</a></li>
-          <li><a href="#team" onClick={() => setMenuOpen(false)}>Team</a></li>
+          <li><Link to="/#about" onClick={() => setMenuOpen(false)}>About</Link></li>
+          <li><Link to="/#services" onClick={() => setMenuOpen(false)}>Services</Link></li>
+          <li><Link to="/#team" onClick={() => setMenuOpen(false)}>Team</Link></li>
           <li><Link to="/articles#hero" onClick={() => setMenuOpen(false)}>Blog</Link></li>
-          <li><a href="#contact" onClick={() => setMenuOpen(false)}>Contact</a></li>
+          <li><Link to="/#contact" onClick={() => setMenuOpen(false)}>Contact</Link></li>
           <li>
             <Link to={authed ? '/admin' : '/login'} onClick={() => setMenuOpen(false)}>
               {authed ? 'Admin' : 'Login'}

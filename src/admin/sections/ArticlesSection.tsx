@@ -114,12 +114,12 @@ function ListView({ onCreate, onEdit }: { onCreate: () => void; onEdit: (id: str
 
   return (
     <div className="section">
-      <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, marginBottom: 12 }}>
-        <div>
+      <div className="card ops-media-head" style={{ marginBottom: 12 }}>
+        <div className="ops-media-info">
           <strong>Articles</strong>
           <span className="ops-sub"> Manage and publish articles for the public site</span>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="ops-media-actions">
           <button className="ops-btn" onClick={onCreate}>Create Article</button>
           <button className="ops-btn" onClick={syncAll} disabled={syncing}>{syncing ? 'Syncing…' : 'Sync Articles'}</button>
         </div>

@@ -8,6 +8,7 @@ import App from './App.tsx'
 import ArticlesList from './pages/articles/ArticlesList'
 import ArticlePage from './pages/articles/ArticlePage'
 import ArticleTemplatePreview from './pages/templates/ArticleTemplatePreview'
+import PracticeAreaTemplatePreview from './pages/templates/PracticeAreaTemplatePreview'
 import ProtectedRoute from './routes/ProtectedRoute'
 import Login from './pages/Login'
 
@@ -24,6 +25,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/articles" element={<ArticlesList />} />
           <Route path="/articles/:slug" element={<ArticlePage />} />
           <Route path="/templates/article-preview" element={<ArticleTemplatePreview />} />
+          <Route path="/templates/practice-preview" element={<PracticeAreaTemplatePreview />} />
           <Route
             path="/admin/*"
             element={

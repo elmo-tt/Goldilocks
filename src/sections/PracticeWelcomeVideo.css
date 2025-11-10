@@ -5,6 +5,7 @@
 
 .pa-welcome .video-shell {
   position: relative;
+  width: 100%;
   max-width: min(980px, 100%);
   margin: 0 auto;
 }
@@ -47,7 +48,8 @@
 /* YouTube player wrapper (16:9) */
 .pa-welcome .yt-wrap {
   position: relative;
-  width: 100%;
+  width: 100% !important; /* defeat any inline width set by scripts */
+  max-width: 100% !important;
   aspect-ratio: 16 / 9;
   border-radius: 14px;
   overflow: hidden;
@@ -56,4 +58,40 @@
 .pa-welcome .yt {
   position: absolute;
   inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+/* Ensure the YouTube iframe matches the wrapper even if YT replaces the container element */
+.pa-welcome .yt-wrap iframe,
+.pa-welcome .yt iframe{
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  border: 0 !important;
+  display: block;
+  transform: none !important;
+}
+/* Some YT loads create an extra div wrapper around the iframe with fixed inline sizes; force it to fill */
+.pa-welcome .yt-wrap > div{
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+/* If YouTube nests the iframe inside a div within our .yt container, force that wrapper to fill */
+.pa-welcome .yt > div{
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+/* Extra hardening: if YT adds deeper wrappers, ensure the first two levels fill */
+.pa-welcome .yt-wrap > div > div{
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
 }

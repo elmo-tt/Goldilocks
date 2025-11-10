@@ -6,7 +6,6 @@ import FooterSection from '@/sections/FooterSection'
 import '@/sections/FooterSection.css'
 import PracticeAreaTemplate from '@/pages/practice/PracticeAreaTemplate'
 import type { PracticeAreaData } from '@/pages/practice/PracticeAreaTemplate'
-import PracticeWelcomeVideo from '@/sections/PracticeWelcomeVideo'
 
 export default function PracticeAreaTemplatePreview() {
   const area: PracticeAreaData = {
@@ -24,10 +23,6 @@ export default function PracticeAreaTemplatePreview() {
     <>
       <StickyNav />
       <PracticeAreaTemplate area={area} />
-      <PracticeWelcomeVideo
-        videoId="hBeQHy67wTo"
-        placeholderSrc="/images/practice/welcome-video-placeholder.png"
-      />
       <FooterSection />
     </>
   )

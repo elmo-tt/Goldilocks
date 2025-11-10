@@ -2,11 +2,15 @@
 .about-inner { padding-inline: clamp(24px, 8vw, 160px); display: grid; gap: 48px; }
 
 .about-row1 { display: grid; grid-template-columns: 0.9fr 1.6fr; gap: clamp(24px, 6vw, 56px); align-items: center; }
+.about-row1.no-image { grid-template-columns: 1fr; }
 .about-text .eyebrow { font-size: 0.8125rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; }
 .about-title { font-size: 40px; line-height: 1.1; margin: 6px 0 12px 0; font-weight: 400; }
 .about-title .muted { color: rgba(255,255,255,0.7); display: inline; }
 .about-title .strong { color: #fff; display: inline; }
 .about-title .muted::after { content: '\00A0'; }
+.about-title.stack .muted,
+.about-title.stack .strong { display: block; }
+.about-title.stack .muted::after { content: ''; }
 .about-copy { color: rgba(255,255,255,0.8); max-width: 60ch; font-size: 16px; line-height: 1.4; }
 
 .about-image { position: relative; }

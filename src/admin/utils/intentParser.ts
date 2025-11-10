@@ -60,6 +60,15 @@ export function parseCommand(input: string, practiceAreas?: PracticeAreaRef[]): 
   const q = input.trim().toLowerCase();
   if (!q) return { type: "UNKNOWN" };
 
+  // Explicit task creation should take precedence over content gating or navigation fallbacks
+  if (/^(\/task\b|create\s+(?:a\s+)?task\b|add\s+(?:a\s+)?task\b)/i.test(input.trim())) {
+    const raw = input.trim();
+    const m = raw.match(/["']([^"']+)["']/);
+    let title = m ? m[1].trim() : raw.replace(/^\/?(?:task|create(?:\s+a)?\s+task|add(?:\s+a)?\s+task)[:\s]*/i, "").trim();
+    if (!title) title = "Follow up";
+    return { type: "CREATE_TASK", title };
+  }
+
   // Let the LLM handle content creation, edits, and research flows (avoid hard navigation to practice pages).
   if (
     /(create|write|draft|generate|compose|summarize|research|update|edit|modify|append|revise|publish|unpublish)\b[\s\S]*\b(article|post)\b/.test(q)
@@ -87,13 +96,7 @@ export function parseCommand(input: string, practiceAreas?: PracticeAreaRef[]): 
     return { type: "MAP", target: "wpb" };
   }
 
-  if (/^(\/task\b|create task\b|add task\b)/.test(q)) {
-    const raw = input.trim();
-    const m = raw.match(/["']([^"']+)["']/);
-    let title = m ? m[1].trim() : raw.replace(/^\/?(task|create task|add task)[:\s]*/i, "").trim();
-    if (!title) title = "Follow up";
-    return { type: "CREATE_TASK", title };
-  }
+  // (Handled above) CREATE_TASK detection
 
   if (practiceAreas && practiceAreas.length) {
     const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();

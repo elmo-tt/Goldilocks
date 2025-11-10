@@ -7,11 +7,14 @@ import '@/sections/ContactSection.css'
 import FAQSection from '@/sections/FAQSection'
 import '@/sections/FAQSection.css'
 import PracticeWelcomeVideo from '@/sections/PracticeWelcomeVideo'
+import PracticeTwoCol from '@/sections/PracticeTwoCol'
+import '@/sections/PracticeTwoCol.css'
 
 export type PracticeAreaData = {
   key: string
   name: string
   heroUrl?: string
+  benefitsImageUrl?: string
   headline: string
   details: string
   ratingScore?: string
@@ -82,6 +85,11 @@ export default function PracticeAreaTemplate({ area }: { area: PracticeAreaData 
         muted={mutedLine}
         showImage={false}
         copy=""
+      />
+
+      <PracticeTwoCol
+        imageUrl={area.benefitsImageUrl || area.heroUrl || '/images/practice/motor-accidents-hero.png'}
+        detail={area.details}
       />
 
       <ContactSection />

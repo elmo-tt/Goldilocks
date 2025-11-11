@@ -50,14 +50,12 @@ p {
   .hiw-inner,
   .contact-inner,
   .faq-inner,
-  .testimonials-inner,
   .pa-two-col .pa2-inner,
   .pa-why-inner,
   .practice-inner,
   .articles-inner,
   .related-inner,
   .footer-inner,
-  .t-inner,
   .pb-inner {
     padding-inline: 24px !important;
   }

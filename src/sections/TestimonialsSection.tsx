@@ -73,8 +73,8 @@ export default function TestimonialsSection() {
     const cards = root.querySelectorAll<HTMLElement>('.t-card')
     const el = cards[loopIdx]
     if (!el) return
-    const targetLeft = el.offsetLeft - (root.clientWidth - el.clientWidth) / 2
-    root.scrollTo({ left: targetLeft, behavior })
+    // Let the browser perform a snap-centered scroll reliably
+    el.scrollIntoView({ behavior, inline: 'center', block: 'nearest' })
   }
 
   const go = (dir: 1 | -1) => {
@@ -151,7 +151,7 @@ export default function TestimonialsSection() {
   }, [total, active, clones])
 
   return (
-    <section id="testimonials" className={"testimonials"}>
+    <section id="testimonials" className="home-testimonials">
       <div className="testimonials-inner">
         <div className="t-viewport-wrap">
           <div className="t-viewport" ref={trackRef}>

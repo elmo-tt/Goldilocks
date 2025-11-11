@@ -62,3 +62,13 @@ p {
     padding-inline: 24px !important;
   }
 }
+
+/* Standardize review/wreath styling on mobile to match HIW (MagicBento) */
+@media (max-width: 599px) {
+  .rating-card .wreath { width: clamp(150px, 46vw, 200px) !important; }
+  .rating-card .rating-bottom { padding-top: 18px; }
+  .rating-card .rating-list { margin-top: 4px; gap: 10px; }
+  .rating-card .rating-score { font-size: clamp(22px, 6.4vw, 28px) !important; }
+  .rating-card .rating-reviews { font-size: 0.8rem; }
+  .rating-card .google-g { width: 20px; }
+}

@@ -59,3 +59,7 @@
   .pb-grid { grid-template-columns: 1fr; grid-template-rows: none; }
   .pb-areas, .pb-reviews, .pb-actions, .pb-benefits { grid-column: auto; grid-row: auto; }
 }
+
+@media (max-width: 599px) {
+  .practice-bento .rating-card .wreath { width: clamp(150px, 46vw, 200px); }
+}

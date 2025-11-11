@@ -99,7 +99,7 @@ export default function StickyNav() {
                 <div className="dropdown wide">
                   <ul>
                     {PRACTICE_AREAS.map((pa) => (
-                      <li key={pa.key}><a href={pa.url} target="_blank" rel="noreferrer">{pa.label}</a></li>
+                      <li key={pa.key}><Link to="/practice/motor-accidents">{pa.label}</Link></li>
                     ))}
                   </ul>
                 </div>
@@ -155,7 +155,7 @@ export default function StickyNav() {
             </button>
             <ul className={`sub${mCasesOpen ? ' open' : ''}`}>
               {PRACTICE_AREAS.map((pa) => (
-                <li key={pa.key}><a href={pa.url} target="_blank" rel="noreferrer" onClick={() => setMenuOpen(false)}>{pa.label}</a></li>
+                <li key={pa.key}><Link to="/practice/motor-accidents" onClick={() => setMenuOpen(false)}>{pa.label}</Link></li>
               ))}
             </ul>
           </li>

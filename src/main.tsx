@@ -5,6 +5,7 @@ import ScrollToTop from '@/components/ScrollToTop'
 import './styles/tokens.css'
 import './styles/global.css'
 import App from './App.tsx'
+import MotorAccidents from '@/pages/practice/MotorAccidents'
 import ArticlesList from './pages/articles/ArticlesList'
 import ArticlePage from './pages/articles/ArticlePage'
 import ArticleTemplatePreview from './pages/templates/ArticleTemplatePreview'
@@ -21,6 +22,7 @@ createRoot(document.getElementById('root')!).render(
       <Suspense fallback={<div style={{ padding: 24 }}>Loading…</div>}>
         <Routes>
           <Route path="/" element={<App />} />
+          <Route path="/practice/motor-accidents" element={<MotorAccidents />} />
           <Route path="/login" element={<Login />} />
           <Route path="/articles" element={<ArticlesList />} />
           <Route path="/articles/:slug" element={<ArticlePage />} />

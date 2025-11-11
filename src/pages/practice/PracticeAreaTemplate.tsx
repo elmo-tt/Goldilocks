@@ -9,6 +9,11 @@ import '@/sections/FAQSection.css'
 import PracticeWelcomeVideo from '@/sections/PracticeWelcomeVideo'
 import PracticeTwoCol from '@/sections/PracticeTwoCol'
 import '@/sections/PracticeTwoCol.css'
+import PracticeWhy from '@/sections/PracticeWhy'
+import '@/sections/PracticeWhy.css'
+import PracticeTestimonials from '@/sections/PracticeTestimonials'
+import PracticeBento from '@/sections/PracticeBento'
+import '@/sections/PracticeBento.css'
 
 export type PracticeAreaData = {
   key: string
@@ -25,6 +30,7 @@ export default function PracticeAreaTemplate({ area }: { area: PracticeAreaData 
   const score = area.ratingScore || '4.8'
   const count = area.ratingCount || 918
   const style = area.heroUrl ? { backgroundImage: `url('${area.heroUrl}')` } as React.CSSProperties : undefined
+  const testimonialsFolder = (area.key || '').toLowerCase().replace(/-/g, '_')
   const makeMuted = (a: PracticeAreaData) => {
     const key = (a.key || '').toLowerCase()
     const name = (a.name || '').trim()
@@ -90,6 +96,60 @@ export default function PracticeAreaTemplate({ area }: { area: PracticeAreaData 
       <PracticeTwoCol
         imageUrl={area.benefitsImageUrl || area.heroUrl || '/images/practice/motor-accidents-hero.png'}
         detail={area.details}
+      />
+
+      <PracticeWhy
+        strong={"Auto accidents are among the leading causes of personal injury in Florida."}
+        muted={"Here’s why you need an attorney."}
+        items={[
+          {
+            title: 'You May Be Entitled to More Compensation Than You Realize',
+            body:
+              'After sustaining injuries in a car accident, many victims downplay their injuries or damages to avoid making a claim and potentially having their rates increase. However, you may be entitled to compensation for more than just physical injuries and property damage — including time off work, medical bills, and pain and suffering.',
+          },
+          {
+            title: 'The Insurance Company Is Not On Your Side',
+            body:
+              'Insurers are businesses focused on profit. They may offer low settlements, delay, or deny claims outright. Having a legal advocate ensures the process moves forward and protects your rights.',
+          },
+          {
+            title: 'You May Need to Take Your Claim to Court',
+            body:
+              'In some cases, taking your claim to court might be necessary to get the compensation you deserve. This could be because the insurance company has denied your claim or because they have made an unreasonably low settlement offer.',
+          },
+          {
+            title: 'The Statute of Limitations Could Be Looming',
+            body:
+              'In Florida, the time limit for filing most car accident claims is now two years from the date of the accident. This may seem like a long time, but if you wait too long, important evidence, such as eyewitnesses and surveillance footage, can be more challenging to find. Consulting with a lawyer right away can make sure you\'re able to build a strong case that is filed on time.',
+          },
+        ]}
+      />
+
+      <PracticeTestimonials folder={testimonialsFolder} />
+
+      <PracticeBento
+        areaName={area.name}
+        neighborhoods={[
+          'Riviera Beach','Lake Worth','Boynton Beach','Wellington','Royal Palm Beach','Lantana','Jupiter','Greenacres','Atlantis'
+        ]}
+        ratingScore={score}
+        ratingCount={count}
+        quotes={[
+          { text: 'What a wonderful experience. At GOLDLAW, you are treated like family! Thank you, Paul, and the entire team. Outstanding!!!!!', author: 'Karen R.', context: 'Auto Accident' },
+          { text: 'Professional, responsive, and compassionate from start to finish.', author: 'Daniela M.', context: 'Auto Accident' },
+        ]}
+        actions={[
+          'Gather evidence',
+          'Seek medical attention',
+          'Keep a detailed journal of symptoms and expenses',
+          'Avoid giving recorded statements to insurers',
+          'Do not post about the accident on social media',
+        ]}
+        benefits={[
+          { icon: 'clock', text: 'Available 24/7' },
+          { icon: 'badge', text: 'Board-certified attorneys' },
+          { icon: 'dollar', text: 'No fees or costs unless we win' },
+        ]}
       />
 
       <ContactSection />

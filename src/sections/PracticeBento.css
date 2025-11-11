@@ -1,0 +1,60 @@
+.practice-bento { background: #0a0d48; color: #fff; padding-block: clamp(56px, 8vw, 96px); }
+.pb-inner { padding-inline: clamp(56px, 20vw, 360px); }
+.pb-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: minmax(240px, auto) minmax(240px, auto) minmax(150px, auto);
+}
+.pb-card { background: rgba(255,255,255,0.08); border-radius: 14px; padding: 22px; }
+
+/* Areas */
+.pb-areas { grid-column: 1 / 2; grid-row: 1 / 2; display: grid; grid-template-rows: auto 1fr auto; }
+.pb-areas .pb-title { font-size: clamp(20px, 2.8vw, 26px); font-weight: 500; margin: 0 0 18px; max-width: 26ch; }
+.pb-chips { display: flex; flex-wrap: wrap; gap: 10px; align-self: end; }
+.pb-chip { background: rgba(255,255,255,0.12); padding: 9px 12px; border-radius: 8px; font-size: 14px; }
+
+/* Reviews */
+.pb-reviews { grid-column: 2 / 3; grid-row: 1 / 3; display: grid; grid-template-rows: auto 1fr; gap: 16px; }
+.practice-bento .rating-card { background: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; border: 0 !important; box-shadow: none !important; }
+.pb-scorebox { display: grid; gap: 8px; justify-items: center; text-align: center; }
+.pb-wreath { display: grid; grid-auto-flow: column; gap: 10px; align-items: center; color: rgba(255,255,255,0.9); }
+.pb-laurel { opacity: 0.9; }
+.pb-scorebig { font-size: clamp(30px, 4.4vw, 46px); font-weight: 600; }
+.pb-outof { opacity: 0.7; font-size: 0.8em; }
+.pb-google { width: 28px; height: 28px; opacity: 0.95; }
+.pb-count { opacity: 0.8; font-size: 0.9rem; }
+.pb-quotes { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; }
+.pb-quote { border-top: 1px solid rgba(255,255,255,0.14); padding-top: 14px; }
+.pb-quote:first-child { border-top: none; padding-top: 0; }
+.pb-qtext { margin: 0 0 10px; font-size: 0.95rem; line-height: 1.4; opacity: 0.9; }
+.pb-qmeta { opacity: 0.85; font-size: 0.85rem; }
+.pb-qauthor { font-weight: 600; }
+.pb-qctx { opacity: 0.8; }
+
+/* Actions */
+.pb-actions { grid-column: 1 / 2; grid-row: 2 / 4; display: grid; grid-template-rows: auto auto 1fr; min-height: 0; }
+.pb-actions .pb-title { font-size: clamp(20px, 2.8vw, 26px); font-weight: 500; margin: 0 0 18px; }
+.pb-acc { overflow: hidden; }
+.pb-acc-inner { display: grid; gap: 10px; color: rgba(255,255,255,0.9); font-size: 0.95rem; line-height: 1.45; }
+.pb-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; align-self: stretch; min-height: 0; overflow: auto; }
+.pb-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-top: 1px solid rgba(255,255,255,0.14); }
+.pb-row:first-child { border-top: none; }
+.pb-rowtext { font-size: 0.98rem; transition: color 120ms ease; }
+.pb-plus { font-size: 20px; opacity: 0.85; transition: color 120ms ease; }
+.pb-row.active .pb-rowtext { color: #d0ae63; }
+.pb-row.active .pb-plus { color: #d0ae63; }
+.pb-actions.has-active .pb-list .pb-row { opacity: 0.55; }
+.pb-actions.has-active .pb-list .pb-row.active { opacity: 1; }
+
+/* Benefits */
+.pb-benefits { grid-column: 2 / 3; grid-row: 3 / 4; }
+.pb-benefitlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.pb-benefit { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
+.pb-ico { width: 24px; height: 24px; display: grid; place-items: center; color: #f4c36a; }
+.pb-btext { font-size: 0.96rem; }
+
+@media (max-width: 1000px) {
+  .pb-grid { grid-template-columns: 1fr; grid-template-rows: none; }
+  .pb-areas, .pb-reviews, .pb-actions, .pb-benefits { grid-column: auto; grid-row: auto; }
+}

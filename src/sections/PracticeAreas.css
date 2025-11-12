@@ -46,8 +46,6 @@
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scroll-snap-stop: always;
-  /* Add trailing space so the last card can align to the start */
-  padding-inline-end: calc(100% - var(--pa-card-w));
   padding-bottom: 10px;
   align-items: stretch;
   scrollbar-width: none; /* Firefox */
@@ -63,6 +61,9 @@
   height: clamp(280px, 32vw, 360px);
   display: grid;
 }
+
+/* Align the last card to the end so previous cards remain visible */
+.cards-viewport .practice-card:last-child { scroll-snap-align: end; }
 
 .practice-card .card-inner { display: grid; grid-template-rows: auto 1fr auto; height: 100%; padding: 16px; }
 .practice-card .card-header { font-weight: 600; opacity: 0.95; }

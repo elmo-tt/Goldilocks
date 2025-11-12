@@ -30,7 +30,7 @@ export default function PracticeAreas() {
     []
   )
 
-  const [active, setActive] = useState(1)
+  const [active, setActive] = useState(-1)
   const trackRef = useRef<HTMLDivElement>(null)
   const scrollRaf = useRef<number | null>(null)
 
@@ -40,19 +40,29 @@ export default function PracticeAreas() {
     const cards = track.querySelectorAll<HTMLElement>('.practice-card')
     const card = cards[idx]
     if (!card) return
-    // First, request a UA snap to start. Some browsers may stop slightly off; fix up after a tick.
-    card.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' })
+    const isLast = idx === cards.length - 1
+    // Request a UA snap first. Use end alignment for last card so previous cards remain visible.
+    card.scrollIntoView({ behavior: 'smooth', inline: isLast ? 'end' : 'start', block: 'nearest' })
     // After a short delay, force exact left alignment if not already aligned
     window.setTimeout(() => {
       const desired = card.offsetLeft - track.offsetLeft
       const maxLeft = Math.max(0, track.scrollWidth - track.clientWidth)
-      const clamped = Math.max(0, Math.min(desired, maxLeft))
+      // For last card, align its right edge to viewport right
+      const desiredEnd = desired - (track.clientWidth - card.clientWidth)
+      const targetLeft = isLast ? desiredEnd : desired
+      const clamped = Math.max(0, Math.min(targetLeft, maxLeft))
       const delta = Math.abs(track.scrollLeft - clamped)
       if (delta > 1) track.scrollTo({ left: clamped, behavior: 'auto' })
     }, 220)
   }
 
   const go = (dir: 1 | -1) => {
+    if (active === -1) {
+      const first = dir === 1 ? 0 : areas.length - 1
+      setActive(first)
+      scrollToIndex(first)
+      return
+    }
     const next = (active + dir + areas.length) % areas.length
     scrollToIndex(next)
   }
@@ -67,6 +77,7 @@ export default function PracticeAreas() {
         if (!cards.length) return
         const viewportRect = root.getBoundingClientRect()
         const targetX = viewportRect.left
+        const maxLeft = Math.max(0, root.scrollWidth - root.clientWidth)
         let nearest = 0
         let min = Number.POSITIVE_INFINITY
         cards.forEach((el, idx) => {
@@ -74,6 +85,10 @@ export default function PracticeAreas() {
           const d = Math.abs(r.left - targetX)
           if (d < min) { min = d; nearest = idx }
         })
+        // If we're at the very end, force last as nearest so its details show
+        if (Math.abs(root.scrollLeft - maxLeft) < 2) {
+          nearest = cards.length - 1
+        }
         if (nearest !== active) setActive(nearest)
       })
     }

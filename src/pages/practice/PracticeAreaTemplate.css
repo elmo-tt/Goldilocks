@@ -49,12 +49,16 @@
 
 .pa-tag { position: absolute; right: clamp(24px, 8vw, 160px); bottom: clamp(24px, 6vw, 72px); z-index: 1; color: rgba(255,255,255,0.92); font-size: 18px; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
 
-@media (max-width: 768px) {
-  .pa-hero { padding-top: calc(var(--nav-stack-h, 84px) + 24px); padding-bottom: 40px; }
-  .pa-block { position: static; margin: 0 clamp(24px, 6vw, 28px); }
-  .pa-tag { position: static; margin: 16px clamp(24px, 6vw, 28px) 0; text-align: center; }
+@media (max-width: 900px) {
+  .pa-hero { padding-top: calc(var(--nav-stack-h, 84px) + 24px); padding-bottom: 40px; display: grid; align-content: center; justify-items: center; }
+  .pa-block { position: relative; left: auto; bottom: auto; z-index: 2; margin: 0 24px; max-width: none; }
+  .pa-tag { position: relative; right: auto; bottom: auto; z-index: 2; margin: 16px 24px 0; text-align: center; }
   .pa-actions { justify-content: center; }
-  .pa-title { text-align: center; margin-top: 2px; }
+  .pa-title { text-align: center; margin-top: 2px; color: #fff; }
   .pa-detail { text-align: center; }
-  .pa-rating { justify-content: center; }
+  .pa-rating { justify-content: center; margin-inline: auto; }
+  .pa-block { text-align: center; }
+  .pa-hero::before { background: linear-gradient(180deg, rgba(3,5,53,0.35) 0%, rgba(3,5,53,0.60) 46%, rgba(3,5,53,0.78) 100%); }
+  .pa-title { text-shadow: 0 2px 8px rgba(0,0,0,0.55); }
+  .pa-detail { color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.45); }
 }

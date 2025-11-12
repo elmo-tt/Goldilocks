@@ -104,6 +104,9 @@ export default function PracticeTestimonials({ folder, title = 'Hear the stories
     targets.forEach(t => { ensurePoster(t) })
   }, [items, active])
 
+  
+
+
   return (
     <section className="testimonials">
       <div className="t-inner">

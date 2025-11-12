@@ -72,6 +72,16 @@ export default function ScrollToTop() {
       }
       requestAnimationFrame(tick)
       setTimeout(() => { if (!cancelled) scrollTop() }, 120)
+    } else {
+      // Initial load on same path (e.g., refresh). Ensure we start at the very top when no hash.
+      let tries = 0
+      const tick = () => {
+        if (cancelled) return
+        scrollTop()
+        if (tries++ < 6) requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+      setTimeout(() => { if (!cancelled) scrollTop() }, 150)
     }
 
     return () => { cancelled = true }

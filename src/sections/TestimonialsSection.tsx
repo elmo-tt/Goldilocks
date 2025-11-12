@@ -50,37 +50,63 @@ export default function TestimonialsSection() {
 
   const [active, setActive] = useState(0) // index within original testimonials
   const [focusLoopIdx, setFocusLoopIdx] = useState(1) // loop index visually focused
+  const [ghostActive, setGhostActive] = useState<number | null>(null)
   const scrollRaf = useRef<number | null>(null)
+  const animatingRef = useRef(false)
+  const swappingRef = useRef(false)
+  const lastNavRef = useRef(0)
+  const settleTimerRef = useRef<number | null>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const [visibleCount, setVisibleCount] = useState(3)
   const total = testimonials.length
+  const clones = visibleCount > 1 ? Math.max(1, visibleCount) : 0
+  const loopIndexForOriginal = (origIdx: number) => origIdx + clones
+  const originalFromLoopIndex = (loopIdx: number) => ((loopIdx - clones) % total + total) % total
   const looped = useMemo(() => {
     if (!total) return [] as Testimonial[]
-    const lc = Math.max(1, visibleCount)
+    if (clones <= 0) return testimonials
+    const lc = clones
     const left = testimonials.slice(-lc).map((t, i) => ({ ...t, id: `${t.id}-lc${i}` }))
     const right = testimonials.slice(0, lc).map((t, i) => ({ ...t, id: `${t.id}-rc${i}` }))
     return [...left, ...testimonials, ...right]
-  }, [testimonials, total, visibleCount])
+  }, [testimonials, total, clones])
   const ratio = total > 1 ? active / (total - 1) : 0
 
-  const clones = Math.max(1, visibleCount)
-  const loopIndexForOriginal = (origIdx: number) => origIdx + clones
-  const originalFromLoopIndex = (loopIdx: number) => ((loopIdx - clones) % total + total) % total
-
-  const scrollToIndex = (loopIdx: number, behavior: ScrollBehavior = 'smooth') => {
+  const scrollToIndex = (loopIdx: number, behavior: ScrollBehavior = 'smooth', markAnimating = false) => {
     const root = trackRef.current
     if (!root) return
     const cards = root.querySelectorAll<HTMLElement>('.t-card')
     const el = cards[loopIdx]
     if (!el) return
-    // Let the browser perform a snap-centered scroll reliably
-    el.scrollIntoView({ behavior, inline: 'center', block: 'nearest' })
+    // Deterministic centering avoids Android Chrome finickiness with scrollIntoView
+    const targetLeft = Math.round(el.offsetLeft - (root.clientWidth - el.clientWidth) / 2)
+    if (markAnimating && behavior !== 'auto') {
+      animatingRef.current = true
+      window.setTimeout(() => { animatingRef.current = false }, 320)
+    }
+    root.scrollTo({ left: targetLeft, behavior })
   }
 
   const go = (dir: 1 | -1) => {
+    // Throttle to prevent multi-step advances from a single gesture/tap
+    const now = (typeof performance !== 'undefined' ? performance.now() : Date.now())
+    if (now - lastNavRef.current < 280) return
+    lastNavRef.current = now
     // Move one loop step from current center so motion always goes forward/backward using clones
-    const targetLoop = focusLoopIdx + dir
-    scrollToIndex(targetLoop, 'smooth')
+    if (clones > 0) {
+      const targetLoop = focusLoopIdx + dir
+      setFocusLoopIdx(targetLoop)
+      const orig = originalFromLoopIndex(targetLoop)
+      if (orig !== active) setActive(orig)
+      scrollToIndex(targetLoop, 'smooth')
+    } else {
+      const next = Math.max(0, Math.min(total - 1, focusLoopIdx + dir))
+      if (next === focusLoopIdx) return
+      setFocusLoopIdx(next)
+      const orig = originalFromLoopIndex(next)
+      if (orig !== active) setActive(orig)
+      scrollToIndex(next, 'smooth')
+    }
   }
 
   useEffect(() => {
@@ -97,56 +123,152 @@ export default function TestimonialsSection() {
     scrollToIndex(initial, 'auto')
 
     const onScroll = () => {
+      if (swappingRef.current) return
       if (scrollRaf.current) cancelAnimationFrame(scrollRaf.current)
       scrollRaf.current = requestAnimationFrame(() => {
         const root = trackRef.current
         if (!root) return
         const cards = root.querySelectorAll<HTMLElement>('.t-card')
         if (!cards.length) return
-        const viewportRect = root.getBoundingClientRect()
-        const centerX = viewportRect.left + viewportRect.width / 2
+        const centerX = root.scrollLeft + root.clientWidth / 2
         let nearest = 0
         let min = Number.POSITIVE_INFINITY
         cards.forEach((el, idx) => {
-          const r = el.getBoundingClientRect()
-          const cx = r.left + r.width / 2
+          const cx = el.offsetLeft + el.clientWidth / 2
           const d = Math.abs(cx - centerX)
           if (d < min) { min = d; nearest = idx }
         })
 
+        // No hysteresis to avoid leaving a flick-scrolled card dimmed
+
+        let settleTarget: number | null = null
+
         // If a clone region is centered, reposition seamlessly to the matching original
         if (nearest < clones || nearest >= clones + total) {
-          const root = trackRef.current
-          if (!root) return
+          const track = trackRef.current
+          if (!track) return
           const orig = originalFromLoopIndex(nearest)
           const origLoop = loopIndexForOriginal(orig)
-          const cardsAll = root.querySelectorAll<HTMLElement>('.t-card')
+          const cardsAll = track.querySelectorAll<HTMLElement>('.t-card')
           const cloneEl = cardsAll[nearest]
           const origEl = cardsAll[origLoop]
           if (!cloneEl || !origEl) return
-          // shift scrollLeft by the delta between original and clone so visual center stays identical
+          const sectionEl = track.closest('.home-testimonials') as HTMLElement | null
+          sectionEl?.classList.add('no-anim')
+          swappingRef.current = true
+          setGhostActive(nearest)
+          // Immediately mark the original as focused/active so visuals update without waiting for another scroll tick
+          setFocusLoopIdx(origLoop)
+          if (active !== orig) setActive(orig)
           const delta = origEl.offsetLeft - cloneEl.offsetLeft
-          root.scrollTo({ left: root.scrollLeft + delta, behavior: 'auto' })
-          // Defer state changes to next frame so the shift completes without visible flicker
+          track.scrollTo({ left: track.scrollLeft + delta, behavior: 'auto' })
           requestAnimationFrame(() => {
-            setFocusLoopIdx(origLoop)
-            if (active !== orig) setActive(orig)
+            // Ensure the newly focused original is precisely centered before re-enabling animations
+            scrollToIndex(origLoop, 'auto')
+            setGhostActive(origLoop)
+            setTimeout(() => {
+              sectionEl?.classList.remove('no-anim')
+              swappingRef.current = false
+            }, 200)
           })
-          return
+          settleTarget = origLoop
         }
 
-        setFocusLoopIdx(nearest)
-        const orig = originalFromLoopIndex(nearest)
-        if (orig !== active) setActive(orig)
+        if (settleTarget === null) {
+          setFocusLoopIdx(nearest)
+          const orig = originalFromLoopIndex(nearest)
+          if (orig !== active) setActive(orig)
+          settleTarget = nearest
+        }
+
+        if (settleTimerRef.current) window.clearTimeout(settleTimerRef.current)
+        if (settleTarget !== null) {
+          settleTimerRef.current = window.setTimeout(() => {
+            if (swappingRef.current) return
+            const rootNow = trackRef.current
+            if (!rootNow) return
+            const cardsNow = rootNow.querySelectorAll<HTMLElement>('.t-card')
+            if (!cardsNow.length) return
+            const cxNow = rootNow.scrollLeft + rootNow.clientWidth / 2
+            let near = 0
+            let best = Number.POSITIVE_INFINITY
+            cardsNow.forEach((el, idx) => {
+              const cx = el.offsetLeft + el.clientWidth / 2
+              const d = Math.abs(cx - cxNow)
+              if (d < best) { best = d; near = idx }
+            })
+            if (near < clones || near >= clones + total) {
+              const orig = originalFromLoopIndex(near)
+              const origLoop = loopIndexForOriginal(orig)
+              setFocusLoopIdx(origLoop)
+              if (active !== orig) setActive(orig)
+              scrollToIndex(origLoop, 'auto')
+            } else {
+              setFocusLoopIdx(near)
+              const origIdx = originalFromLoopIndex(near)
+              if (origIdx !== active) setActive(origIdx)
+              scrollToIndex(near, 'auto')
+            }
+            setGhostActive(null)
+          }, 220)
+        }
       })
     }
 
     const root = trackRef.current
     root?.addEventListener('scroll', onScroll, { passive: true })
+    const onPointerUp = () => {
+      if (!root || swappingRef.current) return
+      const centerX = root.scrollLeft + root.clientWidth / 2
+      const cards = root.querySelectorAll<HTMLElement>('.t-card')
+      if (!cards.length) return
+      let near = 0
+      let best = Number.POSITIVE_INFINITY
+      cards.forEach((el, idx) => {
+        const cx = el.offsetLeft + el.clientWidth / 2
+        const d = Math.abs(cx - centerX)
+        if (d < best) { best = d; near = idx }
+      })
+      if (near < clones || near >= clones + total) {
+        const cardsAll = root.querySelectorAll<HTMLElement>('.t-card')
+        const cloneEl = cardsAll[near]
+        const orig = originalFromLoopIndex(near)
+        const origLoop = loopIndexForOriginal(orig)
+        const origEl = cardsAll[origLoop]
+        if (!cloneEl || !origEl) return
+        const sectionEl = root.closest('.home-testimonials') as HTMLElement | null
+        sectionEl?.classList.add('no-anim')
+        swappingRef.current = true
+        setGhostActive(near)
+        setFocusLoopIdx(origLoop)
+        if (active !== orig) setActive(orig)
+        const delta = origEl.offsetLeft - cloneEl.offsetLeft
+        root.scrollTo({ left: root.scrollLeft + delta, behavior: 'auto' })
+        requestAnimationFrame(() => {
+          scrollToIndex(origLoop, 'auto')
+          setGhostActive(origLoop)
+          setTimeout(() => {
+            sectionEl?.classList.remove('no-anim')
+            swappingRef.current = false
+            setGhostActive(null)
+          }, 200)
+        })
+      } else {
+        setFocusLoopIdx(near)
+        const origIdx = originalFromLoopIndex(near)
+        if (origIdx !== active) setActive(origIdx)
+        scrollToIndex(near, 'auto')
+      }
+    }
+    root?.addEventListener('pointerup', onPointerUp)
+    root?.addEventListener('touchend', onPointerUp, { passive: true })
     return () => {
       root?.removeEventListener('scroll', onScroll)
+      root?.removeEventListener('pointerup', onPointerUp)
+      root?.removeEventListener('touchend', onPointerUp)
       if (mq.removeEventListener) mq.removeEventListener('change', listener)
       else mq.removeListener(listener)
+      if (settleTimerRef.current) window.clearTimeout(settleTimerRef.current)
     }
   }, [total, active, clones])
 
@@ -158,10 +280,13 @@ export default function TestimonialsSection() {
             {looped.map((t, i) => (
               <article
                 key={t.id}
-                className={`t-card${i === focusLoopIdx ? ' active' : ''}`}
+                className={`t-card${(i === focusLoopIdx || i === ghostActive) ? ' active' : ''}`}
                 onClick={() => {
                   // Scroll directly to the clicked loop index (may be a clone)
-                  scrollToIndex(i, 'smooth')
+                  setFocusLoopIdx(i)
+                  const origIdx = originalFromLoopIndex(i)
+                  if (origIdx !== active) setActive(origIdx)
+                  scrollToIndex(i, 'smooth', true)
                 }}
                 aria-current={i === focusLoopIdx ? 'true' : undefined}
               >

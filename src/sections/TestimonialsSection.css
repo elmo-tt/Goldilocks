@@ -25,6 +25,7 @@
   align-items: stretch; 
   scrollbar-width: none; 
   -ms-overflow-style: none; 
+  touch-action: pan-x;
   /* Full-bleed track so cards touch viewport edges */
   width: 100%;
   position: relative;
@@ -40,6 +41,9 @@
   scroll-snap-stop: always;
 }
 .home-testimonials .t-viewport::-webkit-scrollbar { display: none; }
+
+/* During wrap-around reposition, temporarily disable snapping to prevent jitter */
+.home-testimonials.no-anim .t-viewport { scroll-snap-type: none; }
 
 .home-testimonials .t-card { background: #030535; border-radius: 6px; padding: 24px; display: grid; grid-template-rows: auto 1fr auto; scroll-snap-align: center; opacity: 0.45; transform: scale(0.92); transform-origin: center; transition: opacity 160ms ease, background 160ms ease, transform 200ms ease; }
 .home-testimonials .t-card.active { background: #030535; opacity: 1; box-shadow: none; transform: scale(1.04); z-index: 1; }
@@ -73,8 +77,8 @@
   .home-testimonials .t-controls { padding-inline: 16px; }
   .home-testimonials .progress { margin-inline: 6px; }
   /* Keep all content inside the dark card; scroll only the quote when needed */
-  .home-testimonials .t-card { height: clamp(360px, 62vh, 480px); display: grid; grid-template-rows: auto 1fr auto; }
-  .home-testimonials .t-card .t-text { min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; font-size: clamp(16px, 4.6vw, 18px); line-height: 1.35; }
+  .home-testimonials .t-card { min-height: clamp(420px, 70vh, 560px); display: grid; grid-template-rows: auto 1fr auto; }
+  .home-testimonials .t-card .t-text { min-height: 0; overflow: visible; -webkit-overflow-scrolling: auto; font-size: clamp(16px, 4.6vw, 18px); line-height: 1.35; }
   .home-testimonials .t-card .stars { margin-bottom: 16px; }
   .home-testimonials .t-card .t-meta { margin-top: 14px; }
 }

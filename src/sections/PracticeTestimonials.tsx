@@ -30,6 +30,7 @@ export default function PracticeTestimonials({ folder, title = 'Hear the stories
 
   const [active, setActive] = useState(0)
   const trackRef = useRef<HTMLDivElement>(null)
+  const scrollRaf = useRef<number | null>(null)
 
   const scrollToIndex = (idx: number) => {
     const track = trackRef.current
@@ -103,6 +104,31 @@ export default function PracticeTestimonials({ folder, title = 'Hear the stories
     if (items[active - 1]) targets.push(items[active - 1])
     targets.forEach(t => { ensurePoster(t) })
   }, [items, active])
+
+  useEffect(() => {
+    const root = trackRef.current
+    if (!root) return
+    const onScroll = () => {
+      if (scrollRaf.current) cancelAnimationFrame(scrollRaf.current)
+      scrollRaf.current = requestAnimationFrame(() => {
+        const cards = root.querySelectorAll<HTMLElement>('.t-card')
+        if (!cards.length) return
+        const viewportRect = root.getBoundingClientRect()
+        const centerX = viewportRect.left + viewportRect.width / 2
+        let nearest = 0
+        let min = Number.POSITIVE_INFINITY
+        cards.forEach((el, idx) => {
+          const r = el.getBoundingClientRect()
+          const cx = r.left + r.width / 2
+          const d = Math.abs(cx - centerX)
+          if (d < min) { min = d; nearest = idx }
+        })
+        if (nearest !== active) setActive(nearest)
+      })
+    }
+    root.addEventListener('scroll', onScroll, { passive: true })
+    return () => { root.removeEventListener('scroll', onScroll) }
+  }, [active, items.length])
 
   
 

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState, useEffect } from 'react'
 import './PracticeAreas.css'
 
 type Area = {
@@ -32,13 +32,18 @@ export default function PracticeAreas() {
 
   const [active, setActive] = useState(1)
   const trackRef = useRef<HTMLDivElement>(null)
+  const scrollRaf = useRef<number | null>(null)
 
   const scrollToIndex = (idx: number) => {
     const track = trackRef.current
     if (!track) return
-    const card = track.querySelectorAll<HTMLElement>('.practice-card')[idx]
+    const cards = track.querySelectorAll<HTMLElement>('.practice-card')
+    const card = cards[idx]
     if (!card) return
-    card.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
+    const desiredLeft = card.offsetLeft - track.offsetLeft
+    const maxLeft = Math.max(0, track.scrollWidth - track.clientWidth)
+    const clampedLeft = Math.max(0, Math.min(desiredLeft, maxLeft))
+    track.scrollTo({ left: clampedLeft, behavior: 'smooth' })
   }
 
   const go = (dir: 1 | -1) => {
@@ -46,6 +51,30 @@ export default function PracticeAreas() {
     setActive(next)
     scrollToIndex(next)
   }
+
+  useEffect(() => {
+    const root = trackRef.current
+    if (!root) return
+    const onScroll = () => {
+      if (scrollRaf.current) cancelAnimationFrame(scrollRaf.current)
+      scrollRaf.current = requestAnimationFrame(() => {
+        const cards = root.querySelectorAll<HTMLElement>('.practice-card')
+        if (!cards.length) return
+        const viewportRect = root.getBoundingClientRect()
+        const targetX = viewportRect.left
+        let nearest = 0
+        let min = Number.POSITIVE_INFINITY
+        cards.forEach((el, idx) => {
+          const r = el.getBoundingClientRect()
+          const d = Math.abs(r.left - targetX)
+          if (d < min) { min = d; nearest = idx }
+        })
+        if (nearest !== active) setActive(nearest)
+      })
+    }
+    root.addEventListener('scroll', onScroll, { passive: true })
+    return () => { root.removeEventListener('scroll', onScroll) }
+  }, [active, areas.length])
 
   return (
     <section id="practice-areas" className="practice">

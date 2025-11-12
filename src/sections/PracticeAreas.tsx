@@ -40,15 +40,20 @@ export default function PracticeAreas() {
     const cards = track.querySelectorAll<HTMLElement>('.practice-card')
     const card = cards[idx]
     if (!card) return
-    const desiredLeft = card.offsetLeft - track.offsetLeft
-    const maxLeft = Math.max(0, track.scrollWidth - track.clientWidth)
-    const clampedLeft = Math.max(0, Math.min(desiredLeft, maxLeft))
-    track.scrollTo({ left: clampedLeft, behavior: 'smooth' })
+    // First, request a UA snap to start. Some browsers may stop slightly off; fix up after a tick.
+    card.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' })
+    // After a short delay, force exact left alignment if not already aligned
+    window.setTimeout(() => {
+      const desired = card.offsetLeft - track.offsetLeft
+      const maxLeft = Math.max(0, track.scrollWidth - track.clientWidth)
+      const clamped = Math.max(0, Math.min(desired, maxLeft))
+      const delta = Math.abs(track.scrollLeft - clamped)
+      if (delta > 1) track.scrollTo({ left: clamped, behavior: 'auto' })
+    }, 220)
   }
 
   const go = (dir: 1 | -1) => {
     const next = (active + dir + areas.length) % areas.length
-    setActive(next)
     scrollToIndex(next)
   }
 
@@ -93,7 +98,6 @@ export default function PracticeAreas() {
                   key={a.id}
                   className={`practice-card${isActive ? ' active' : ''}`}
                   onClick={() => {
-                    setActive(i)
                     scrollToIndex(i)
                   }}
                   aria-current={isActive ? 'true' : undefined}

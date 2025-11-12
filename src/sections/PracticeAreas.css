@@ -38,12 +38,16 @@
 }
 
 .cards-viewport {
+  --pa-card-w: clamp(210px, 24vw, 230px);
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: clamp(210px, 24vw, 230px);
+  grid-auto-columns: var(--pa-card-w);
   gap: 16px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
+  scroll-snap-stop: always;
+  /* Add trailing space so the last card can align to the start */
+  padding-inline-end: calc(100% - var(--pa-card-w));
   padding-bottom: 10px;
   align-items: stretch;
   scrollbar-width: none; /* Firefox */

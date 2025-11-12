@@ -54,18 +54,19 @@ export default function TestimonialsSection() {
   const trackRef = useRef<HTMLDivElement>(null)
   const [visibleCount, setVisibleCount] = useState(3)
   const total = testimonials.length
+  const clones = visibleCount > 1 ? Math.max(1, visibleCount) : 0
+  const loopIndexForOriginal = (origIdx: number) => origIdx + clones
+  const originalFromLoopIndex = (loopIdx: number) => ((loopIdx - clones) % total + total) % total
   const looped = useMemo(() => {
     if (!total) return [] as Testimonial[]
-    const lc = Math.max(1, visibleCount)
+    if (clones <= 0) return testimonials
+    const lc = clones
     const left = testimonials.slice(-lc).map((t, i) => ({ ...t, id: `${t.id}-lc${i}` }))
     const right = testimonials.slice(0, lc).map((t, i) => ({ ...t, id: `${t.id}-rc${i}` }))
     return [...left, ...testimonials, ...right]
-  }, [testimonials, total, visibleCount])
+  }, [testimonials, total, clones])
   const ratio = total > 1 ? active / (total - 1) : 0
 
-  const clones = Math.max(1, visibleCount)
-  const loopIndexForOriginal = (origIdx: number) => origIdx + clones
-  const originalFromLoopIndex = (loopIdx: number) => ((loopIdx - clones) % total + total) % total
 
   const scrollToIndex = (loopIdx: number, behavior: ScrollBehavior = 'smooth') => {
     const root = trackRef.current
@@ -78,9 +79,14 @@ export default function TestimonialsSection() {
   }
 
   const go = (dir: 1 | -1) => {
-    // Move one loop step from current center so motion always goes forward/backward using clones
-    const targetLoop = focusLoopIdx + dir
-    scrollToIndex(targetLoop, 'smooth')
+    if (clones > 0) {
+      const targetLoop = focusLoopIdx + dir
+      scrollToIndex(targetLoop, 'smooth')
+    } else {
+      const next = Math.max(0, Math.min(total - 1, focusLoopIdx + dir))
+      if (next === focusLoopIdx) return
+      scrollToIndex(next, 'smooth')
+    }
   }
 
   useEffect(() => {

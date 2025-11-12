@@ -59,7 +59,7 @@
 .home-testimonials .t-card .t-meta .name { font-weight: 600; font-size: 16px; }
 .home-testimonials .t-card .t-meta .area { font-size: 14px; opacity: 0.8; }
 
-.home-testimonials .t-controls { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 16px; margin-top: 8px; }
+.home-testimonials .t-controls { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 16px; margin-top: 8px; position: relative; z-index: 5; }
 
 /* Single-line indicator */
 .home-testimonials .progress { position: relative; height: 2px; background: rgba(255,255,255,0.18); border-radius: 999px; overflow: visible; }

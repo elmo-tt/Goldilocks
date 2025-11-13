@@ -43,11 +43,13 @@
 .t-arrows { display: flex; gap: 10px; margin-top: 14px; }
 
 .t-right { min-width: 0; }
-.t-viewport { display: grid; grid-auto-flow: column; grid-auto-columns: clamp(240px, 26vw, 320px); gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 12px clamp(24px, 3.2vw, 40px) 10px; scroll-padding-inline: clamp(24px, 3.2vw, 40px); align-items: start; scrollbar-width: none; -ms-overflow-style: none; }
+.t-viewport { --pt-card-w: clamp(240px, 26vw, 320px); display: grid; grid-auto-flow: column; grid-auto-columns: var(--pt-card-w); gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 12px clamp(24px, 3.2vw, 40px) 10px; scroll-padding-inline: clamp(24px, 3.2vw, 40px); align-items: start; scrollbar-width: none; -ms-overflow-style: none; }
 .t-viewport::-webkit-scrollbar { display: none; }
 
 .t-viewport > .t-card:first-child { margin-left: 8px; }
-.t-viewport > .t-card:last-child { margin-right: 8px; }
+.t-viewport > .t-card:last-child { margin-right: 0; }
+/* Ensure the last card can snap to the right (end) edge */
+.t-viewport .t-card:last-child { scroll-snap-align: end; }
 
 .t-card { background: transparent; border: none; border-radius: 10px; height: clamp(320px, 38vw, 460px); display: grid; grid-template-rows: minmax(0, 1fr) auto; padding: 0; box-sizing: border-box; overflow: visible; scroll-snap-align: start; scroll-margin-inline: clamp(24px, 3.2vw, 40px); opacity: 0.45; transition: opacity 200ms ease; }
 .t-card.active { background: transparent; opacity: 1; }

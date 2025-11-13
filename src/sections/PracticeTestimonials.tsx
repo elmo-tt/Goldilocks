@@ -37,7 +37,18 @@ export default function PracticeTestimonials({ folder, title = 'Hear the stories
     if (!track) return
     const card = track.querySelectorAll<HTMLElement>('.t-card')[idx]
     if (!card) return
-    card.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
+    const cards = track.querySelectorAll<HTMLElement>('.t-card')
+    const isLast = idx === cards.length - 1
+    card.scrollIntoView({ inline: isLast ? 'end' : 'start', block: 'nearest', behavior: 'smooth' })
+    // After a short delay, force precise alignment in case UA snap stops slightly off
+    window.setTimeout(() => {
+      const desiredStart = card.offsetLeft - track.offsetLeft
+      const maxLeft = Math.max(0, track.scrollWidth - track.clientWidth)
+      const desiredEnd = desiredStart - (track.clientWidth - card.clientWidth)
+      const targetLeft = isLast ? desiredEnd : desiredStart
+      const clamped = Math.max(0, Math.min(targetLeft, maxLeft))
+      if (Math.abs(track.scrollLeft - clamped) > 1) track.scrollTo({ left: clamped, behavior: 'auto' })
+    }, 220)
   }
 
   const go = (dir: 1 | -1) => {
@@ -96,6 +107,13 @@ export default function PracticeTestimonials({ folder, title = 'Hear the stories
     }
   }
 
+  // Pre-generate posters for the first 4 items on initial load so placeholders appear immediately
+  useEffect(() => {
+    if (!items.length) return
+    const count = Math.min(4, items.length)
+    for (let i = 0; i < count; i++) ensurePoster(items[i])
+  }, [items])
+
   useEffect(() => {
     if (!items.length) return
     const targets: Testimonial[] = []
@@ -114,15 +132,35 @@ export default function PracticeTestimonials({ folder, title = 'Hear the stories
         const cards = root.querySelectorAll<HTMLElement>('.t-card')
         if (!cards.length) return
         const viewportRect = root.getBoundingClientRect()
-        const centerX = viewportRect.left + viewportRect.width / 2
+        const rootStyle = getComputedStyle(root)
+        const padLeftStr = rootStyle.getPropertyValue('scroll-padding-left') || '0'
+        let padLeft = parseFloat(padLeftStr) || 0
+        // Fallback: use card scroll-margin-left if scroll-padding-left is not available
+        const cardsArr = Array.from(cards)
+        if (!padLeft && cardsArr.length) {
+          const cs0 = getComputedStyle(cardsArr[0])
+          padLeft = parseFloat(cs0.getPropertyValue('scroll-margin-left') || '0') || 0
+        }
+        const targetX = viewportRect.left + padLeft
+        const maxLeft = Math.max(0, root.scrollWidth - root.clientWidth)
         let nearest = 0
         let min = Number.POSITIVE_INFINITY
+        const marginLeft = (() => {
+          if (!cardsArr.length) return 0
+          const cs = getComputedStyle(cardsArr[0])
+          return parseFloat(cs.getPropertyValue('scroll-margin-left') || '0') || 0
+        })()
         cards.forEach((el, idx) => {
           const r = el.getBoundingClientRect()
-          const cx = r.left + r.width / 2
-          const d = Math.abs(cx - centerX)
+          // Logical left = visual left minus the scroll-margin-left applied for snapping
+          const logicalLeft = r.left - marginLeft
+          const d = Math.abs(logicalLeft - targetX)
           if (d < min) { min = d; nearest = idx }
         })
+        // If scrolled to the very end, force last card as active so it is reachable both by swipe and back arrow
+        if (Math.abs(root.scrollLeft - maxLeft) < 2) {
+          nearest = cards.length - 1
+        }
         if (nearest !== active) setActive(nearest)
       })
     }

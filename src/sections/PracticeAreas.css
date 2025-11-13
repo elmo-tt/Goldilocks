@@ -39,31 +39,28 @@
 
 .cards-viewport {
   --pa-card-w: clamp(210px, 24vw, 230px);
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: var(--pa-card-w);
-  gap: 16px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-snap-stop: always;
-  padding-bottom: 10px;
-  align-items: stretch;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE 10+ */
+  overflow: hidden; /* Embla viewport */
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+  cursor: grab;
 }
-.cards-viewport::-webkit-scrollbar { display: none; }
+.cards-track {
+  display: flex; /* Embla container */
+  will-change: transform;
+  align-items: stretch;
+}
 
 .practice-card {
   background: #030535;
   border: none;
   border-radius: 4px;
-  scroll-snap-align: start;
+  flex: 0 0 var(--pa-card-w); /* Embla slide width */
+  margin-right: 16px; /* replaces gap for compatibility */
   height: clamp(280px, 32vw, 360px);
   display: grid;
 }
-
-/* Align the last card to the end so previous cards remain visible */
-.cards-viewport .practice-card:last-child { scroll-snap-align: end; }
+.practice-card:last-child { margin-right: 0; }
 
 .practice-card .card-inner { display: grid; grid-template-rows: auto 1fr auto; height: 100%; padding: 16px; }
 .practice-card .card-header { font-weight: 600; opacity: 0.95; }
@@ -95,4 +92,36 @@
   .practice-card.active .card-inner { grid-template-rows: auto 1fr; }
   .practice-card .card-feature { height: 100%; }
   .practice-card .feature-body { margin-top: auto; gap: 20px; }
+}
+
+.pa2 { margin-top: 24px; display: grid; gap: 10px; position: relative; z-index: 20; }
+.pa2-viewport { --pa2-w: clamp(210px, 24vw, 230px); overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: pan-y; cursor: grab; position: relative; z-index: 0; }
+.pa2-track { display: flex; will-change: transform; align-items: stretch; }
+.pa2-slide { flex: 0 0 var(--pa2-w); margin-right: 16px; }
+.pa2-slide:last-child { margin-right: 0; }
+.pa2-card { background: #030535; border: none; border-radius: 4px; height: clamp(280px, 32vw, 360px); display: grid; }
+.pa2-slide.active .pa2-card { background: rgba(255,255,255,0.08); }
+.pa2-inner { display: grid; grid-template-rows: auto 1fr auto; height: 100%; padding: 16px; }
+.pa2-header { font-weight: 600; opacity: 0.95; }
+.pa2-footer { align-self: end; }
+.pa2-rate { font-size: 2rem; font-weight: 500; }
+.pa2-caption { font-size: 0.75rem; opacity: 0.7; }
+.pa2-slide.active .pa2-inner { grid-template-rows: auto 1fr; }
+.pa2-feature { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; min-height: 0; height: 100%; }
+.pa2-feature-image { width: 100%; height: 120px; background-size: cover; background-position: center; border-radius: 8px; }
+.pa2-feature-body { display: grid; gap: 28px; margin-top: auto; min-height: 0; }
+.pa2-feature-text { opacity: 0.9; margin: 0; font-size: 0.875rem; line-height: 1.45; }
+.pa2-feature-cta { display: inline-flex; align-items: center; gap: 6px; color: #fff; text-decoration: none; opacity: 0.95; }
+.pa2-feature-cta .arrow { opacity: 0.85; }
+.pa2-nav { display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
+.pa2-nav .nav-btn { width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,0.08); border: none; color: #fff; }
+.pa2-nav .view-all { color: rgba(255,255,255,0.85); text-decoration: none; }
+.pa2-nav .arrows { display: flex; gap: 10px; }
+
+@media (max-width: 768px) {
+  .pa2-card { height: auto; min-height: 380px; }
+  .pa2-inner { grid-template-rows: auto 1fr auto; }
+  .pa2-slide.active .pa2-inner { grid-template-rows: auto 1fr; }
+  .pa2-feature { height: 100%; }
+  .pa2-feature-body { margin-top: auto; gap: 20px; }
 }

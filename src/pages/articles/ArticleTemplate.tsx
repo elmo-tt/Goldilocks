@@ -54,6 +54,23 @@ function HtmlBody({ html, heroMaxWidth, excerpt }: { html: string; heroMaxWidth?
           }
         }
       } catch {}
+      // Cleanup: remove orphaned auto-captions that no longer match the preceding image
+      try {
+        const autos = Array.from(el.querySelectorAll('p.auto-caption[data-caption-for]')) as HTMLElement[]
+        autos.forEach(p => {
+          const id = p.getAttribute('data-caption-for') || ''
+          const prev = p.previousElementSibling as HTMLElement | null
+          let ok = false
+          if (prev && prev.tagName.toLowerCase() === 'img') {
+            const dataId = prev.getAttribute('data-asset-id') || ''
+            const srcPrev = (prev.getAttribute('src') || '')
+            const prevIsAsset = srcPrev.startsWith('asset:')
+            const prevId = dataId || (prevIsAsset ? srcPrev.slice(6) : '')
+            if (prevId && prevId === id) ok = true
+          }
+          if (!ok) p.remove()
+        })
+      } catch {}
       const imgs = Array.from(el.querySelectorAll('img')) as HTMLImageElement[]
       imgs.forEach(img => {
         // Constrain images to hero width (if provided) and apply optional data-width percentage
@@ -98,9 +115,20 @@ function HtmlBody({ html, heroMaxWidth, excerpt }: { html: string; heroMaxWidth?
           // Auto-caption from asset meta if no explicit caption present
           try {
             const next = img.nextElementSibling as HTMLElement | null
-            const hasParaCaption = !!(next && next.tagName.toLowerCase() === 'p' && next.getAttribute('data-caption-for') === id)
+            // If there is a mismatched auto-caption immediately after the image, drop it
+            if (next && next.tagName.toLowerCase() === 'p') {
+              const capId = next.getAttribute('data-caption-for') || ''
+              if (capId && capId !== id && next.classList.contains('auto-caption')) {
+                next.remove()
+              }
+            }
+            const hasParaCaption = !!(img.nextElementSibling && img.nextElementSibling.tagName.toLowerCase() === 'p' && img.nextElementSibling.getAttribute('data-caption-for') === id)
             const hasFigureCaption = !!(img.parentElement && img.parentElement.tagName.toLowerCase() === 'figure' && !!img.parentElement.querySelector('figcaption'))
-            const already = hasParaCaption || hasFigureCaption || img.dataset.autoCaption === '1'
+            // Clear stale auto-caption flag if no matching caption remains
+            if (img.dataset.autoCaption === '1' && !hasParaCaption && !hasFigureCaption) {
+              delete (img.dataset as any).autoCaption
+            }
+            const already = hasParaCaption || hasFigureCaption
             if (!already && (AssetStore as any).getMeta) {
               ;(AssetStore as any).getMeta(id).then((meta: any) => {
                 if (cancelled) return
@@ -143,7 +171,7 @@ function HtmlBody({ html, heroMaxWidth, excerpt }: { html: string; heroMaxWidth?
     apply()
     // Re-apply on attribute mutations so changes show without needing DevTools
     const mo = new MutationObserver(() => apply())
-    mo.observe(el, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-width', 'data-align'] })
+    mo.observe(el, { subtree: true, childList: true, attributes: true, attributeFilter: ['src', 'data-asset-id', 'data-width', 'data-align'] })
     // Style any paragraphs explicitly marked as captions
     return () => {
       cancelled = true

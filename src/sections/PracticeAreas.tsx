@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
+import useEmblaCarousel from 'embla-carousel-react'
 import './PracticeAreas.css'
 
 type Area = {
@@ -30,71 +31,58 @@ export default function PracticeAreas() {
     []
   )
 
-  const [active, setActive] = useState(-1)
-  const trackRef = useRef<HTMLDivElement>(null)
-  const scrollRaf = useRef<number | null>(null)
+  
+  const [active2, setActive2] = useState(-1)
+  const [emblaRef2, embla2] = useEmblaCarousel({ align: 'start', loop: false, dragFree: false, skipSnaps: false, slidesToScroll: 1 })
+  const viewport2Ref = useRef<HTMLDivElement | null>(null)
+  const setViewport2Ref = useCallback((node: HTMLDivElement | null) => {
+    viewport2Ref.current = node
+    // Forward to Embla's ref callback
+    emblaRef2(node as unknown as HTMLElement)
+  }, [emblaRef2])
+  const wheelState2Ref = useRef<{ acc: number; lastDir: number; ts: number }>({ acc: 0, lastDir: 0, ts: 0 })
 
-  const scrollToIndex = (idx: number) => {
-    const track = trackRef.current
-    if (!track) return
-    const cards = track.querySelectorAll<HTMLElement>('.practice-card')
-    const card = cards[idx]
-    if (!card) return
-    const isLast = idx === cards.length - 1
-    // Request a UA snap first. Use end alignment for last card so previous cards remain visible.
-    card.scrollIntoView({ behavior: 'smooth', inline: isLast ? 'end' : 'start', block: 'nearest' })
-    // After a short delay, force exact left alignment if not already aligned
-    window.setTimeout(() => {
-      const desired = card.offsetLeft - track.offsetLeft
-      const maxLeft = Math.max(0, track.scrollWidth - track.clientWidth)
-      // For last card, align its right edge to viewport right
-      const desiredEnd = desired - (track.clientWidth - card.clientWidth)
-      const targetLeft = isLast ? desiredEnd : desired
-      const clamped = Math.max(0, Math.min(targetLeft, maxLeft))
-      const delta = Math.abs(track.scrollLeft - clamped)
-      if (delta > 1) track.scrollTo({ left: clamped, behavior: 'auto' })
-    }, 220)
+  const isSlideInView2 = (idx: number) => {
+    if (!embla2 || !viewport2Ref.current) return false
+    const viewportRect = viewport2Ref.current.getBoundingClientRect()
+    const slide = embla2.slideNodes()[idx] as HTMLElement | undefined
+    if (!slide) return false
+    const r = slide.getBoundingClientRect()
+    const pad = 1
+    return r.left >= viewportRect.left - pad && r.right <= viewportRect.right + pad
   }
 
-  const go = (dir: 1 | -1) => {
-    if (active === -1) {
-      const first = dir === 1 ? 0 : areas.length - 1
-      setActive(first)
-      scrollToIndex(first)
-      return
-    }
-    const next = (active + dir + areas.length) % areas.length
-    scrollToIndex(next)
+  const go2 = (dir: 1 | -1) => {
+    if (!embla2) return
+    const length = areas.length
+    const base = active2 === -1 ? embla2.selectedScrollSnap() : active2
+    const next = Math.max(0, Math.min(base + dir, length - 1))
+    setActive2(next)
+    if (!isSlideInView2(next)) embla2.scrollTo(next)
   }
+
+  
+
+  
 
   useEffect(() => {
-    const root = trackRef.current
-    if (!root) return
-    const onScroll = () => {
-      if (scrollRaf.current) cancelAnimationFrame(scrollRaf.current)
-      scrollRaf.current = requestAnimationFrame(() => {
-        const cards = root.querySelectorAll<HTMLElement>('.practice-card')
-        if (!cards.length) return
-        const viewportRect = root.getBoundingClientRect()
-        const targetX = viewportRect.left
-        const maxLeft = Math.max(0, root.scrollWidth - root.clientWidth)
-        let nearest = 0
-        let min = Number.POSITIVE_INFINITY
-        cards.forEach((el, idx) => {
-          const r = el.getBoundingClientRect()
-          const d = Math.abs(r.left - targetX)
-          if (d < min) { min = d; nearest = idx }
-        })
-        // If we're at the very end, force last as nearest so its details show
-        if (Math.abs(root.scrollLeft - maxLeft) < 2) {
-          nearest = cards.length - 1
-        }
-        if (nearest !== active) setActive(nearest)
-      })
+    if (!embla2) return
+    const onSelect = () => {
+      // Sync active to Embla when user drags/swipes
+      setActive2(embla2.selectedScrollSnap())
     }
-    root.addEventListener('scroll', onScroll, { passive: true })
-    return () => { root.removeEventListener('scroll', onScroll) }
-  }, [active, areas.length])
+    embla2.on('select', onSelect)
+    embla2.on('reInit', onSelect)
+    // Initialize to first slide for the test carousel
+    embla2.scrollTo(0)
+    setActive2(0)
+    return () => {
+      embla2.off('select', onSelect)
+      embla2.off('reInit', onSelect)
+    }
+  }, [embla2])
+
+  // No extra effects needed: Embla aligns snaps to the left (align: 'start') consistently
 
   return (
     <section id="practice-areas" className="practice">
@@ -105,51 +93,81 @@ export default function PracticeAreas() {
           <p className="practice-sub">Protecting your rights & securing maximum compensation.</p>
         </div>
         <div className="practice-right">
-          <div className="cards-viewport" ref={trackRef}>
-            {areas.map((a, i) => {
-              const isActive = i === active
-              return (
-                <article
-                  key={a.id}
-                  className={`practice-card${isActive ? ' active' : ''}`}
-                  onClick={() => {
-                    scrollToIndex(i)
-                  }}
-                  aria-current={isActive ? 'true' : undefined}
-                >
-                  <div className="card-inner">
-                    <header className="card-header">{a.title}</header>
-                    {!isActive && (
-                      <div className="card-footer">
-                        <div className="rate">{a.success}</div>
-                        <div className="caption">success rate</div>
-                      </div>
-                    )}
-                    {isActive && (
-                      <div className="card-feature">
-                        {a.image && <div className="feature-image" style={{ backgroundImage: `url(${a.image})` }} />}
-                        <div className="feature-body">
-                          <p className="feature-text">{a.description}</p>
-                          <a className="feature-cta" href={a.href || '#'}>
-                            Learn more <span className="arrow">→</span>
-                          </a>
+          <div className="pa2">
+            <div
+              className="pa2-viewport"
+              ref={setViewport2Ref}
+              tabIndex={0}
+              onWheel={(e) => {
+                if (!embla2) return
+                e.preventDefault()
+                const axis = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
+                if (axis === 0) return
+                const dir = axis > 0 ? 1 : -1
+                const now = Date.now()
+                const state = wheelState2Ref.current
+                const cooldown = 220
+                const threshold = 60
+                if (state.lastDir !== dir) { state.acc = 0; state.lastDir = dir }
+                if (now - state.ts < cooldown) return
+                state.acc += Math.abs(axis)
+                if (state.acc >= threshold) {
+                  go2(dir as 1 | -1)
+                  state.acc = 0
+                  state.ts = now
+                }
+              }}
+              onKeyDown={(e) => {
+                if (!embla2) return
+                if (e.key === 'ArrowRight') { e.preventDefault(); go2(1) }
+                if (e.key === 'ArrowLeft')  { e.preventDefault(); go2(-1) }
+              }}
+            >
+              <div className="pa2-track">
+                {areas.map((a, i) => {
+                  const isActive = i === active2
+                  return (
+                    <div
+                      key={`test-${a.id}`}
+                      className={`pa2-slide${isActive ? ' active' : ''}`}
+                      onClick={() => {
+                        setActive2(i)
+                        if (embla2 && !isSlideInView2(i)) embla2.scrollTo(i)
+                      }}
+                    >
+                      <div className="pa2-card">
+                        <div className="pa2-inner">
+                          <header className="pa2-header">{a.title}</header>
+                          {!isActive && (
+                            <div className="pa2-footer">
+                              <div className="pa2-rate">{a.success}</div>
+                              <div className="pa2-caption">success rate</div>
+                            </div>
+                          )}
+                          {isActive && (
+                            <div className="pa2-feature">
+                              {a.image && <div className="pa2-feature-image" style={{ backgroundImage: `url(${a.image})` }} />}
+                              <div className="pa2-feature-body">
+                                {a.description && <p className="pa2-feature-text">{a.description}</p>}
+                                <a className="pa2-feature-cta" href={a.href || '#'}>
+                                  Learn more <span className="arrow">→</span>
+                                </a>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    )}
-                  </div>
-                </article>
-              )
-            })}
-          </div>
-          <div className="practice-nav">
-            <a className="view-all" href="#">View all</a>
-            <div className="arrows">
-              <button className="nav-btn" aria-label="Previous" onClick={() => go(-1)}>
-                ←
-              </button>
-              <button className="nav-btn" aria-label="Next" onClick={() => go(1)}>
-                →
-              </button>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="pa2-nav">
+              <a className="view-all" href="#">View all</a>
+              <div className="arrows">
+                <button className="nav-btn" aria-label="Previous" onClick={() => go2(-1)}>←</button>
+                <button className="nav-btn" aria-label="Next" onClick={() => go2(1)}>→</button>
+              </div>
             </div>
           </div>
         </div>

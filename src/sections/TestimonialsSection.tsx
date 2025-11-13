@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import useEmblaCarousel from 'embla-carousel-react'
 import './TestimonialsSection.css'
 
 type Testimonial = {
@@ -48,141 +49,49 @@ export default function TestimonialsSection() {
     []
   )
 
-  const [active, setActive] = useState(0) // index within original testimonials
-  const [focusLoopIdx, setFocusLoopIdx] = useState(1) // loop index visually focused
-  const scrollRaf = useRef<number | null>(null)
-  const trackRef = useRef<HTMLDivElement>(null)
-  const [visibleCount, setVisibleCount] = useState(3)
-  const total = testimonials.length
-  const clones = visibleCount > 1 ? Math.max(1, visibleCount) : 0
-  const loopIndexForOriginal = (origIdx: number) => origIdx + clones
-  const originalFromLoopIndex = (loopIdx: number) => ((loopIdx - clones) % total + total) % total
-  const looped = useMemo(() => {
-    if (!total) return [] as Testimonial[]
-    if (clones <= 0) return testimonials
-    const lc = clones
-    const left = testimonials.slice(-lc).map((t, i) => ({ ...t, id: `${t.id}-lc${i}` }))
-    const right = testimonials.slice(0, lc).map((t, i) => ({ ...t, id: `${t.id}-rc${i}` }))
-    return [...left, ...testimonials, ...right]
-  }, [testimonials, total, clones])
-  const ratio = total > 1 ? active / (total - 1) : 0
-
-
-  const scrollToIndex = (loopIdx: number, behavior: ScrollBehavior = 'smooth') => {
-    const root = trackRef.current
-    if (!root) return
-    const cards = root.querySelectorAll<HTMLElement>('.t-card')
-    const el = cards[loopIdx]
-    if (!el) return
-    // Let the browser perform a snap-centered scroll reliably
-    el.scrollIntoView({ behavior, inline: 'center', block: 'nearest' })
-  }
-
-  const go = (dir: 1 | -1) => {
-    if (clones > 0) {
-      const targetLoop = focusLoopIdx + dir
-      scrollToIndex(targetLoop, 'smooth')
-    } else {
-      const next = Math.max(0, Math.min(total - 1, focusLoopIdx + dir))
-      if (next === focusLoopIdx) return
-      scrollToIndex(next, 'smooth')
-    }
-  }
-
+  // Old custom carousel removed
+  // Looping Embla instance (demo-style: selected index, scroll snaps, prev/next disabled)
+  const [emblaRef, embla] = useEmblaCarousel({ loop: true, align: 'center', skipSnaps: false, slidesToScroll: 1 })
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const [scrollSnaps, setScrollSnaps] = useState<number[]>([])
   useEffect(() => {
-    // responsive visible count (3 desktop, 1 mobile)
-    const mq = window.matchMedia('(max-width: 900px)')
-    const apply = () => setVisibleCount(mq.matches ? 1 : 3)
-    apply()
-    const listener = () => apply()
-    if (mq.addEventListener) mq.addEventListener('change', listener)
-    else mq.addListener(listener)
-
-    const initial = loopIndexForOriginal(active)
-    setFocusLoopIdx(initial)
-    scrollToIndex(initial, 'auto')
-
-    const onScroll = () => {
-      if (scrollRaf.current) cancelAnimationFrame(scrollRaf.current)
-      scrollRaf.current = requestAnimationFrame(() => {
-        const root = trackRef.current
-        if (!root) return
-        const cards = root.querySelectorAll<HTMLElement>('.t-card')
-        if (!cards.length) return
-        const viewportRect = root.getBoundingClientRect()
-        const centerX = viewportRect.left + viewportRect.width / 2
-        let nearest = 0
-        let min = Number.POSITIVE_INFINITY
-        cards.forEach((el, idx) => {
-          const r = el.getBoundingClientRect()
-          const cx = r.left + r.width / 2
-          const d = Math.abs(cx - centerX)
-          if (d < min) { min = d; nearest = idx }
-        })
-
-        // If a clone region is centered, reposition seamlessly to the matching original
-        if (nearest < clones || nearest >= clones + total) {
-          const root = trackRef.current
-          if (!root) return
-          const orig = originalFromLoopIndex(nearest)
-          const origLoop = loopIndexForOriginal(orig)
-          const cardsAll = root.querySelectorAll<HTMLElement>('.t-card')
-          const cloneEl = cardsAll[nearest]
-          const origEl = cardsAll[origLoop]
-          if (!cloneEl || !origEl) return
-          // shift scrollLeft by the delta between original and clone so visual center stays identical
-          const delta = origEl.offsetLeft - cloneEl.offsetLeft
-          root.scrollTo({ left: root.scrollLeft + delta, behavior: 'auto' })
-          // Defer state changes to next frame so the shift completes without visible flicker
-          requestAnimationFrame(() => {
-            setFocusLoopIdx(origLoop)
-            if (active !== orig) setActive(orig)
-          })
-          return
-        }
-
-        setFocusLoopIdx(nearest)
-        const orig = originalFromLoopIndex(nearest)
-        if (orig !== active) setActive(orig)
-      })
+    if (!embla) return
+    const onSelect = () => {
+      setSelectedIndex(embla.selectedScrollSnap())
     }
+    setScrollSnaps(embla.scrollSnapList())
+    onSelect()
+    embla.on('select', onSelect)
+    embla.on('reInit', () => { setScrollSnaps(embla.scrollSnapList()); onSelect() })
+    return () => { embla.off('select', onSelect) }
+  }, [embla])
 
-    const root = trackRef.current
-    root?.addEventListener('scroll', onScroll, { passive: true })
-    return () => {
-      root?.removeEventListener('scroll', onScroll)
-      if (mq.removeEventListener) mq.removeEventListener('change', listener)
-      else mq.removeListener(listener)
-    }
-  }, [total, active, clones])
+  const emblaTotal = scrollSnaps.length || testimonials.length
+  const ratio = emblaTotal > 1 ? selectedIndex / (emblaTotal - 1) : 0
 
   return (
     <section id="testimonials" className="home-testimonials">
       <div className="testimonials-inner">
-        <div className="t-viewport-wrap">
-          <div className="t-viewport" ref={trackRef}>
-            {looped.map((t, i) => (
-              <article
-                key={t.id}
-                className={`t-card${i === focusLoopIdx ? ' active' : ''}`}
-                onClick={() => {
-                  // Scroll directly to the clicked loop index (may be a clone)
-                  scrollToIndex(i, 'smooth')
-                }}
-                aria-current={i === focusLoopIdx ? 'true' : undefined}
-              >
-                <div className="stars" aria-hidden="true">
-                  {Array.from({ length: 5 }).map((_, s) => (
-                    <span key={s} className={`star${s < t.rating ? ' on' : ''}`}>★</span>
-                  ))}
+        <div className="embla">
+          <div className="embla__viewport" ref={emblaRef}>
+            <div className="embla__container">
+              {testimonials.map((t, i) => (
+                <div className={`embla__slide${i === selectedIndex ? ' embla__slide--selected' : ''}`} key={`loop2-${t.id}`} onClick={() => embla?.scrollTo(i)}>
+                  <div className="embla__slide__card">
+                    <div className="stars" aria-hidden="true">
+                      {Array.from({ length: 5 }).map((_, s) => (
+                        <span key={s} className={`star${s < t.rating ? ' on' : ''}`}>★</span>
+                      ))}
+                    </div>
+                    <blockquote className="t-text">“{t.text}”</blockquote>
+                    <footer className="t-meta">
+                      <div className="name">{t.name}</div>
+                      <div className="area">{t.area}</div>
+                    </footer>
+                  </div>
                 </div>
-                <blockquote className="t-text">“{t.text}”</blockquote>
-                <footer className="t-meta">
-                  <div className="name">{t.name}</div>
-                  <div className="area">{t.area}</div>
-                </footer>
-              </article>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
@@ -192,17 +101,18 @@ export default function TestimonialsSection() {
             role="progressbar"
             aria-label="Testimonials"
             aria-valuemin={0}
-            aria-valuemax={total - 1}
-            aria-valuenow={active}
-            style={{ ['--segments' as any]: total }}
+            aria-valuemax={emblaTotal - 1}
+            aria-valuenow={selectedIndex}
+            style={{ ['--segments' as any]: emblaTotal }}
           >
             <span className="thumb" style={{ ['--progress' as any]: ratio }} />
           </div>
           <div className="t-arrows">
-            <button className="t-nav-btn" aria-label="Previous" onClick={() => go(-1)}>←</button>
-            <button className="t-nav-btn" aria-label="Next" onClick={() => go(1)}>→</button>
+            <button className="t-nav-btn" aria-label="Previous" onClick={() => { if (embla && emblaTotal) embla.scrollTo((selectedIndex - 1 + emblaTotal) % emblaTotal) }}>←</button>
+            <button className="t-nav-btn" aria-label="Next" onClick={() => { if (embla && emblaTotal) embla.scrollTo((selectedIndex + 1) % emblaTotal) }}>→</button>
           </div>
         </div>
+        {/* Removed the duplicate Embla block below; original controls drive Embla above */}
       </div>
     </section>
   )

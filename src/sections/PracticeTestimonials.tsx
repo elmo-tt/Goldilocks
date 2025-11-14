@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import useEmblaCarousel from 'embla-carousel-react'
 import './PracticeTestimonials.css'
 
 type Testimonial = {
@@ -28,34 +29,23 @@ export default function PracticeTestimonials({ folder, title = 'Hear the stories
       .catch(() => {})
   }, [folder])
 
-  const [active, setActive] = useState(0)
-  const trackRef = useRef<HTMLDivElement>(null)
-  const scrollRaf = useRef<number | null>(null)
+  
+  const [emblaRef, embla] = useEmblaCarousel({ loop: true, align: 'start', skipSnaps: false, containScroll: 'trimSnaps', slidesToScroll: 1 })
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  useEffect(() => {
+    if (!embla) return
+    const onSelect = () => { setSelectedIndex(embla.selectedScrollSnap()) }
+    onSelect()
+    embla.on('select', onSelect)
+    embla.on('reInit', () => { onSelect() })
+    return () => { embla.off('select', onSelect) }
+  }, [embla])
 
-  const scrollToIndex = (idx: number) => {
-    const track = trackRef.current
-    if (!track) return
-    const card = track.querySelectorAll<HTMLElement>('.t-card')[idx]
-    if (!card) return
-    const cards = track.querySelectorAll<HTMLElement>('.t-card')
-    const isLast = idx === cards.length - 1
-    card.scrollIntoView({ inline: isLast ? 'end' : 'start', block: 'nearest', behavior: 'smooth' })
-    // After a short delay, force precise alignment in case UA snap stops slightly off
-    window.setTimeout(() => {
-      const desiredStart = card.offsetLeft - track.offsetLeft
-      const maxLeft = Math.max(0, track.scrollWidth - track.clientWidth)
-      const desiredEnd = desiredStart - (track.clientWidth - card.clientWidth)
-      const targetLeft = isLast ? desiredEnd : desiredStart
-      const clamped = Math.max(0, Math.min(targetLeft, maxLeft))
-      if (Math.abs(track.scrollLeft - clamped) > 1) track.scrollTo({ left: clamped, behavior: 'auto' })
-    }, 220)
-  }
+  
 
-  const go = (dir: 1 | -1) => {
-    const next = (active + dir + items.length) % items.length
-    setActive(next)
-    scrollToIndex(next)
-  }
+  
+  const prevEmbla = () => { embla?.scrollPrev() }
+  const nextEmbla = () => { embla?.scrollNext() }
 
   // Dynamic poster capture for items lacking poster/image; default 5s, per-item override via captureAt
   const ensurePoster = async (it: Testimonial) => {
@@ -117,56 +107,13 @@ export default function PracticeTestimonials({ folder, title = 'Hear the stories
   useEffect(() => {
     if (!items.length) return
     const targets: Testimonial[] = []
-    if (items[active]) targets.push(items[active])
-    if (items[active + 1]) targets.push(items[active + 1])
-    if (items[active - 1]) targets.push(items[active - 1])
+    if (items[selectedIndex]) targets.push(items[selectedIndex])
+    if (items[selectedIndex + 1]) targets.push(items[selectedIndex + 1])
+    if (items[selectedIndex - 1]) targets.push(items[selectedIndex - 1])
     targets.forEach(t => { ensurePoster(t) })
-  }, [items, active])
+  }, [items, selectedIndex])
 
-  useEffect(() => {
-    const root = trackRef.current
-    if (!root) return
-    const onScroll = () => {
-      if (scrollRaf.current) cancelAnimationFrame(scrollRaf.current)
-      scrollRaf.current = requestAnimationFrame(() => {
-        const cards = root.querySelectorAll<HTMLElement>('.t-card')
-        if (!cards.length) return
-        const viewportRect = root.getBoundingClientRect()
-        const rootStyle = getComputedStyle(root)
-        const padLeftStr = rootStyle.getPropertyValue('scroll-padding-left') || '0'
-        let padLeft = parseFloat(padLeftStr) || 0
-        // Fallback: use card scroll-margin-left if scroll-padding-left is not available
-        const cardsArr = Array.from(cards)
-        if (!padLeft && cardsArr.length) {
-          const cs0 = getComputedStyle(cardsArr[0])
-          padLeft = parseFloat(cs0.getPropertyValue('scroll-margin-left') || '0') || 0
-        }
-        const targetX = viewportRect.left + padLeft
-        const maxLeft = Math.max(0, root.scrollWidth - root.clientWidth)
-        let nearest = 0
-        let min = Number.POSITIVE_INFINITY
-        const marginLeft = (() => {
-          if (!cardsArr.length) return 0
-          const cs = getComputedStyle(cardsArr[0])
-          return parseFloat(cs.getPropertyValue('scroll-margin-left') || '0') || 0
-        })()
-        cards.forEach((el, idx) => {
-          const r = el.getBoundingClientRect()
-          // Logical left = visual left minus the scroll-margin-left applied for snapping
-          const logicalLeft = r.left - marginLeft
-          const d = Math.abs(logicalLeft - targetX)
-          if (d < min) { min = d; nearest = idx }
-        })
-        // If scrolled to the very end, force last card as active so it is reachable both by swipe and back arrow
-        if (Math.abs(root.scrollLeft - maxLeft) < 2) {
-          nearest = cards.length - 1
-        }
-        if (nearest !== active) setActive(nearest)
-      })
-    }
-    root.addEventListener('scroll', onScroll, { passive: true })
-    return () => { root.removeEventListener('scroll', onScroll) }
-  }, [active, items.length])
+  
 
   
 
@@ -177,34 +124,43 @@ export default function PracticeTestimonials({ folder, title = 'Hear the stories
         <div className="t-left">
           <h2 className="t-title">{title}</h2>
           <div className="t-arrows">
-            <button className="nav-btn" aria-label="Previous" onClick={() => go(-1)}>←</button>
-            <button className="nav-btn" aria-label="Next" onClick={() => go(1)}>→</button>
+            <button className="nav-btn" aria-label="Previous" onClick={prevEmbla}>←</button>
+            <button className="nav-btn" aria-label="Next" onClick={nextEmbla}>→</button>
           </div>
         </div>
         <div className="t-right">
-          <div className="t-viewport" ref={trackRef}>
-            {items.map((it, i) => (
-              <article
-                className={`t-card${i === active ? ' active' : ''}`}
-                key={it.id}
-                aria-current={i === active ? 'true' : undefined}
-                onClick={() => {
-                  setActive(i)
-                  scrollToIndex(i)
-                }}
-              >
-                <div className="t-thumb" style={(it.image || it.poster || posters[it.id]) ? { backgroundImage: `url(${it.image || it.poster || posters[it.id]})` } : undefined}>
-                  {it.settlement && <div className="pill">{it.settlement}</div>}
-                  <button className="play" aria-label={`Play ${it.name}'s story`} onClick={(e) => { e.stopPropagation(); setPlaying(it) }}>
-                    <svg viewBox="0 0 48 48" width="22" height="22" aria-hidden="true"><path fill="#0a0d48" d="M19 16l14 8-14 8z"/></svg>
-                  </button>
-                </div>
-                <footer className="t-meta">
-                  <div className="t-name">{it.name}</div>
-                  <div className="t-area">{it.area}</div>
-                </footer>
-              </article>
-            ))}
+          <div className="pt-embla">
+            <div className="pt-embla__viewport" ref={emblaRef}>
+              <div className="pt-embla__container">
+                {items.map((it, i) => (
+                  <div className="pt-embla__slide" key={`embla-${it.id}`}>
+                    <article
+                      className={`t-card${i === selectedIndex ? ' active' : ''}`}
+                      aria-current={i === selectedIndex ? 'true' : undefined}
+                      onClick={() => embla?.scrollTo(i)}
+                    >
+                      <div
+                        className="t-thumb"
+                        style={(it.image || it.poster || posters[it.id]) ? { backgroundImage: `url(${it.image || it.poster || posters[it.id]})` } : undefined}
+                      >
+                        {it.settlement && <div className="pill">{it.settlement}</div>}
+                        <button
+                          className="play"
+                          aria-label={`Play ${it.name}'s story`}
+                          onClick={(e) => { e.stopPropagation(); setPlaying(it) }}
+                        >
+                          <svg viewBox="0 0 48 48" width="22" height="22" aria-hidden="true"><path fill="#0a0d48" d="M19 16l14 8-14 8z"/></svg>
+                        </button>
+                      </div>
+                      <footer className="t-meta">
+                        <div className="t-name">{it.name}</div>
+                        <div className="t-area">{it.area}</div>
+                      </footer>
+                    </article>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
         {playing && (

@@ -43,13 +43,7 @@
 .t-arrows { display: flex; gap: 10px; margin-top: 14px; }
 
 .t-right { min-width: 0; }
-.t-viewport { --pt-card-w: clamp(240px, 26vw, 320px); display: grid; grid-auto-flow: column; grid-auto-columns: var(--pt-card-w); gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 12px clamp(24px, 3.2vw, 40px) 10px; scroll-padding-inline: clamp(24px, 3.2vw, 40px); align-items: start; scrollbar-width: none; -ms-overflow-style: none; }
-.t-viewport::-webkit-scrollbar { display: none; }
 
-.t-viewport > .t-card:first-child { margin-left: 8px; }
-.t-viewport > .t-card:last-child { margin-right: 0; }
-/* Ensure the last card can snap to the right (end) edge */
-.t-viewport .t-card:last-child { scroll-snap-align: end; }
 
 .t-card { background: transparent; border: none; border-radius: 10px; height: clamp(320px, 38vw, 460px); display: grid; grid-template-rows: minmax(0, 1fr) auto; padding: 0; box-sizing: border-box; overflow: visible; scroll-snap-align: start; scroll-margin-inline: clamp(24px, 3.2vw, 40px); opacity: 0.45; transition: opacity 200ms ease; }
 .t-card.active { background: transparent; opacity: 1; }
@@ -74,7 +68,23 @@
 @media (max-width: 900px) {
   .t-inner { grid-template-columns: 1fr; padding-inline: 24px; }
   .t-card { min-height: 360px; }
-  .t-viewport { padding: 12px 0 10px; scroll-padding-inline: 24px; }
-  .t-viewport > .t-card:first-child { margin-left: 0; }
-  .t-viewport > .t-card:last-child { margin-right: 0; }
+  
+  
+}
+
+/* New Embla carousel under Practice Area testimonials */
+.pt-embla { margin-top: 12px; --pt-card-w: clamp(240px, 26vw, 320px); --pt-gap: 16px; }
+.pt-embla__viewport { overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: pan-y; padding: 12px clamp(24px, 3.2vw, 40px) 10px; }
+.pt-embla__container { display: flex; align-items: start; touch-action: pan-y pinch-zoom; margin-left: calc(var(--pt-gap) * -1); margin-right: calc(var(--pt-gap) * -1); }
+.pt-embla__slide { flex: 0 0 var(--pt-card-w); min-width: 0; padding-left: var(--pt-gap); }
+
+@media (max-width: 900px) {
+  .pt-embla__viewport { padding: 12px 0 10px; }
+}
+
+/* Desktop-only: right-gap only so the focused slide sits flush left without prior-slide peeking */
+@media (min-width: 901px) {
+  .pt-embla__container { margin-left: 0; margin-right: calc(var(--pt-gap) * -1); gap: 0; }
+  .pt-embla__slide { padding-left: 0; padding-right: var(--pt-gap); }
+  .pt-embla__viewport { padding-left: 0; padding-right: clamp(24px, 3.2vw, 40px); }
 }

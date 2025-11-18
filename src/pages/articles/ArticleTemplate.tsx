@@ -271,7 +271,7 @@ export default function ArticleTemplate({ article }: { article: Article }) {
     }
   }, [i18n.language, article.title, (article as any).title_es, article.metaTitle, (article as any).metaTitle_es, article.metaDescription, (article as any).metaDescription_es, article.excerpt, (article as any).excerpt_es, article.canonicalUrl, article.noindex])
 
-  // Auto-translate on-demand when viewing ES and no ES source is available
+  // Auto-translate on-demand when viewing ES. If forceTranslate=1 is present, always trigger.
   useEffect(() => {
     const isEs = i18n.language?.startsWith('es')
     if (!isEs) return
@@ -284,6 +284,11 @@ export default function ArticleTemplate({ article }: { article: Article }) {
     const bodyAll = article.body || ''
     const esOnly = filterLangBlocks(bodyAll, 'es').trim()
     const esCoverageOk = esOnly.length > Math.min(bodyAll.length * 0.6, bodyAll.length - 400)
+    const force = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('forceTranslate') === '1'
+    if (force) {
+      ensureSpanishForArticle(article).catch(() => {})
+      return
+    }
     if (!hasFields && !hasI18n && (!hasMarkers || !esCoverageOk)) {
       ensureSpanishForArticle(article).catch(() => {})
     }

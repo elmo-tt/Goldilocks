@@ -66,7 +66,7 @@ export async function ensureSpanishForArticle(a: Article): Promise<boolean> {
     const body = a.body || ''
     const estimateChars = (title + excerpt + body).length
     const lim = getDailyLimit()
-    if (lim > 0) {
+    if (!force && lim > 0) {
       const used = getTranslateStats().today
       if (used + estimateChars > lim) { inflight.delete(a.id); return false }
     }

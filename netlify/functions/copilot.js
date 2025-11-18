@@ -183,6 +183,7 @@ export const handler = async (event) => {
       // Helpers: no-key fallback translator
       const chunkText = (s, max = 450) => {
         const text = String(s || '')
+        if (!text.trim()) return []
         if (text.length <= max) return [text]
         const out = []
         let i = 0
@@ -199,6 +200,7 @@ export const handler = async (event) => {
       }
       const looksLikeHtml = (s) => /<(?:\/|[^>]+)>/.test(String(s || ''))
       const tryLibre = async (text) => {
+        if (!String(text || '').trim()) return ''
         const payload = { q: text, source: 'en', target: 'es', format: 'text' }
         const eps = ['https://libretranslate.de/translate', 'https://translate.astian.org/translate']
         for (const ep of eps) {
@@ -211,6 +213,7 @@ export const handler = async (event) => {
         return ''
       }
       const tryMyMemory = async (text) => {
+        if (!String(text || '').trim()) return ''
         const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|es`
         try {
           const r = await fetch(url)
@@ -221,7 +224,9 @@ export const handler = async (event) => {
         } catch { return '' }
       }
       const fallbackTranslate = async (text) => {
+        if (!String(text || '').trim()) return ''
         const pieces = chunkText(text, 420)
+        if (!pieces.length) return ''
         const out = []
         for (const p of pieces) {
           let es = await tryLibre(p)
@@ -231,11 +236,13 @@ export const handler = async (event) => {
         return out.join('')
       }
       const translateWithAzure = async (text) => {
+        if (!String(text || '').trim()) return ''
         const key = process.env.AZURE_TRANSLATOR_KEY
         const region = process.env.AZURE_TRANSLATOR_REGION || 'global'
         const base = process.env.AZURE_TRANSLATOR_ENDPOINT || 'https://api.cognitive.microsofttranslator.com'
         if (!key) return ''
         const pieces = chunkText(text, 420)
+        if (!pieces.length) return ''
         try {
           const bodyArr = pieces.map(t => ({ Text: t }))
           const url = `${base.replace(/\/$/, '')}/translate?api-version=3.0&from=en&to=es`
@@ -261,6 +268,7 @@ export const handler = async (event) => {
         } catch { return '' }
       }
       const translateWithDeepL = async (text) => {
+        if (!String(text || '').trim()) return ''
         const key = process.env.DEEPL_API_KEY
         if (!key) return ''
         const base = (process.env.DEEPL_API_URL || 'https://api.deepl.com/v2/translate').replace(/\/$/, '')
@@ -269,7 +277,7 @@ export const handler = async (event) => {
           if (!glossary.length) return s
           let out = String(s || '')
           for (const term of glossary) {
-            const re = new RegExp(`\\b${term.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\b`, 'gi')
+            const re = new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi')
             out = out.replace(re, (m) => `<keep>${m}</keep>`)
           }
           return out
@@ -277,6 +285,7 @@ export const handler = async (event) => {
         const textProtected = protect(text)
         const unwrapKeep = (s) => String(s || '').replace(/<\/?keep>/g, '')
         const pieces = chunkText(textProtected, 2500)
+        if (!pieces.length) return ''
         const html = looksLikeHtml(textProtected) || glossary.length > 0
         const doRequest = async () => {
           const params = new URLSearchParams()

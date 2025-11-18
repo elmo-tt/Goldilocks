@@ -1,6 +1,8 @@
 import './FooterSection.css'
+import { useTranslation } from 'react-i18next'
 
 export default function FooterSection() {
+  const { t } = useTranslation()
   return (
     <footer className="footer">
       <div className="footer-inner">
@@ -8,12 +10,12 @@ export default function FooterSection() {
           <div className="ft-col">
             <div className="ft-brand">
               <div className="ft-logo">GOLDLAW</div>
-              <p className="ft-tag">A South Florida based Personal Injury Law Firm representing clients who deserve results.</p>
+              <p className="ft-tag">{t('footer.tagline')}</p>
             </div>
           </div>
           <div className="ft-col">
             <div className="ft-contact">
-              <div className="ft-title">Contact</div>
+              <div className="ft-title">{t('footer.contact')}</div>
               <div className="ft-addresses">
                 <p>1641 Worthington Rd., Suite 300<br/>West Palm Beach, FL 33409</p>
                 <p>1100 St Lucie W Blvd, Suite 103<br/>Port St. Lucie, FL 34986</p>
@@ -60,47 +62,47 @@ export default function FooterSection() {
 
         <div className="footer-mid">
           <div className="fl-col">
-            <div className="fl-title">Practice Areas</div>
+            <div className="fl-title">{t('footer.practice_areas')}</div>
             <ul className="fl-list">
-              <li><a href="#">Personal Injury</a></li>
-              <li><a href="#">Car Accidents</a></li>
-              <li><a href="#">Medical Malpractice</a></li>
-              <li><a href="#">Slip and Fall</a></li>
-              <li><a href="#">Sexual Assault</a></li>
-              <li><a href="#">Trucking Accidents</a></li>
-              <li><a href="#">Wrongful Death</a></li>
-              <li><a href="#">View all</a></li>
+              <li><a href="#">{t('footer.practice_items.personal_injury')}</a></li>
+              <li><a href="#">{t('footer.practice_items.car_accidents')}</a></li>
+              <li><a href="#">{t('footer.practice_items.medical_malpractice')}</a></li>
+              <li><a href="#">{t('footer.practice_items.slip_and_fall')}</a></li>
+              <li><a href="#">{t('footer.practice_items.sexual_assault')}</a></li>
+              <li><a href="#">{t('footer.practice_items.trucking_accidents')}</a></li>
+              <li><a href="#">{t('footer.practice_items.wrongful_death')}</a></li>
+              <li><a href="#">{t('footer.view_all')}</a></li>
             </ul>
           </div>
           <div className="fl-col">
-            <div className="fl-title">Company</div>
+            <div className="fl-title">{t('footer.company')}</div>
             <ul className="fl-list">
-              <li><a href="#">About</a></li>
-              <li><a href="#">Team</a></li>
-              <li><a href="#">Careers</a></li>
-              <li><a href="#">Community / Events</a></li>
-              <li><a href="#">Press Releases</a></li>
-              <li><a href="#">Contact</a></li>
+              <li><a href="#">{t('footer.about')}</a></li>
+              <li><a href="#">{t('footer.team')}</a></li>
+              <li><a href="#">{t('footer.careers')}</a></li>
+              <li><a href="#">{t('footer.community')}</a></li>
+              <li><a href="#">{t('footer.press')}</a></li>
+              <li><a href="#">{t('footer.contact_link')}</a></li>
             </ul>
           </div>
           <div className="fl-col">
-            <div className="fl-title">Resources</div>
+            <div className="fl-title">{t('footer.resources')}</div>
             <ul className="fl-list">
-              <li><a href="#">FAQ</a></li>
-              <li><a href="#">Blog</a></li>
-              <li><a href="#">Newsletters</a></li>
-              <li><a href="#">Promotions & Incentives</a></li>
-              <li><a href="#">Testimonials</a></li>
+              <li><a href="#">{t('footer.faq')}</a></li>
+              <li><a href="#">{t('footer.blog')}</a></li>
+              <li><a href="#">{t('footer.newsletters')}</a></li>
+              <li><a href="#">{t('footer.promotions')}</a></li>
+              <li><a href="#">{t('footer.testimonials')}</a></li>
             </ul>
           </div>
           <div className="fl-col">
             <div className="ft-news">
               <div className="ft-news-card">
-                <div className="ft-news-title">Subscribe to our<br/>newsletter</div>
-                <p className="ft-news-sub">Get legal insights that matter straight to your inbox — no fluff, just facts.</p>
+                <div className="ft-news-title">{t('footer.subscribe_title')}</div>
+                <p className="ft-news-sub">{t('footer.subscribe_sub')}</p>
                 <form className="ft-form" onSubmit={(e)=>e.preventDefault()}>
                   <input type="email" className="ft-input" placeholder="Enter your email" required />
-                  <button className="ft-btn" type="submit">Sign up →</button>
+                  <button className="ft-btn" type="submit">{t('footer.sign_up')}</button>
                 </form>
               </div>
             </div>

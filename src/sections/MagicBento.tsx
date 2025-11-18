@@ -1,7 +1,8 @@
-import { useRef, useEffect, useCallback, useState } from 'react'
+import { useRef, useEffect, useCallback, useState, useMemo } from 'react'
 import type { PropsWithChildren, CSSProperties, MutableRefObject } from 'react'
 import { gsap } from 'gsap'
 import './MagicBento.css'
+import { useTranslation } from 'react-i18next'
 
 const DEFAULT_PARTICLE_COUNT = 12
 const DEFAULT_SPOTLIGHT_RADIUS = 300
@@ -15,14 +16,7 @@ type Card = {
   label: string
 }
 
-const cardData: Card[] = [
-  { color: '#060010', title: 'Free Consultation', description: 'Speak with our legal team to review your case—no cost, no pressure.', label: '01' },
-  { color: '#060010', title: 'We Build Your Case', description: 'We investigate and gather evidence to build the strongest case.', label: '02' },
-  { color: '#060010', title: 'We Fight For Results', description: 'We negotiate or go to trial to maximize the compensation you deserve.', label: '03' },
-  { color: '#060010', title: 'Locations', description: 'West Palm Beach • Port St. Lucie', label: 'Info' },
-  { color: '#060010', title: 'Our Rating', description: '4.8 / 5.0 from 918 reviews', label: 'Score' },
-  { color: '#060010', title: 'Why GOLDLAW', description: 'Available 24/7 • Board‑certified • No fees unless we win', label: 'Benefits' },
-]
+ 
 
 const createParticleElement = (x: number, y: number, color: string = DEFAULT_GLOW_COLOR) => {
   const el = document.createElement('div')
@@ -457,6 +451,17 @@ export default function MagicBento({
   const gridRef = useRef<HTMLDivElement | null>(null)
   const isMobile = useMobileDetection()
   const shouldDisableAnimations = disableAnimations || isMobile
+  const { t, i18n } = useTranslation()
+
+  // Build localized cards in a stable order
+  const cards = useMemo<Card[]>(() => [
+    { color: '#060010', title: t('bento.cards.free.title'), description: t('bento.cards.free.description'), label: t('bento.cards.free.label') },
+    { color: '#060010', title: t('bento.cards.build.title'), description: t('bento.cards.build.description'), label: t('bento.cards.build.label') },
+    { color: '#060010', title: t('bento.cards.fight.title'), description: t('bento.cards.fight.description'), label: t('bento.cards.fight.label') },
+    { color: '#060010', title: t('bento.cards.locations.title'), description: t('bento.cards.locations.description'), label: t('bento.cards.locations.label') },
+    { color: '#060010', title: t('bento.cards.rating.title'), description: t('bento.cards.rating.description'), label: t('bento.cards.rating.label') },
+    { color: '#060010', title: t('bento.cards.why.title'), description: t('bento.cards.why.description'), label: t('bento.cards.why.label') },
+  ], [t, i18n.language])
 
   return (
     <>
@@ -471,7 +476,7 @@ export default function MagicBento({
       )}
 
       <BentoCardGrid gridRef={gridRef}>
-        {cardData.map((card, index) => {
+        {cards.map((card, index) => {
           const baseClassName = `magic-bento-card ${textAutoHide ? 'magic-bento-card--text-autohide' : ''} ${enableBorderGlow ? 'magic-bento-card--border-glow' : ''}`
           const cardProps = {
             className: baseClassName,

@@ -7,7 +7,37 @@ import { AssetStore } from '@/shared/assets/store'
 import DOMPurify from 'dompurify'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import type { Article } from '@/shared/articles/store'
+import { ArticlesStore, type Article } from '@/shared/articles/store'
+import { useTranslation } from 'react-i18next'
+import { ensureSpanishForArticle } from '@/shared/translate/service'
+
+function filterLangBlocks(s: string, lang: 'en' | 'es') {
+  try {
+    if (!s) return ''
+    let out = String(s)
+    // HTML comment markers: <!-- lang:xx --> ... <!-- /lang -->
+    out = out.replace(/<!--\s*lang:(en|es)\s*-->([\s\S]*?)<!--\s*\/\s*lang\s*-->/gi, (_m, g1, g2) => (String(g1).toLowerCase() === lang ? g2 : ''))
+    // Bracket markers: [lang:xx] ... [/lang]
+    out = out.replace(/\[lang:(en|es)\]([\s\S]*?)\[\/lang\]/gi, (_m, g1, g2) => (String(g1).toLowerCase() === lang ? g2 : ''))
+    return out
+  } catch { return s }
+}
+
+function getMarked(s: string, key: 'title' | 'excerpt', lang: 'en' | 'es') {
+  try {
+    if (!s) return ''
+    const reHtml = new RegExp(`<!--\\s*${key}:(en|es)\\s*-->([\\s\\S]*?)<!--\\s*\\/\\s*${key}\\s*-->`, 'gi')
+    let m: RegExpExecArray | null
+    while ((m = reHtml.exec(s))) {
+      if (String(m[1]).toLowerCase() === lang) return String(m[2] || '').trim()
+    }
+    const reBr = new RegExp(`\\[${key}:(en|es)\\]([\\s\\S]*?)\\[\\/${key}\\]`, 'gi')
+    while ((m = reBr.exec(s))) {
+      if (String(m[1]).toLowerCase() === lang) return String(m[2] || '').trim()
+    }
+    return ''
+  } catch { return '' }
+}
 
 function looksLikeHtml(s: string) {
   return /<(?:\/|[^>]+)>/.test(s)
@@ -15,15 +45,15 @@ function looksLikeHtml(s: string) {
 
 function HtmlBody({ html, heroMaxWidth, excerpt }: { html: string; heroMaxWidth?: number; excerpt?: string }) {
   const ref = useRef<HTMLDivElement | null>(null)
-  // Preprocess: also stamp data-asset-id while keeping src="asset:ID" intact
+  // Preprocess: replace src="asset:ID" with a safe placeholder and carry ID via data-asset-id/data-src
   const prepped = html.replace(
     /<img([^>]*?)\s+src=("|')asset:([^"']+)(\2)([^>]*)>/gi,
-    (m, pre, q, id, q2, post) => {
-      // If data-asset-id is already present, keep as-is; else add it
-      return /data-asset-id=/i.test(m) ? m : `<img${pre} src=${q}asset:${id}${q2} data-asset-id="${id}"${post}>`
+    (_m, pre, q, id, q2, post) => {
+      const placeholder = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='
+      return `<img${pre} src=${q}${placeholder}${q2} data-asset-id="${id}" data-src=${q}asset:${id}${q2}${post}>`
     }
   )
-  const safe = DOMPurify.sanitize(prepped, { ADD_ATTR: ['data-asset-id', 'data-width', 'data-align', 'data-caption-for'], ALLOW_UNKNOWN_PROTOCOLS: true })
+  const safe = DOMPurify.sanitize(prepped, { ADD_ATTR: ['data-asset-id', 'data-width', 'data-align', 'data-caption-for', 'data-src'], ALLOW_UNKNOWN_PROTOCOLS: true })
   useEffect(() => {
     const el = ref.current
     if (!el) return
@@ -183,13 +213,26 @@ function HtmlBody({ html, heroMaxWidth, excerpt }: { html: string; heroMaxWidth?
 }
 
 export default function ArticleTemplate({ article }: { article: Article }) {
+  const { t, i18n } = useTranslation()
   const [heroSrc, setHeroSrc] = useState<string | undefined>(undefined)
   const heroRef = useRef<HTMLImageElement | null>(null)
   const [heroWidth, setHeroWidth] = useState<number | undefined>(undefined)
+  const [, setRefreshTick] = useState(0)
   // SEO meta tags
   useEffect(() => {
-    const title = (article.metaTitle && article.metaTitle.trim()) || article.title
-    const description = (article.metaDescription && article.metaDescription.trim()) || article.excerpt || ''
+    const isEs = i18n.language?.startsWith('es')
+    const slug = article.slug
+    const src = ArticlesStore.getBySlug(slug) || article
+    const tTitleEs = isEs ? t(`articles_content.${slug}.title`, { defaultValue: '' }) : ''
+    const tExcerptEs = isEs ? t(`articles_content.${slug}.excerpt`, { defaultValue: '' }) : ''
+    const tMetaTitleEs = isEs ? t(`articles_content.${slug}.metaTitle`, { defaultValue: '' }) : ''
+    const tMetaDescEs = isEs ? t(`articles_content.${slug}.metaDescription`, { defaultValue: '' }) : ''
+    const markTitleEs = isEs ? getMarked(src.body || '', 'title', 'es') : ''
+    const markExcerptEs = isEs ? getMarked(src.body || '', 'excerpt', 'es') : ''
+    const displayTitle = (isEs ? ((src as any).title_es || tTitleEs || markTitleEs) : undefined) || src.title
+    const displayExcerpt = (isEs ? (((src as any).excerpt_es || tExcerptEs || markExcerptEs)) : undefined) || src.excerpt || ''
+    const title = ((isEs ? (((src as any).metaTitle_es || tMetaTitleEs)) : undefined) || src.metaTitle || '').trim() || displayTitle
+    const description = ((isEs ? (((src as any).metaDescription_es || tMetaDescEs)) : undefined) || src.metaDescription || '').trim() || displayExcerpt
     const canonical = (article.canonicalUrl && article.canonicalUrl.trim()) || ''
     const noindex = !!article.noindex
 
@@ -226,7 +269,29 @@ export default function ArticleTemplate({ article }: { article: Article }) {
       if (prevCanonical) linkEl.setAttribute('href', prevCanonical)
       else linkEl.removeAttribute('href')
     }
-  }, [article.metaTitle, article.title, article.metaDescription, article.excerpt, article.canonicalUrl, article.noindex])
+  }, [i18n.language, article.title, (article as any).title_es, article.metaTitle, (article as any).metaTitle_es, article.metaDescription, (article as any).metaDescription_es, article.excerpt, (article as any).excerpt_es, article.canonicalUrl, article.noindex])
+
+  // Auto-translate on-demand when viewing ES and no ES source is available
+  useEffect(() => {
+    const isEs = i18n.language?.startsWith('es')
+    if (!isEs) return
+    const slug = article.slug
+    const tTitleEs = t(`articles_content.${slug}.title`, { defaultValue: '' })
+    const tBodyEs = t(`articles_content.${slug}.body`, { defaultValue: '' })
+    const hasFields = !!(article as any).body_es
+    const hasI18n = !!(tTitleEs || tBodyEs)
+    const hasMarkers = !!(getMarked(article.body || '', 'title', 'es') || getMarked(article.body || '', 'excerpt', 'es') || /<!--\s*lang:es\s*-->|\[lang:es\]/i.test(article.body || ''))
+    if (!hasFields && !hasI18n && !hasMarkers) {
+      ensureSpanishForArticle(article).catch(() => {})
+    }
+  }, [i18n.language, article.id, article.slug, article.body])
+
+  // Listen for article store updates to re-render with new ES fields
+  useEffect(() => {
+    const on = () => setRefreshTick(v => v + 1)
+    window.addEventListener('gl:articles-updated', on as any)
+    return () => window.removeEventListener('gl:articles-updated', on as any)
+  }, [])
   useEffect(() => {
     let revokeId: string | null = null
     let cancelled = false
@@ -272,40 +337,75 @@ export default function ArticleTemplate({ article }: { article: Article }) {
                 fontWeight: 700,
               }}
             >
-              {useMemo(() => PRACTICE_AREAS.find(p => p.key === article.category)?.label || 'Article', [article.category])}
+              {useMemo(() => PRACTICE_AREAS.find(p => p.key === article.category)?.label || t('related.category_fallback'), [article.category, t])}
             </div>
             <h1 className="hiw-title" style={{ margin: 0, fontSize: 40, fontWeight: 400, lineHeight: 1.25 }}>
-              <span className="strong">{article.title}</span>
+              <span className="strong">{(() => {
+                const isEs = i18n.language?.startsWith('es')
+                const slug = article.slug
+                const src = ArticlesStore.getBySlug(slug) || article
+                const tTitleEs = isEs ? t(`articles_content.${slug}.title`, { defaultValue: '' }) : ''
+                const markTitleEs = isEs ? getMarked(src.body || '', 'title', 'es') : ''
+                return (isEs ? ((src as any).title_es || tTitleEs || markTitleEs) : undefined) || src.title
+              })()}</span>
             </h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'rgba(255,255,255,0.5)', marginTop: 16, marginBottom: 12, fontSize: 16 }}>
               <span>{formatDate(article.updatedAt || article.createdAt)}</span>
               <span>•</span>
-              <span>{readTime(article.body)}</span>
+              <span>{(() => {
+                const isEs = i18n.language?.startsWith('es')
+                const slug = article.slug
+                const src = ArticlesStore.getBySlug(slug) || article
+                const tBodyEs = isEs ? t(`articles_content.${slug}.body`, { defaultValue: '' }) : ''
+                const bodyRaw = (isEs ? ((src as any).body_es || tBodyEs) : undefined) || src.body
+                const body = isEs ? filterLangBlocks(bodyRaw || '', 'es') : filterLangBlocks(bodyRaw || '', 'en')
+                return readTime(body, t)
+              })()}</span>
             </div>
           </div>
+        
 
-          {heroSrc && (
-            <img ref={heroRef} src={heroSrc} alt="hero" onLoad={() => { if (heroRef.current) setHeroWidth(heroRef.current.clientWidth || undefined) }} style={{ width: '100%', borderRadius: 12, margin: '8px 0 6px' }} />
-          )}
-          {article.excerpt && (
-            <p className="article-excerpt" style={{ margin: '0 0 16px', color: 'rgba(255,255,255,0.78)' }}>{article.excerpt}</p>
-          )}
+        {heroSrc && (
+          <img ref={heroRef} src={heroSrc} alt={t('articles_template.hero_alt')} onLoad={() => { if (heroRef.current) setHeroWidth(heroRef.current.clientWidth || undefined) }} style={{ width: '100%', borderRadius: 12, margin: '8px 0 6px' }} />
+        )}
+        {(() => {
+          const isEs = i18n.language?.startsWith('es')
+          const slug = article.slug
+          const src = ArticlesStore.getBySlug(slug) || article
+          const tExcerptEs = isEs ? t(`articles_content.${slug}.excerpt`, { defaultValue: '' }) : ''
+          const markExcerptEs = isEs ? getMarked(src.body || '', 'excerpt', 'es') : ''
+          const ex = (isEs ? ((src as any).excerpt_es || tExcerptEs || markExcerptEs) : undefined) || src.excerpt
+          return ex ? (
+            <p className="article-excerpt" style={{ margin: '0 0 16px', color: 'rgba(255,255,255,0.78)' }}>{ex}</p>
+          ) : null
+        })()}
 
-          <div className="article-body" style={{ display: 'grid', gap: 14, lineHeight: 1.7, color: 'rgba(255,255,255,0.9)', maxWidth: 840 }}>
-            {looksLikeHtml(article.body) ? (
-              <HtmlBody html={article.body!} heroMaxWidth={heroWidth} excerpt={article.excerpt || ''} />
+        <div className="article-body" style={{ display: 'grid', gap: 14, lineHeight: 1.7, color: 'rgba(255,255,255,0.9)', maxWidth: 840 }}>
+          {(() => {
+            const isEs = i18n.language?.startsWith('es')
+            const slug = article.slug
+            const src = ArticlesStore.getBySlug(slug) || article
+            const tBodyEs = isEs ? t(`articles_content.${slug}.body`, { defaultValue: '' }) : ''
+            const tExcerptEs = isEs ? t(`articles_content.${slug}.excerpt`, { defaultValue: '' }) : ''
+            const bodyRaw = (isEs ? ((src as any).body_es || tBodyEs) : undefined) || src.body
+            const exRaw = (isEs ? ((src as any).excerpt_es || tExcerptEs) : undefined) || src.excerpt
+            const body = isEs ? filterLangBlocks(bodyRaw || '', 'es') : filterLangBlocks(bodyRaw || '', 'en')
+            const ex = isEs ? (getMarked(src.body || '', 'excerpt', 'es') || exRaw) : exRaw
+            return looksLikeHtml(body) ? (
+              <HtmlBody html={body!} heroMaxWidth={heroWidth} excerpt={ex || ''} />
             ) : (
-              <BodyRenderer body={article.body} excerpt={article.excerpt} />
-            )}
-          </div>
-
-          <div style={{ marginTop: 24 }}>
-            <a className="btn primary" href="/#contact">Contact GOLDLAW</a>
-          </div>
+              <BodyRenderer body={body} excerpt={ex} />
+            )
+          })()}
         </div>
-      </section>
-    </>
-  )
+
+        <div style={{ marginTop: 24 }}>
+          <a className="btn primary" href="/#contact">{t('articles_template.contact_cta')}</a>
+        </div>
+      </div>
+    </section>
+  </>
+)
 }
 
 function stripMd(s: string) {
@@ -427,9 +527,8 @@ function formatDate(ts?: number) {
   return d.toLocaleDateString(undefined, { month: 'long', day: 'numeric' })
 }
 
-function readTime(text?: string) {
-  if (!text) return '1 min read'
-  const words = text.trim().split(/\s+/).length
+function readTime(text?: string, t?: (key: string, opts?: any) => string) {
+  const words = (text || '').trim().split(/\s+/).filter(Boolean).length
   const mins = Math.max(1, Math.round(words / 225))
-  return `${mins} min read`
+  return t ? t('articles_page.min_read', { count: mins }) : `${mins} min read`
 }

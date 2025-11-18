@@ -1,17 +1,19 @@
 import MagicBento from '@/components/MagicBento'
 import './HowItWorksSection.css'
+import { useTranslation } from 'react-i18next'
 
 export default function HowItWorksSection() {
+  const { t } = useTranslation()
   return (
     <section id="how-it-works" className="hiw">
       <div className="hiw-inner">
         <header className="hiw-head">
-          <div className="eyebrow">How it works</div>
+          <div className="eyebrow">{t('hiw.eyebrow')}</div>
           <h2 className="hiw-title">
-            <span className="muted">Getting started is simple — </span>
-            <span className="strong">no upfront costs, only pay if we win.</span>
+            <span className="muted">{t('hiw.muted')}</span>
+            <span className="strong">{t('hiw.strong')}</span>
           </h2>
-          <p className="hiw-copy">We make it easy to get help fast. Our team reviews your case, builds your claim, and fights for the maximum compensation you deserve.</p>
+          <p className="hiw-copy">{t('hiw.copy')}</p>
         </header>
 
         <MagicBento

@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import './PracticeWelcomeVideo.css'
 
 export default function PracticeWelcomeVideo({
   videoId,
   placeholderSrc,
-  title = 'Welcome video',
+  title,
 }: {
   videoId: string
   placeholderSrc: string
   title?: string
 }) {
+  const { t } = useTranslation()
+  const titleText = title ?? t('practice_welcome.title_default')
   const [playing, setPlaying] = useState(false)
   const playerRef = useRef<any>(null)
   const wrapRef = useRef<HTMLDivElement | null>(null)
@@ -151,8 +154,8 @@ export default function PracticeWelcomeVideo({
       <div className="video-shell">
         {!playing && (
           <>
-            <img className="ph" src={placeholderSrc} alt={title} />
-            <button className="play" type="button" aria-label="Play welcome video" onClick={start}>
+            <img className="ph" src={placeholderSrc} alt={titleText} />
+            <button className="play" type="button" aria-label={t('practice_welcome.play_label')} onClick={start}>
               <svg viewBox="0 0 48 48" width="28" height="28" aria-hidden="true" focusable="false">
                 <path fill="#fff" d="M19 16l14 8-14 8z"/>
               </svg>
@@ -160,12 +163,12 @@ export default function PracticeWelcomeVideo({
           </>
         )}
         {playing && (
-          <div className="yt-wrap" aria-label={title} ref={wrapRef}>
+          <div className="yt-wrap" aria-label={titleText} ref={wrapRef}>
             {useDirectEmbed ? (
               <iframe
                 className="yt"
                 src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
-                title={title}
+                title={titleText}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
                 referrerPolicy="strict-origin-when-cross-origin"

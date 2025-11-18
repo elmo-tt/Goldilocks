@@ -8,9 +8,11 @@ import ArticleTemplate from './ArticleTemplate'
 import { useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { ArticlesStore } from '@/shared/articles/store'
+import { useTranslation } from 'react-i18next'
 
 export default function ArticlePage() {
   const { slug } = useParams<{ slug: string }>()
+  const { t } = useTranslation()
   const [a, setA] = useState(() => (slug ? ArticlesStore.getBySlug(slug) : undefined))
 
   // Scroll to top on article change
@@ -35,7 +37,7 @@ export default function ArticlePage() {
       ) : (
         <main style={{ padding: '80px 24px 24px' }}>
           <div style={{ maxWidth: 900, margin: '0 auto' }}>
-            <p style={{ color: '#475569' }}>Article not found.</p>
+            <p style={{ color: '#475569' }}>{t('articles_page.not_found')}</p>
           </div>
         </main>
       )}

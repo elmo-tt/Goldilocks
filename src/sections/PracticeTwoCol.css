@@ -1,5 +1,5 @@
 .pa-two-col { background: var(--color-7-0a0d48, #0a0d48); color: #fff; padding: clamp(56px, 8vw, 96px) 0; }
-.pa-two-col .pa2-inner { display: grid; grid-template-columns: 1.05fr 1fr; gap: clamp(64px, 10vw, 140px); align-items: center; padding-inline: clamp(32px, 14vw, 240px); }
+.pa-two-col .pa2-inner { display: grid; grid-template-columns: 1.05fr 1fr; align-items: center; padding-inline: clamp(32px, 14vw, 240px); }
 
 .pa-two-col .pa2-title { font-size: clamp(28px, 4.6vw, 44px); line-height: 1.15; font-weight: 400; margin: 0 0 12px 0; }
 .pa-two-col .pa2-title .muted { color: rgba(255,255,255,0.75); }

@@ -20,6 +20,11 @@ export type Article = {
   canonicalUrl?: string
   noindex?: boolean
   featured?: boolean
+  title_es?: string
+  excerpt_es?: string
+  body_es?: string
+  metaTitle_es?: string
+  metaDescription_es?: string
 }
 
 function slugify(s: string) {
@@ -109,6 +114,11 @@ export const CloudArticlesStore = {
       canonicalUrl: (input as any).canonicalUrl !== undefined ? (input as any).canonicalUrl : (prev as any).canonicalUrl,
       noindex: (input as any).noindex !== undefined ? (input as any).noindex : (prev as any).noindex,
       featured: (input as any).featured !== undefined ? (input as any).featured : (prev as any)?.featured,
+      title_es: (input as any).title_es !== undefined ? (input as any).title_es : (prev as any)?.title_es,
+      excerpt_es: (input as any).excerpt_es !== undefined ? (input as any).excerpt_es : (prev as any)?.excerpt_es,
+      body_es: (input as any).body_es !== undefined ? (input as any).body_es : (prev as any)?.body_es,
+      metaTitle_es: (input as any).metaTitle_es !== undefined ? (input as any).metaTitle_es : (prev as any)?.metaTitle_es,
+      metaDescription_es: (input as any).metaDescription_es !== undefined ? (input as any).metaDescription_es : (prev as any)?.metaDescription_es,
     }
     let { data, error } = await supabase.from('articles').upsert(next as any, { onConflict: 'id' }).select().limit(1)
     if (error) {

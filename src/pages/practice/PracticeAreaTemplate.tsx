@@ -6,6 +6,7 @@ import ContactSection from '@/sections/ContactSection'
 import '@/sections/ContactSection.css'
 import FAQSection from '@/sections/FAQSection'
 import '@/sections/FAQSection.css'
+import { useTranslation } from 'react-i18next'
 import PracticeWelcomeVideo from '@/sections/PracticeWelcomeVideo'
 import PracticeTwoCol from '@/sections/PracticeTwoCol'
 import '@/sections/PracticeTwoCol.css'
@@ -27,25 +28,29 @@ export type PracticeAreaData = {
 }
 
 export default function PracticeAreaTemplate({ area }: { area: PracticeAreaData }) {
+  const { t } = useTranslation()
   const score = area.ratingScore || '4.8'
   const count = area.ratingCount || 918
   const style = area.heroUrl ? { backgroundImage: `url('${area.heroUrl}')` } as React.CSSProperties : undefined
   const testimonialsFolder = (area.key || '').toLowerCase().replace(/-/g, '_')
+  const nameText = t(`practice_pages.${area.key}.name`, { defaultValue: area.name })
+  const headlineText = t(`practice_pages.${area.key}.headline`, { defaultValue: area.headline })
+  const detailsText = t(`practice_pages.${area.key}.details`, { defaultValue: area.details })
   const makeMuted = (a: PracticeAreaData) => {
     const key = (a.key || '').toLowerCase()
     const name = (a.name || '').trim()
     const lower = name.toLowerCase()
     // Motor vehicle umbrella (car, motorcycle, truck, uber/lyft, pedestrian, bicycle, motor)
     if (/(motor|car|truck|trucking|motorcycle|uber|lyft|rideshare|pedestrian|bicycle|bike)/.test(key) || /(motor|car|truck|motorcycle|uber|lyft|pedestrian|bicycle|bike)/.test(lower)) {
-      return 'who have been in a motor vehicle accident.'
+      return t('practice_about.motor_vehicle')
     }
     // Generic patterns
-    if (/accident/.test(lower)) return `who have been in ${lower}.`
-    if (/injur/.test(lower)) return `who have suffered ${lower}.`
-    if (/malpractice/.test(lower)) return `who have suffered ${lower}.`
-    if (/wrongful\s+death/.test(lower)) return 'who have suffered a wrongful death.'
+    if (/accident/.test(lower)) return t('practice_about.accident_generic', { lower })
+    if (/injur/.test(lower)) return t('practice_about.injury_generic', { lower })
+    if (/malpractice/.test(lower)) return t('practice_about.malpractice_generic', { lower })
+    if (/wrongful\s+death/.test(lower)) return t('practice_about.wrongful_death')
     // Fallback
-    return `who need help with ${lower}.`
+    return t('practice_about.fallback', { lower })
   }
   const mutedLine = makeMuted(area)
   return (
@@ -54,14 +59,14 @@ export default function PracticeAreaTemplate({ area }: { area: PracticeAreaData 
         <div className="pa-block">
           <div className="pa-rating">
             <img src="/SVG/Google__G__logo.svg" alt="Google" className="google-g" />
-            <span className="score">{score} Rating</span>
+            <span className="score">{score} {t('common.rating')}</span>
             <span className="sep">•</span>
-            <span className="reviews">From {count} Reviews</span>
+            <span className="reviews">{t('common.reviews_from_count', { count })}</span>
           </div>
-          <h1 className="pa-title">{area.headline}</h1>
-          <p className="pa-detail">{area.details}</p>
+          <h1 className="pa-title">{headlineText}</h1>
+          <p className="pa-detail">{detailsText}</p>
           <div className="pa-actions">
-            <a className="btn primary" href="/#contact">Get a free case review</a>
+            <a className="btn primary" href="/#contact">{t('nav.free_case_review')}</a>
             <a className="btn call" href="tel:15612222222">
               <span className="icon-box" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
@@ -75,7 +80,7 @@ export default function PracticeAreaTemplate({ area }: { area: PracticeAreaData 
             </a>
           </div>
         </div>
-        <div className="pa-tag">{area.name}</div>
+        <div className="pa-tag">{nameText}</div>
       </section>
 
       <PracticeWelcomeVideo
@@ -84,10 +89,10 @@ export default function PracticeAreaTemplate({ area }: { area: PracticeAreaData 
       />
 
       <AboutSection
-        eyebrow="OUR IMPACT"
+        eyebrow={t('practice_about_section.eyebrow')}
         strongFirst
         stackTitleLines
-        strong="Delivering results for our clients"
+        strong={t('practice_about_section.strong')}
         muted={mutedLine}
         showImage={false}
         copy=""
@@ -95,40 +100,25 @@ export default function PracticeAreaTemplate({ area }: { area: PracticeAreaData 
 
       <PracticeTwoCol
         imageUrl={area.benefitsImageUrl || area.heroUrl || '/images/practice/motor-accidents-hero.png'}
-        detail={area.details}
+        detail={detailsText}
       />
 
       <PracticeWhy
-        strong={"Auto accidents are among the leading causes of personal injury in Florida."}
-        muted={"Here’s why you need an attorney."}
+        eyebrow={t('practice_why.eyebrow')}
+        strong={t('practice_why.strong')}
+        muted={t('practice_why.muted')}
         items={[
-          {
-            title: 'You May Be Entitled to More Compensation Than You Realize',
-            body:
-              'After sustaining injuries in a car accident, many victims downplay their injuries or damages to avoid making a claim and potentially having their rates increase. However, you may be entitled to compensation for more than just physical injuries and property damage — including time off work, medical bills, and pain and suffering.',
-          },
-          {
-            title: 'The Insurance Company Is Not On Your Side',
-            body:
-              'Insurers are businesses focused on profit. They may offer low settlements, delay, or deny claims outright. Having a legal advocate ensures the process moves forward and protects your rights.',
-          },
-          {
-            title: 'You May Need to Take Your Claim to Court',
-            body:
-              'In some cases, taking your claim to court might be necessary to get the compensation you deserve. This could be because the insurance company has denied your claim or because they have made an unreasonably low settlement offer.',
-          },
-          {
-            title: 'The Statute of Limitations Could Be Looming',
-            body:
-              'In Florida, the time limit for filing most car accident claims is now two years from the date of the accident. This may seem like a long time, but if you wait too long, important evidence, such as eyewitnesses and surveillance footage, can be more challenging to find. Consulting with a lawyer right away can make sure you\'re able to build a strong case that is filed on time.',
-          },
+          { title: t('practice_why.items.0.title'), body: t('practice_why.items.0.body') },
+          { title: t('practice_why.items.1.title'), body: t('practice_why.items.1.body') },
+          { title: t('practice_why.items.2.title'), body: t('practice_why.items.2.body') },
+          { title: t('practice_why.items.3.title'), body: t('practice_why.items.3.body') },
         ]}
       />
 
       <PracticeTestimonials folder={testimonialsFolder} />
 
       <PracticeBento
-        areaName={area.name}
+        areaName={nameText}
         neighborhoods={[
           'Riviera Beach','Lake Worth','Boynton Beach','Wellington','Royal Palm Beach','Lantana','Jupiter','Greenacres','Atlantis'
         ]}
@@ -139,16 +129,16 @@ export default function PracticeAreaTemplate({ area }: { area: PracticeAreaData 
           { text: 'Professional, responsive, and compassionate from start to finish.', author: 'Daniela M.', context: 'Auto Accident' },
         ]}
         actions={[
-          'Gather evidence',
-          'Seek medical attention',
-          'Keep a detailed journal of symptoms and expenses',
-          'Avoid giving recorded statements to insurers',
-          'Do not post about the accident on social media',
+          t('practice_bento.actions.0'),
+          t('practice_bento.actions.1'),
+          t('practice_bento.actions.2'),
+          t('practice_bento.actions.3'),
+          t('practice_bento.actions.4'),
         ]}
         benefits={[
-          { icon: 'clock', text: 'Available 24/7' },
-          { icon: 'badge', text: 'Board-certified attorneys' },
-          { icon: 'dollar', text: 'No fees or costs unless we win' },
+          { icon: 'clock', text: t('hero.bullet_available') },
+          { icon: 'badge', text: t('hero.bullet_board_certified') },
+          { icon: 'dollar', text: t('hero.bullet_no_fees') },
         ]}
       />
 

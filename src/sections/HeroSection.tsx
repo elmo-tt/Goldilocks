@@ -1,13 +1,15 @@
 import './HeroSection.css'
+import { useTranslation } from 'react-i18next'
 
 export default function HeroSection() {
+  const { t } = useTranslation()
   return (
     <section className="hero" id="hero">
       <div className="hero-inner">
         <div className="hero-colA">
-          <h1 className="hero-title">We Hold Accountable Those Who Hurt Others<span className="tm">™</span></h1>
+          <h1 className="hero-title">{t('hero.title')}<span className="tm">™</span></h1>
           <div className="hero-actions">
-            <a className="btn primary" href="#contact">Get a free case review</a>
+            <a className="btn primary" href="#contact">{t('nav.free_case_review')}</a>
             <a className="btn call" href="tel:15612222222">
               <span className="icon-box" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
@@ -21,7 +23,7 @@ export default function HeroSection() {
             </a>
           </div>
           <div className="as-featured">
-            <span className="label">As featured on</span>
+            <span className="label">{t('hero.as_featured_on')}</span>
             <span className="divider" aria-hidden="true"></span>
             <div className="logos">
               <img src="/SVG/CNN.svg" alt="CNN" />
@@ -34,15 +36,15 @@ export default function HeroSection() {
         <div className="hero-colB">
           <div className="hero-card">
             <div className="metric-value">$1B+</div>
-            <div className="metric-caption">in total amounts recovered for our amazing clients</div>
+            <div className="metric-caption">{t('hero.metric_total_caption')}</div>
           </div>
           <div className="hero-card">
             <div className="metric-value">95%</div>
-            <div className="metric-caption">of clients got a top settlement in under 1 year*</div>
+            <div className="metric-caption">{t('hero.metric_top_settlements_caption')}</div>
           </div>
           <div className="hero-card">
             <div className="metric-value">200+</div>
-            <div className="metric-caption">years of combined experience serving our clients</div>
+            <div className="metric-caption">{t('hero.metric_years_caption')}</div>
           </div>
           <div className="hero-card rating-card">
             <div className="rating-top">
@@ -51,7 +53,7 @@ export default function HeroSection() {
                 <div className="stars">
                   <span className="rating-score">4.8</span>
                   <span className="rating-outof">/ 5.0</span>
-                  <span className="rating-reviews">From 918 Reviews</span>
+                  <span className="rating-reviews">{t('hero.rating_from_reviews')}</span>
                   <img src="/SVG/Google__G__logo.svg" alt="Google" className="google-g" />
                 </div>
               </div>
@@ -59,15 +61,15 @@ export default function HeroSection() {
             <div className="rating-bottom">
               <div className="rating-item">
                 <svg className="check" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.2l-3.5-3.5a1 1 0 10-1.4 1.4l4.2 4.2a1 1 0 001.4 0l10-10a1 1 0 10-1.4-1.4L9 16.2z"/></svg>
-                <span>Available 24/7</span>
+                <span>{t('hero.bullet_available')}</span>
               </div>
               <div className="rating-item">
                 <svg className="check" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.2l-3.5-3.5a1 1 0 10-1.4 1.4l4.2 4.2a1 1 0 001.4 0l10-10a1 1 0 10-1.4-1.4L9 16.2z"/></svg>
-                <span>Board-certified Attorneys</span>
+                <span>{t('hero.bullet_board_certified')}</span>
               </div>
               <div className="rating-item">
                 <svg className="check" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.2l-3.5-3.5a1 1 0 10-1.4 1.4l4.2 4.2a1 1 0 001.4 0l10-10a1 1 0 10-1.4-1.4L9 16.2z"/></svg>
-                <span>No Fees Or Costs Unless We Win</span>
+                <span>{t('hero.bullet_no_fees')}</span>
               </div>
             </div>
           </div>

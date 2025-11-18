@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { PRACTICE_AREAS } from '@/admin/data/goldlaw'
 import './StickyNav.css'
@@ -16,6 +17,8 @@ const ABOUT_LINKS = [
 ]
 
 export default function StickyNav() {
+  // i18n: expose t() and current language
+  const { t, i18n } = useTranslation()
   const [scrolled, setScrolled] = useState(false)
   const [showTopbar, setShowTopbar] = useState(true)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -81,7 +84,7 @@ export default function StickyNav() {
             </Link>
             <ul className="nav-links">
               <li className="has-dropdown">
-                <Link to="/#about">About
+                <Link to="/#about">{t('nav.about')}
                   <svg className="caret" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 10l5 5 5-5z"/></svg>
                 </Link>
                 <div className="dropdown wide">
@@ -93,7 +96,7 @@ export default function StickyNav() {
                 </div>
               </li>
               <li className="has-dropdown">
-                <Link to="/#services">Cases We Handle
+                <Link to="/#services">{t('nav.cases')}
                   <svg className="caret" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 10l5 5 5-5z"/></svg>
                 </Link>
                 <div className="dropdown wide">
@@ -104,15 +107,23 @@ export default function StickyNav() {
                   </ul>
                 </div>
               </li>
-              <li><Link to="/articles#hero">Blog</Link></li>
-              <li><Link to="/#contact">Contact</Link></li>
+              <li><Link to="/articles#hero">{t('nav.blog')}</Link></li>
+              <li><Link to="/#contact">{t('nav.contact')}</Link></li>
               <li>
-                <Link to={authed ? '/admin' : '/login'}>{authed ? 'Admin' : 'Login'}</Link>
+                <Link to={authed ? '/admin' : '/login'}>{authed ? t('nav.admin') : t('nav.login')}</Link>
               </li>
             </ul>
           </div>
           <div className="right">
-            <a className="cta" href="/#contact">Free case review</a>
+            <a className="cta" href="/#contact">{t('nav.free_case_review')}</a>
+            <button
+              className="lang-toggle"
+              type="button"
+              aria-label={`${t('nav.toggle_label')}: ${i18n.language === 'es' ? 'Español' : 'English'}`}
+              onClick={() => i18n.changeLanguage(i18n.language === 'es' ? 'en' : 'es')}
+            >
+              {i18n.language === 'es' ? 'ES' : 'EN'}
+            </button>
             <button
               className={`menu-toggle${menuOpen ? ' open' : ''}`}
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
@@ -134,12 +145,12 @@ export default function StickyNav() {
       </div>
       <div className={`mobile-menu${menuOpen ? ' open' : ''}`}>
         <div className="mobile-head">
-          <a className="cta mobile-cta" href="/#contact" onClick={() => setMenuOpen(false)}>Free case review</a>
+          <a className="cta mobile-cta" href="/#contact" onClick={() => setMenuOpen(false)}>{t('nav.free_case_review')}</a>
         </div>
         <ul>
           <li className="has-sub">
             <button className={`acc-head${mAboutOpen ? ' open' : ''}`} aria-expanded={mAboutOpen} onClick={() => setMAboutOpen(v => !v)}>
-              <span>About</span>
+              <span>{t('nav.about')}</span>
               <svg className="caret" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 10l5 5 5-5z"/></svg>
             </button>
             <ul className={`sub${mAboutOpen ? ' open' : ''}`}>
@@ -150,7 +161,7 @@ export default function StickyNav() {
           </li>
           <li className="has-sub">
             <button className={`acc-head${mCasesOpen ? ' open' : ''}`} aria-expanded={mCasesOpen} onClick={() => setMCasesOpen(v => !v)}>
-              <span>Cases We Handle</span>
+              <span>{t('nav.cases')}</span>
               <svg className="caret" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 10l5 5 5-5z"/></svg>
             </button>
             <ul className={`sub${mCasesOpen ? ' open' : ''}`}>
@@ -159,12 +170,21 @@ export default function StickyNav() {
               ))}
             </ul>
           </li>
-          <li><Link to="/articles#hero" onClick={() => setMenuOpen(false)}>Blog</Link></li>
-          <li><Link to="/#contact" onClick={() => setMenuOpen(false)}>Contact</Link></li>
+          <li><Link to="/articles#hero" onClick={() => setMenuOpen(false)}>{t('nav.blog')}</Link></li>
+          <li><Link to="/#contact" onClick={() => setMenuOpen(false)}>{t('nav.contact')}</Link></li>
           <li>
             <Link to={authed ? '/admin' : '/login'} onClick={() => setMenuOpen(false)}>
-              {authed ? 'Admin' : 'Login'}
+              {authed ? t('nav.admin') : t('nav.login')}
             </Link>
+          </li>
+          <li>
+            <button
+              className="lang-toggle"
+              type="button"
+              onClick={() => { i18n.changeLanguage(i18n.language === 'es' ? 'en' : 'es'); setMenuOpen(false) }}
+            >
+              {i18n.language === 'es' ? 'ES' : 'EN'}
+            </button>
           </li>
         </ul>
       </div>

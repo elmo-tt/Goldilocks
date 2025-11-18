@@ -1,7 +1,8 @@
-import { useRef, useEffect, useCallback, useState } from 'react'
+import { useRef, useEffect, useCallback, useState, useMemo } from 'react'
 import type { PropsWithChildren, CSSProperties, MutableRefObject } from 'react'
 import { gsap } from 'gsap'
 import './MagicBento.css'
+import { useTranslation } from 'react-i18next'
 
 const DEFAULT_PARTICLE_COUNT = 12
 const DEFAULT_SPOTLIGHT_RADIUS = 300
@@ -16,41 +17,7 @@ type Card = {
   kind?: 'step' | 'locations' | 'rating' | 'benefits' | 'generic'
 }
 
-const cardData: Card[] = [
-  {
-    color: '#030535',
-    title: 'Free Consultation',
-    description: 'Speak with our legal team to review your case and understand your options—no cost, no pressure.',
-    label: '01',
-    kind: 'step',
-  },
-  {
-    color: '#030535',
-    title: 'We Build Your Case',
-    description: 'Our team investigates, gathers evidence, and fights to build the strongest case possible on your behalf.',
-    label: '02',
-    kind: 'step',
-  },
-  {
-    color: '#030535',
-    title: 'Get the Results You Deserve',
-    description: "We negotiate aggressively or go to trial if needed—always aiming for the maximum compensation you're owed.",
-    label: '03',
-    kind: 'step',
-  },
-  {
-    color: '#030535',
-    title: 'Locations',
-    label: 'Locations',
-    kind: 'locations',
-  },
-  {
-    color: '#030535',
-    title: 'Our Rating',
-    label: 'Rating',
-    kind: 'rating',
-  },
-]
+ 
 
 const createParticleElement = (x: number, y: number, color: string = DEFAULT_GLOW_COLOR) => {
   const el = document.createElement('div')
@@ -485,6 +452,47 @@ export default function MagicBento({
   const gridRef = useRef<HTMLDivElement | null>(null)
   const isMobile = useMobileDetection()
   const shouldDisableAnimations = disableAnimations || isMobile
+  const { t, i18n } = useTranslation()
+
+  // Localized card data
+  const cardData: Card[] = useMemo(
+    () => [
+      {
+        color: '#030535',
+        title: t('bento.cards.free.title'),
+        description: t('bento.cards.free.description'),
+        label: t('bento.cards.free.label'),
+        kind: 'step',
+      },
+      {
+        color: '#030535',
+        title: t('bento.cards.build.title'),
+        description: t('bento.cards.build.description'),
+        label: t('bento.cards.build.label'),
+        kind: 'step',
+      },
+      {
+        color: '#030535',
+        title: t('bento.cards.fight.title'),
+        description: t('bento.cards.fight.description'),
+        label: t('bento.cards.fight.label'),
+        kind: 'step',
+      },
+      {
+        color: '#030535',
+        title: t('bento.cards.locations.title'),
+        label: t('bento.cards.locations.title'),
+        kind: 'locations',
+      },
+      {
+        color: '#030535',
+        title: t('bento.cards.rating.title'),
+        label: t('bento.cards.rating.label'),
+        kind: 'rating',
+      },
+    ],
+    [t, i18n.language]
+  )
 
   return (
     <>
@@ -529,16 +537,16 @@ export default function MagicBento({
                       <div className="stars">
                         <span className="rating-score">4.8</span>
                         <span className="rating-outof">/ 5.0</span>
-                        <span className="rating-reviews">From 918 Reviews</span>
+                        <span className="rating-reviews">{t('hero.rating_from_reviews')}</span>
                         <img src="/SVG/Google__G__logo.svg" alt="Google" className="google-g" />
                       </div>
                     </div>
                   </div>
                   <div className="rating-bottom">
                     <div className="rating-list">
-                      <div className="rating-item"><svg className="check" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.2l-3.5-3.5a1 1 0 10-1.4 1.4l4.2 4.2a1 1 0 001.4 0l10-10a1 1 0 10-1.4-1.4L9 16.2z"/></svg><span>Available 24/7</span></div>
-                      <div className="rating-item"><svg className="check" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.2l-3.5-3.5a1 1 0 10-1.4 1.4l4.2 4.2a1 1 0 001.4 0l10-10a1 1 0 10-1.4-1.4L9 16.2z"/></svg><span>Board-certified attorneys</span></div>
-                      <div className="rating-item"><svg className="check" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.2l-3.5-3.5a1 1 0 10-1.4 1.4l4.2 4.2a1 1 0 001.4 0l10-10a1 1 0 10-1.4-1.4L9 16.2z"/></svg><span>No fees or costs unless we win</span></div>
+                      <div className="rating-item"><svg className="check" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.2l-3.5-3.5a1 1 0 10-1.4 1.4l4.2 4.2a1 1 0 001.4 0l10-10a1 1 0 10-1.4-1.4L9 16.2z"/></svg><span>{t('hero.bullet_available')}</span></div>
+                      <div className="rating-item"><svg className="check" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.2l-3.5-3.5a1 1 0 10-1.4 1.4l4.2 4.2a1 1 0 001.4 0l10-10a1 1 0 10-1.4-1.4L9 16.2z"/></svg><span>{t('hero.bullet_board_certified')}</span></div>
+                      <div className="rating-item"><svg className="check" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 16.2l-3.5-3.5a1 1 0 10-1.4 1.4l4.2 4.2a1 1 0 001.4 0l10-10a1 1 0 10-1.4-1.4L9 16.2z"/></svg><span>{t('hero.bullet_no_fees')}</span></div>
                     </div>
                   </div>
                 </div>
@@ -566,7 +574,7 @@ export default function MagicBento({
                   </div>
                 </div>
                 <div className="magic-bento-card__header">
-                  <div className="magic-bento-card__label">Locations</div>
+                  <div className="magic-bento-card__label">{t('bento.cards.locations.title')}</div>
                 </div>
                 <div className="magic-bento-card__content locations-card">
                   <div className="locations-info">

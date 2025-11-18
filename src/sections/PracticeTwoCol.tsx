@@ -1,15 +1,12 @@
 import './PracticeTwoCol.css'
+import { useTranslation } from 'react-i18next'
 
 export type PracticeTwoColProps = {
   imageUrl: string
   detail: string
 }
 
-const BENEFITS: Array<{ icon: 'check' | 'loop' | 'support'; title: string; text: string }> = [
-  { icon: 'check', title: 'Decades of Experience', text: 'Trusted in West Palm Beach and across Florida for tough accident claims.' },
-  { icon: 'loop', title: 'Always Kept in the Loop', text: 'Clear, honest updates every step of the way. No legal black hole here.' },
-  { icon: 'support', title: 'Full-Service Support', text: 'We guide you from day one through settlement or trial—so you\'re never on your own.' },
-]
+ 
 
 function Icon({ type }: { type: 'check' | 'loop' | 'support' }) {
   if (type === 'check') {
@@ -34,11 +31,17 @@ function Icon({ type }: { type: 'check' | 'loop' | 'support' }) {
 }
 
 export default function PracticeTwoCol({ imageUrl, detail }: PracticeTwoColProps) {
+  const { t } = useTranslation()
+  const BENEFITS: Array<{ icon: 'check' | 'loop' | 'support'; title: string; text: string }> = [
+    { icon: 'check', title: t('practice_two_col.benefits.0.title'), text: t('practice_two_col.benefits.0.text') },
+    { icon: 'loop', title: t('practice_two_col.benefits.1.title'), text: t('practice_two_col.benefits.1.text') },
+    { icon: 'support', title: t('practice_two_col.benefits.2.title'), text: t('practice_two_col.benefits.2.text') },
+  ]
   return (
     <section className="pa-two-col">
       <div className="pa2-inner">
         <div className="pa2-left">
-          <h2 className="pa2-title"><span className="muted">The attorney you need,</span> <span className="strong">for the result you want.</span></h2>
+          <h2 className="pa2-title"><span className="muted">{t('practice_two_col.title_muted')}</span> <span className="strong">{t('practice_two_col.title_strong')}</span></h2>
           <p className="pa2-detail">{detail}</p>
           <ul className="pa2-benefits">
             {BENEFITS.map((b, i) => (

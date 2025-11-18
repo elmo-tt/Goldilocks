@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import useEmblaCarousel from 'embla-carousel-react'
 import './PracticeTestimonials.css'
 
@@ -14,7 +15,8 @@ type Testimonial = {
   captureAt?: number
 }
 
-export default function PracticeTestimonials({ folder, title = 'Hear the stories our clients have had' }: { folder: string; title?: string }) {
+export default function PracticeTestimonials({ folder, title }: { folder: string; title?: string }) {
+  const { t } = useTranslation()
   const [items, setItems] = useState<Testimonial[]>([])
   const [playing, setPlaying] = useState<Testimonial | null>(null)
   const [posters, setPosters] = useState<Record<string, string>>({})
@@ -122,7 +124,7 @@ export default function PracticeTestimonials({ folder, title = 'Hear the stories
     <section className="testimonials">
       <div className="t-inner">
         <div className="t-left">
-          <h2 className="t-title">{title}</h2>
+          <h2 className="t-title">{title ?? t('practice_testimonials.title')}</h2>
           <div className="t-arrows">
             <button className="nav-btn" aria-label="Previous" onClick={prevEmbla}>←</button>
             <button className="nav-btn" aria-label="Next" onClick={nextEmbla}>→</button>

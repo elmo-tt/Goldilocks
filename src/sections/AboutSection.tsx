@@ -1,10 +1,11 @@
 import './AboutSection.css'
+import { useTranslation } from 'react-i18next'
 
 export default function AboutSection({
-  eyebrow = 'ABOUT US',
-  muted = 'Delivering the results our',
-  strong = 'clients deserve.',
-  copy = 'At GOLDLAW, we don’t measure success by office size or flashy billboards— we measure it by the results we deliver. While other firms may settle quickly or play it safe, we fight hard for every client and never back down from getting you the justice you deserve.',
+  eyebrow,
+  muted,
+  strong,
+  copy,
   showImage = true,
   strongFirst = false,
   stackTitleLines = false,
@@ -17,11 +18,16 @@ export default function AboutSection({
   strongFirst?: boolean
   stackTitleLines?: boolean
 }) {
+  const { t } = useTranslation()
+  const eyebrowText = eyebrow ?? t('about.eyebrow')
+  const mutedText = muted ?? t('about.muted')
+  const strongText = strong ?? t('about.strong')
+  const copyText = copy ?? t('about.copy')
   const results = [
-    { id: 'r1', amount: '$6.5M', desc: 'Tow truck driver killed by Semi-Truck' },
-    { id: 'r2', amount: '$960K', desc: 'Young Woman Falls in Big Box Store' },
-    { id: 'r3', amount: '$500,672', desc: 'Ng, Sandi v. Walmart Verdict' },
-    { id: 'r4', amount: '$2M', desc: 'Young child dies of undiagnosed illness' },
+    { id: 'r1', amount: '$6.5M', desc: t('about.results.r1_desc') },
+    { id: 'r2', amount: '$960K', desc: t('about.results.r2_desc') },
+    { id: 'r3', amount: '$500,672', desc: t('about.results.r3_desc') },
+    { id: 'r4', amount: '$2M', desc: t('about.results.r4_desc') },
   ]
 
   return (
@@ -29,23 +35,23 @@ export default function AboutSection({
       <div className="about-inner">
         <div className={`about-row1${showImage ? '' : ' no-image'}`}>
           <div className="about-text">
-            <div className="eyebrow">{eyebrow}</div>
+            <div className="eyebrow">{eyebrowText}</div>
             <h2 className={`about-title${stackTitleLines ? ' stack' : ''}`}>
               {strongFirst ? (
                 <>
-                  <span className="strong">{strong}</span>{' '}
-                  <span className="muted">{muted}</span>
+                  <span className="strong">{strongText}</span>{' '}
+                  <span className="muted">{mutedText}</span>
                 </>
               ) : (
                 <>
-                  <span className="muted">{muted}</span>{' '}
-                  <span className="strong">{strong}</span>
+                  <span className="muted">{mutedText}</span>{' '}
+                  <span className="strong">{strongText}</span>
                 </>
               )}
             </h2>
-            {copy && copy.trim() && (
+            {copyText && copyText.trim() && (
               <p className="about-copy">
-                {copy}
+                {copyText}
               </p>
             )}
           </div>
@@ -63,7 +69,7 @@ export default function AboutSection({
               <article key={r.id} className={"result-card"}>
                 <div className="result-value">{r.amount}</div>
                 <div className="result-desc">{r.desc}</div>
-                <a className="result-cta" href="#">Learn more <span className="arrow">→</span></a>
+                <a className="result-cta" href="#">{t('about.learn_more')} <span className="arrow">→</span></a>
               </article>
             ))}
           </div>

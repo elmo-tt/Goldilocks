@@ -1,0 +1,592 @@
+// i18n initialization (React)
+// Minimal setup with in-memory resources and localStorage persistence.
+import i18n from 'i18next'
+import { initReactI18next } from 'react-i18next'
+
+const getInitialLang = () => {
+  try {
+    const saved = localStorage.getItem('app_lang')
+    if (saved) return saved
+  } catch {}
+  if (typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('es')) return 'es'
+  return 'en'
+}
+
+void i18n
+  .use(initReactI18next)
+  .init({
+    lng: getInitialLang(),
+    fallbackLng: 'en',
+    interpolation: { escapeValue: false },
+    resources: {
+      en: {
+        translation: {
+          nav: {
+            about: 'About',
+            cases: 'Cases We Handle',
+            blog: 'Blog',
+            contact: 'Contact',
+            free_case_review: 'Free case review',
+            admin: 'Admin',
+            login: 'Login',
+            toggle_label: 'Language',
+          },
+          hero: {
+            title: 'We Hold Accountable Those Who Hurt Others',
+            as_featured_on: 'As featured on',
+            metric_total_caption: 'in total amounts recovered for our amazing clients',
+            metric_top_settlements_caption: 'of clients got a top settlement in under 1 year*',
+            metric_years_caption: 'years of combined experience serving our clients',
+            rating_from_reviews: 'From 918 Reviews',
+            bullet_available: 'Available 24/7',
+            bullet_board_certified: 'Board-certified Attorneys',
+            bullet_no_fees: 'No Fees Or Costs Unless We Win',
+          },
+          common: {
+            rating: 'Rating',
+            reviews_from_count: 'From {{count}} Reviews',
+          },
+          hiw: {
+            eyebrow: 'How it works',
+            muted: 'Getting started is simple — ',
+            strong: 'no upfront costs, only pay if we win.',
+            copy: 'We make it easy to get help fast. Our team reviews your case, builds your claim, and fights for the maximum compensation you deserve.',
+          },
+          bento: {
+            cards: {
+              free: { title: 'Free Consultation', description: 'Speak with our legal team to review your case—no cost, no pressure.', label: '01' },
+              build: { title: 'We Build Your Case', description: 'We investigate and gather evidence to build the strongest case.', label: '02' },
+              fight: { title: 'We Fight For Results', description: 'We negotiate or go to trial to maximize the compensation you deserve.', label: '03' },
+              locations: { title: 'Locations', description: 'West Palm Beach • Port St. Lucie', label: 'Info' },
+              rating: { title: 'Our Rating', description: '4.8 / 5.0 from 918 reviews', label: 'Score' },
+              why: { title: 'Why GOLDLAW', description: 'Available 24/7 • Board‑certified • No fees unless we win', label: 'Benefits' },
+            },
+          },
+          practice: {
+            eyebrow: 'PRACTICE AREAS',
+            title1: 'Experienced.',
+            title2: 'Relentless.',
+            title3: 'Results-Driven.',
+            sub: 'Protecting your rights & securing maximum compensation.',
+            view_all: 'View all',
+            success_rate: 'success rate',
+            learn_more: 'Learn more',
+            cards: {
+              'slip-fall': {
+                title: 'Slip & Fall',
+                description: 'Slip and fall accidents and other injuries caused by premises liability issues can cause serious injuries, leaving victims stuck with significant medical expenses and losing income while they heal.',
+              },
+              'vehicle-accident': {
+                title: 'Vehicle Accident',
+                description: 'Injured in a car crash? We fight to get you the compensation you deserve.',
+              },
+              'negligent-security': {
+                title: 'Negligent Security',
+                description: 'Negligent security laws are designed to hold property owners liable for crimes that occur on their premises due to inadequate security measures.',
+              },
+              'sexual-assault-human-trafficking': { title: 'Sexual Assault and Human Trafficking' },
+              'motorcycle-accident': { title: 'Motorcycle Accident' },
+              'wrongful-death': {
+                title: 'Wrongful Death',
+                description: 'No one ever expects to suffer the sudden and unexpected loss of a loved one.',
+              },
+            },
+          },
+          articles: {
+            eyebrow: 'ARTICLES',
+            muted: 'Powerful people, impressive results.',
+            strong: "We’ve supported high-profile, pro-bono and everything in between.",
+            view_all: 'View all',
+            items: {
+              'bill-cosby': { title: 'Spencer Kuvin Takes on Sexual Battery Case Against Bill Cosby' },
+              'press-conference': { title: 'Spencer Kuvin Takes on Sexual Battery Case Against Bill Cosby' },
+              'case-feature': { title: 'Spencer Kuvin Takes on Sexual Battery Case Against Bill Cosby' },
+            },
+          },
+          about: {
+            eyebrow: 'ABOUT US',
+            muted: 'Delivering the results our',
+            strong: 'clients deserve.',
+            copy: 'At GOLDLAW, we don’t measure success by office size or flashy billboards— we measure it by the results we deliver. While other firms may settle quickly or play it safe, we fight hard for every client and never back down from getting you the justice you deserve.',
+            learn_more: 'Learn more',
+            results: {
+              r1_desc: 'Tow truck driver killed by Semi-Truck',
+              r2_desc: 'Young Woman Falls in Big Box Store',
+              r3_desc: 'Ng, Sandi v. Walmart Verdict',
+              r4_desc: 'Young child dies of undiagnosed illness',
+            },
+          },
+          contact: {
+            eyebrow: 'LET’S GET STARTED',
+            title_muted: 'You made the right choice.',
+            title_strong: "Now, let's get started on your case.",
+            first_name_label: 'First Name',
+            first_name_placeholder: 'Enter your first name',
+            last_name_label: 'Last Name',
+            last_name_placeholder: 'Enter your last name',
+            email_label: 'Email',
+            email_placeholder: 'Enter your email',
+            phone_label: 'Phone Number',
+            phone_placeholder: 'Enter your phone number',
+            case_type_label: 'Type of case',
+            select_case_type: 'Select a case type',
+            tell_us_label: 'Tell us what happened',
+            provide_details_placeholder: 'Provide all the details of your incident',
+            agreement: 'By submitting this form, I am agreeing to Goldlaw’s Privacy Policy.',
+          },
+          footer: {
+            tagline: 'A South Florida based Personal Injury Law Firm representing clients who deserve results.',
+            contact: 'Contact',
+            practice_areas: 'Practice Areas',
+            company: 'Company',
+            resources: 'Resources',
+            subscribe_title: 'Subscribe to our\nnewsletter',
+            subscribe_sub: 'Get legal insights that matter straight to your inbox — no fluff, just facts.',
+            sign_up: 'Sign up →',
+            view_all: 'View all',
+            about: 'About',
+            team: 'Team',
+            careers: 'Careers',
+            community: 'Community / Events',
+            press: 'Press Releases',
+            contact_link: 'Contact',
+            faq: 'FAQ',
+            blog: 'Blog',
+            newsletters: 'Newsletters',
+            promotions: 'Promotions & Incentives',
+            testimonials: 'Testimonials',
+            practice_items: {
+              personal_injury: 'Personal Injury',
+              car_accidents: 'Car Accidents',
+              medical_malpractice: 'Medical Malpractice',
+              slip_and_fall: 'Slip and Fall',
+              sexual_assault: 'Sexual Assault',
+              trucking_accidents: 'Trucking Accidents',
+              wrongful_death: 'Wrongful Death',
+            },
+          },
+          faq: {
+            title_muted: 'Check out our most',
+            title_strong: 'Frequently Asked Questions.',
+            card_title: 'Couldn’t find the answer you were looking for?',
+            card_link: 'View all questions →',
+            items: {
+              0: {
+                q: 'How are medical bills paid after a car accident?',
+                a: 'There are a few ways your medical bills are paid after a car accident. GOLDLAW works with many doctors across various specialties that specialize in treating accident victims. Therefore, we can help you choose the doctors that can help you best. As far as paying for the treatment, in Florida, your car insurance pays the first $10,000 for medical treatment. Then, your health insurance, or Medicare, or Medicaid, might apply. GOLDLAW is skilled in making sure all available sources of payment are considered and used, in order to maximize the recovery to the client at the end of the case.',
+              },
+              1: {
+                q: 'How long does a lawsuit take to settle?',
+                a: 'The length of time a lawsuit takes to settle is not an easy answer because every case has a different level of complexity, the time a case takes to be concluded varies. Therefore, no exact answer can be given. Additionally, every personal injury case has aspects that are directly dependent on 3rd parties, such as insurance companies and law enforcement, which can add to the time it takes for your case to conclude. Often times, the greater the extent of the injuries, the more complex the case will be, and will therefore require more time to thoroughly litigate. You can generally expect us to settle your injury case in under 12 months if your case is settled without having to file a lawsuit. If your case doesn’t settle pre-suit, and we must go into litigation, the entire process can last between 12 months and three years or more.',
+              },
+              2: {
+                q: 'How much will it cost for me to hire you?',
+                a: 'When you hire GOLDLAW it will cost you nothing, there are NO up-front attorney’s fees or costs to hire GOLDLAW. We also provide a FREE consultation to evaluate whether or not you have a case we can be your lawyers for. Like most personal injury firms, GOLDLAW operates on what is called a “contingency fee” structure. Once we have decided to take your case, we begin work without you having to pay us anything. Instead, we take a percentage of the money we recover for you, at the end of the case. If we do not recover any money for your injury, we do not charge you anything for our attorney fees or costs. It’s that simple.',
+              },
+              3: {
+                q: 'What is the “Statute of Limitations” on Personal Injury cases?',
+                a: 'The Statute of Limitations on Personal Injury Cases varies. Different types of cases have different time periods within which we are required to file a lawsuit, in order to protect your legal right to recovery under Florida law. Different cases can have different statutory recovery time periods based on various circumstances and facts regarding the injury, and how or where the injury occurred. Some types of cases even require formal action within six months of the incident! Therefore, it’s best to call our office as soon as possible. Call us to get more information on the Statute of Limitations that may apply to your potential case.',
+              },
+              4: {
+                q: 'Why do I need an experienced trial lawyer?',
+                a: 'You need an experienced Trial Lawyer because some people try to negotiate their case with the insurance adjuster directly, thinking they will save money. Unfortunately, adjusters are trained to convince people without attorneys that they should not hire a lawyer. The adjuster then “low-balls” the injured victim, and convinces them to settle for far less than their case is worth. A lawyer is able to document and build the case, and pressure the insurance company into treating the client fairly and to offer fair compensation. Some insurance industry studies have shown that people who hire lawyers end up getting much more money than those who try to handle it themselves.',
+              },
+              5: {
+                q: 'What does “no costs” and “no fees” really mean?',
+                a: 'No Cost and No Fees mean that Personal injury firms operate on what is called a “contingency fee” structure. That just means that there are no upfront fees or costs to hire our law firm to begin working on your case. Instead of you paying us out of pocket, we take a percentage of the money we recover on your behalf, at the end of the case. That becomes our attorney fee. You will never pay us any money out of your own pocket. We simply keep a percentage of anything we recover. If we do not recover any compensation for your injury, we do not charge you for our attorney fees or costs. It’s that simple.',
+              },
+              6: {
+                q: 'How much is my case worth?',
+                a: 'This is a tough question to answer, especially early in a case. Case value varies based on the clarity of the negligence against the Defendant, the severity of the injuries that have occurred, and the amount of available insurance coverage. Our goal is to handle your case with integrity, detail, and vigor, which will maximize the recovery you receive. Contact us to ask further questions about how we determine the value of your case.',
+              },
+              7: {
+                q: 'Are consultations really free?',
+                a: 'Yes! A consultation with GOLDLAW is always completely free, and completely confidential. For the majority of our cases, you do not even need to speak with a lawyer. We have a highly trained client personal intake specialists whose sole function is to gather basic information about your case, which is then relayed on to a lawyer to determine whether we can represent you. There are always three outcomes of your initial call to our law firm regarding a new case: 1) We accept the case; 2) We are unable to accept the case (and we will always give you our reason why); 3) We may refer you to another attorney or law firm that is better suited to handle your case. GOLDLAW is your law firm for life! Give us a call anytime you have legal questions, whether it pertains to personal injury or not. We are always willing and available to guide you in any way we can.',
+              },
+            },
+          },
+          related: {
+            title: 'Other articles you may like',
+            category_fallback: 'Article',
+          },
+          articles_page: {
+            title: 'Blog',
+            all: 'All',
+            load_more: 'Load more',
+            empty: 'No articles for this filter yet.',
+            featured_alt: 'featured',
+            not_found: 'Article not found.',
+            back_to_articles: 'Back to Articles',
+            min_read: '{{count}} min read',
+          },
+          articles_template: {
+            contact_cta: 'Contact GOLDLAW',
+            hero_alt: 'hero',
+          },
+          practice_testimonials: {
+            title: 'Hear the stories our clients have had',
+          },
+          practice_about_section: {
+            eyebrow: 'OUR IMPACT',
+            strong: 'Delivering results for our clients',
+          },
+          practice_pages: {
+            'motor-accidents': {
+              name: 'Motor Accidents',
+              headline: 'Turning Crash Claims Into Cash Outcomes',
+              details: 'From fender benders to catastrophic collisions, Goldlaw navigates the legal roadblocks so you can recover with peace of mind.',
+            },
+          },
+          practice_welcome: {
+            title_default: 'Welcome video',
+            play_label: 'Play welcome video',
+          },
+          practice_two_col: {
+            title_muted: 'The attorney you need,',
+            title_strong: 'for the result you want.',
+            benefits: {
+              0: { title: 'Decades of Experience', text: 'Trusted in West Palm Beach and across Florida for tough accident claims.' },
+              1: { title: 'Always Kept in the Loop', text: 'Clear, honest updates every step of the way. No legal black hole here.' },
+              2: { title: 'Full-Service Support', text: "We guide you from day one through settlement or trial—so you're never on your own." },
+            },
+          },
+          practice_about: {
+            motor_vehicle: 'who have been in a motor vehicle accident.',
+            accident_generic: 'who have been in {{lower}}.',
+            injury_generic: 'who have suffered {{lower}}.',
+            malpractice_generic: 'who have suffered {{lower}}.',
+            wrongful_death: 'who have suffered a wrongful death.',
+            fallback: 'who need help with {{lower}}.',
+          },
+          practice_bento: {
+            areas_title: 'Neighborhoods and Areas we serve for {{areaName}} Cases',
+            actions_title: 'What you should do before hiring us:',
+            action_detail_intro: '{{action}} — Document details, timelines, and any relevant materials. Keep notes organized and ready for your consultation.',
+            action_detail_followup: 'We’ll review this together and advise next steps specific to your {{areaName}} case.',
+            actions: {
+              0: 'Gather evidence',
+              1: 'Seek medical attention',
+              2: 'Keep a detailed journal of symptoms and expenses',
+              3: 'Avoid giving recorded statements to insurers',
+              4: 'Do not post about the accident on social media',
+            },
+          },
+          practice_why: {
+            eyebrow: 'WHY',
+            strong: 'Auto accidents are among the leading causes of personal injury in Florida.',
+            muted: 'Here’s why you need an attorney.',
+            items: {
+              0: {
+                title: 'You May Be Entitled to More Compensation Than You Realize',
+                body: 'After sustaining injuries in a car accident, many victims downplay their injuries or damages to avoid making a claim and potentially having their rates increase. However, you may be entitled to compensation for more than just physical injuries and property damage — including time off work, medical bills, and pain and suffering.',
+              },
+              1: {
+                title: 'The Insurance Company Is Not On Your Side',
+                body: 'Insurers are businesses focused on profit. They may offer low settlements, delay, or deny claims outright. Having a legal advocate ensures the process moves forward and protects your rights.',
+              },
+              2: {
+                title: 'You May Need to Take Your Claim to Court',
+                body: 'In some cases, taking your claim to court might be necessary to get the compensation you deserve. This could be because the insurance company has denied your claim or because they have made an unreasonably low settlement offer.',
+              },
+              3: {
+                title: 'The Statute of Limitations Could Be Looming',
+                body: "In Florida, the time limit for filing most car accident claims is now two years from the date of the accident. This may seem like a long time, but if you wait too long, important evidence, such as eyewitnesses and surveillance footage, can be more challenging to find. Consulting with a lawyer right away can make sure you're able to build a strong case that is filed on time.",
+              },
+            },
+          },
+        },
+      },
+      es: {
+        translation: {
+          nav: {
+            about: 'Acerca de',
+            cases: 'Casos que manejamos',
+            blog: 'Blog',
+            contact: 'Contacto',
+            free_case_review: 'Evaluación gratuita del caso',
+            admin: 'Admin',
+            login: 'Iniciar sesión',
+            toggle_label: 'Idioma',
+          },
+          hero: {
+            title: 'Hacemos responsables a quienes lastiman a otros',
+            as_featured_on: 'Aparecimos en',
+            metric_total_caption: 'en total recuperado para nuestros increíbles clientes',
+            metric_top_settlements_caption: 'de los clientes obtuvieron un acuerdo superior en menos de 1 año*',
+            metric_years_caption: 'años de experiencia combinada al servicio de nuestros clientes',
+            rating_from_reviews: 'De 918 reseñas',
+            bullet_available: 'Disponible 24/7',
+            bullet_board_certified: 'Abogados certificados',
+            bullet_no_fees: 'Sin honorarios ni costos a menos que ganemos',
+          },
+          common: {
+            rating: 'Calificación',
+            reviews_from_count: 'De {{count}} reseñas',
+          },
+          hiw: {
+            eyebrow: 'Cómo funciona',
+            muted: 'Comenzar es sencillo — ',
+            strong: 'sin costos iniciales, solo pagas si ganamos.',
+            copy: 'Facilitamos obtener ayuda rápidamente. Nuestro equipo revisa tu caso, construye tu reclamación y lucha por la máxima compensación.',
+          },
+          bento: {
+            cards: {
+              free: { title: 'Consulta gratuita', description: 'Habla con nuestro equipo legal para revisar tu caso—sin costo, sin presión.', label: '01' },
+              build: { title: 'Construimos tu caso', description: 'Investigamos y reunimos evidencia para construir el caso más sólido.', label: '02' },
+              fight: { title: 'Luchamos por resultados', description: 'Negociamos o vamos a juicio para maximizar la compensación que mereces.', label: '03' },
+              locations: { title: 'Ubicaciones', description: 'West Palm Beach • Port St. Lucie', label: 'Info' },
+              rating: { title: 'Nuestra calificación', description: '4.8 / 5.0 de 918 reseñas', label: 'Puntaje' },
+              why: { title: 'Por qué GOLDLAW', description: 'Disponible 24/7 • Certificados por la junta • Sin honorarios a menos que ganemos', label: 'Beneficios' },
+            },
+          },
+          practice: {
+            eyebrow: 'ÁREAS DE PRÁCTICA',
+            title1: 'Con experiencia.',
+            title2: 'Implacables.',
+            title3: 'Orientados a resultados.',
+            sub: 'Protegiendo tus derechos y asegurando la máxima compensación.',
+            view_all: 'Ver todo',
+            success_rate: 'tasa de éxito',
+            learn_more: 'Más información',
+            cards: {
+              'slip-fall': {
+                title: 'Resbalón y caída',
+                description: 'Los accidentes por resbalón y caída u otros por responsabilidad de locales pueden causar lesiones graves, dejando a las víctimas con gastos médicos importantes y pérdida de ingresos mientras se recuperan.',
+              },
+              'vehicle-accident': {
+                title: 'Accidente vehicular',
+                description: '¿Lesionado en un choque? Luchamos para obtener la compensación que mereces.',
+              },
+              'negligent-security': {
+                title: 'Seguridad negligente',
+                description: 'Las leyes de seguridad negligente responsabilizan a los propietarios por delitos ocurridos en sus instalaciones debido a medidas de seguridad inadecuadas.',
+              },
+              'sexual-assault-human-trafficking': { title: 'Agresión sexual y trata de personas' },
+              'motorcycle-accident': { title: 'Accidente de motocicleta' },
+              'wrongful-death': {
+                title: 'Muerte por negligencia',
+                description: 'Nadie espera sufrir la pérdida repentina de un ser querido.',
+              },
+            },
+          },
+          articles: {
+            eyebrow: 'ARTÍCULOS',
+            muted: 'Personas influyentes, resultados impresionantes.',
+            strong: 'Hemos apoyado casos de alto perfil, pro bono y todo lo demás.',
+            view_all: 'Ver todo',
+            items: {
+              'bill-cosby': { title: 'Spencer Kuvin asume un caso de agresión sexual contra Bill Cosby' },
+              'press-conference': { title: 'Spencer Kuvin asume un caso de agresión sexual contra Bill Cosby' },
+              'case-feature': { title: 'Spencer Kuvin asume un caso de agresión sexual contra Bill Cosby' },
+            },
+          },
+          about: {
+            eyebrow: 'SOBRE NOSOTROS',
+            muted: 'Ofrecemos los resultados que',
+            strong: 'nuestros clientes merecen.',
+            copy: 'En GOLDLAW, no medimos el éxito por el tamaño de la oficina o carteles llamativos; lo medimos por los resultados. Mientras otros pueden conformarse o jugar a lo seguro, nosotros luchamos por cada cliente y nunca renunciamos a lograr la justicia que mereces.',
+            learn_more: 'Más información',
+            results: {
+              r1_desc: 'Conductor de grúa fallecido por camión semirremolque',
+              r2_desc: 'Joven se cae en tienda de gran superficie',
+              r3_desc: 'Ng, Sandi v. Walmart — Veredicto',
+              r4_desc: 'Niño pequeño fallece por enfermedad no diagnosticada',
+            },
+          },
+          contact: {
+            eyebrow: 'EMPECEMOS',
+            title_muted: 'Tomaste la decisión correcta.',
+            title_strong: 'Ahora, comencemos con tu caso.',
+            first_name_label: 'Nombre',
+            first_name_placeholder: 'Ingresa tu nombre',
+            last_name_label: 'Apellido',
+            last_name_placeholder: 'Ingresa tu apellido',
+            email_label: 'Correo electrónico',
+            email_placeholder: 'Ingresa tu correo electrónico',
+            phone_label: 'Número de teléfono',
+            phone_placeholder: 'Ingresa tu número de teléfono',
+            case_type_label: 'Tipo de caso',
+            select_case_type: 'Selecciona un tipo de caso',
+            tell_us_label: 'Cuéntanos qué pasó',
+            provide_details_placeholder: 'Proporciona todos los detalles de tu incidente',
+            agreement: 'Al enviar este formulario, acepto la Política de Privacidad de Goldlaw.',
+          },
+          footer: {
+            tagline: 'Firma de lesiones personales con sede en el sur de Florida que representa a clientes que merecen resultados.',
+            contact: 'Contacto',
+            practice_areas: 'Áreas de práctica',
+            company: 'Empresa',
+            resources: 'Recursos',
+            subscribe_title: 'Suscríbete a nuestro\nboletín',
+            subscribe_sub: 'Recibe información legal directamente en tu bandeja — sin relleno, solo hechos.',
+            sign_up: 'Registrarse →',
+            view_all: 'Ver todo',
+            about: 'Acerca de',
+            team: 'Equipo',
+            careers: 'Empleos',
+            community: 'Comunidad / Eventos',
+            press: 'Comunicados de prensa',
+            contact_link: 'Contacto',
+            faq: 'Preguntas frecuentes',
+            blog: 'Blog',
+            newsletters: 'Boletines',
+            promotions: 'Promociones e incentivos',
+            testimonials: 'Testimonios',
+            practice_items: {
+              personal_injury: 'Lesiones personales',
+              car_accidents: 'Accidentes de tráfico',
+              medical_malpractice: 'Negligencia médica',
+              slip_and_fall: 'Resbalón y caída',
+              sexual_assault: 'Agresión sexual',
+              trucking_accidents: 'Accidentes de camiones',
+              wrongful_death: 'Muerte por negligencia',
+            },
+          },
+          faq: {
+            title_muted: 'Consulta nuestras',
+            title_strong: 'Preguntas frecuentes.',
+            card_title: '¿No encontraste la respuesta que buscabas?',
+            card_link: 'Ver todas las preguntas →',
+            items: {
+              0: {
+                q: '¿Cómo se pagan las facturas médicas después de un accidente automovilístico?',
+                a: 'Hay varias formas en que se pagan las facturas médicas después de un accidente. GOLDLAW trabaja con muchos médicos de diversas especialidades que tratan a víctimas de accidentes. En Florida, tu seguro de auto paga los primeros $10,000 de tratamiento. Luego, tu seguro médico, Medicare o Medicaid pueden aplicar. GOLDLAW se asegura de considerar todas las fuentes disponibles de pago para maximizar tu recuperación al final del caso.',
+              },
+              1: {
+                q: '¿Cuánto tiempo tarda en resolverse una demanda?',
+                a: 'El tiempo varía según la complejidad del caso y factores externos como aseguradoras y autoridades. Muchos casos se resuelven en menos de 12 meses sin demanda. Si se litiga, puede tardar entre 12 meses y tres años o más.',
+              },
+              2: {
+                q: '¿Cuánto me costará contratarles?',
+                a: 'Nada por adelantado. Trabajamos con honorarios de contingencia: solo cobramos un porcentaje del dinero recuperado al final del caso. Si no hay recuperación, no hay honorarios ni costos.',
+              },
+              3: {
+                q: '¿Cuál es el “estatuto de limitaciones” en casos de lesiones personales?',
+                a: 'Depende del tipo de caso y circunstancias. Algunos requieren acción formal en seis meses. Lo mejor es llamarnos lo antes posible para conocer el plazo aplicable.',
+              },
+              4: {
+                q: '¿Por qué necesito un abogado litigante con experiencia?',
+                a: 'Los ajustadores intentan pagar menos a quienes no tienen abogado. Un abogado documenta el caso, ejerce presión y aumenta la probabilidad de una compensación justa.',
+              },
+              5: {
+                q: '¿Qué significa “sin costos” y “sin honorarios”?',
+                a: 'Significa que no hay pagos iniciales. Cobramos un porcentaje de la recuperación final. Si no recuperamos compensación, no cobramos honorarios ni costos.',
+              },
+              6: {
+                q: '¿Cuánto vale mi caso?',
+                a: 'Depende de la negligencia, la gravedad de las lesiones y la cobertura disponible. Nuestro objetivo es maximizar tu recuperación con integridad y detalle.',
+              },
+              7: {
+                q: '¿Las consultas son realmente gratis?',
+                a: '¡Sí! Siempre gratuitas y confidenciales. Nuestro equipo recopila información básica y un abogado evalúa si podemos representarte. Si no, te orientamos o referimos.',
+              },
+            },
+          },
+          related: {
+            title: 'Otros artículos que te pueden gustar',
+            category_fallback: 'Artículo',
+          },
+          articles_page: {
+            title: 'Blog',
+            all: 'Todos',
+            load_more: 'Cargar más',
+            empty: 'No hay artículos para este filtro aún.',
+            featured_alt: 'destacado',
+            not_found: 'Artículo no encontrado.',
+            back_to_articles: 'Volver a Artículos',
+            min_read: '{{count}} min de lectura',
+          },
+          articles_template: {
+            contact_cta: 'Contactar a GOLDLAW',
+            hero_alt: 'imagen principal',
+          },
+          practice_testimonials: {
+            title: 'Escucha las historias de nuestros clientes',
+          },
+          practice_about_section: {
+            eyebrow: 'NUESTRO IMPACTO',
+            strong: 'Ofrecemos resultados para nuestros clientes',
+          },
+          practice_pages: {
+            'motor-accidents': {
+              name: 'Accidentes de motor',
+              headline: 'Transformamos reclamos por choques en resultados reales',
+              details: 'Desde choques leves hasta colisiones catastróficas, GOLDLAW sortea los obstáculos legales para que te recuperes con tranquilidad.',
+            },
+          },
+          practice_welcome: {
+            title_default: 'Video de bienvenida',
+            play_label: 'Reproducir video de bienvenida',
+          },
+          practice_two_col: {
+            title_muted: 'El abogado que necesitas,',
+            title_strong: 'para el resultado que deseas.',
+            benefits: {
+              0: { title: 'Décadas de experiencia', text: 'De confianza en West Palm Beach y en toda Florida para casos complejos de accidentes.' },
+              1: { title: 'Siempre informado', text: 'Actualizaciones claras y honestas en cada paso. Sin entrar en un agujero negro legal.' },
+              2: { title: 'Apoyo integral', text: 'Te guiamos desde el primer día hasta el acuerdo o juicio — nunca estás solo.' },
+            },
+          },
+          practice_about: {
+            motor_vehicle: 'que han estado en un accidente de vehículo motorizado.',
+            accident_generic: 'que han estado en {{lower}}.',
+            injury_generic: 'que han sufrido {{lower}}.',
+            malpractice_generic: 'que han sufrido {{lower}}.',
+            wrongful_death: 'que han sufrido una muerte por negligencia.',
+            fallback: 'que necesitan ayuda con {{lower}}.',
+          },
+          practice_bento: {
+            areas_title: 'Barrios y zonas que atendemos para casos de {{areaName}}',
+            actions_title: 'Qué debes hacer antes de contratarnos:',
+            action_detail_intro: '{{action}} — Documenta detalles, cronologías y cualquier material relevante. Mantén notas organizadas y listas para tu consulta.',
+            action_detail_followup: 'Revisaremos esto juntos y aconsejaremos los próximos pasos específicos para tu caso de {{areaName}}.',
+            actions: {
+              0: 'Reunir evidencia',
+              1: 'Buscar atención médica',
+              2: 'Llevar un registro detallado de síntomas y gastos',
+              3: 'Evitar dar declaraciones grabadas a aseguradoras',
+              4: 'No publicar sobre el accidente en redes sociales',
+            },
+          },
+          practice_why: {
+            eyebrow: 'POR QUÉ',
+            strong: 'Los accidentes automovilísticos son una de las principales causas de lesiones personales en Florida.',
+            muted: 'Por qué necesitas un abogado.',
+            items: {
+              0: {
+                title: 'Podrías tener derecho a más compensación de la que crees',
+                body: 'Tras un accidente, muchas víctimas minimizan sus lesiones para evitar reclamar. Sin embargo, podrías tener derecho a más que daños físicos y a la propiedad — incluidos salarios perdidos, facturas médicas y dolor y sufrimiento.',
+              },
+              1: {
+                title: 'La aseguradora no está de tu lado',
+                body: 'Las aseguradoras buscan beneficios. Pueden ofrecer acuerdos bajos, retrasar o negar reclamos. Contar con un abogado impulsa el proceso y protege tus derechos.',
+              },
+              2: {
+                title: 'Puede que necesites llevar tu reclamo a los tribunales',
+                body: 'A veces es necesario litigar para obtener la compensación que mereces, ya sea porque negaron el reclamo o porque la oferta es injustamente baja.',
+              },
+              3: {
+                title: 'El plazo de prescripción podría estar cerca',
+                body: 'En Florida, el límite para la mayoría de reclamos por accidentes es de dos años. Esperar puede dificultar obtener evidencia. Consultar con un abogado de inmediato ayuda a construir un caso sólido a tiempo.',
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+// Persist language choice and reflect in <html lang>
+i18n.on('languageChanged', (lng: string) => {
+  try { localStorage.setItem('app_lang', lng) } catch {}
+  if (typeof document !== 'undefined') {
+    document.documentElement.setAttribute('lang', lng)
+  }
+})
+
+// Set initial lang attribute
+if (typeof document !== 'undefined') {
+  document.documentElement.setAttribute('lang', i18n.language || getInitialLang())
+}
+
+export default i18n

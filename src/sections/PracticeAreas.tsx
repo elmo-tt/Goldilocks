@@ -1,4 +1,5 @@
-import { useMemo, useState, useEffect, useRef, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import useEmblaCarousel from 'embla-carousel-react'
 import './PracticeAreas.css'
 
@@ -12,23 +13,24 @@ type Area = {
 }
 
 export default function PracticeAreas() {
+  const { t } = useTranslation()
   const areas: Area[] = useMemo(
     () => [
-      { id: 'slip-fall', title: 'Slip & Fall', success: '94%', description: 'Slip and fall accidents and other injuries caused by premises liability issues can cause serious injuries, leaving victims stuck with significant medical expenses and losing income while they heal.', href: '#' },
+      { id: 'slip-fall', title: t('practice.cards.slip-fall.title'), success: '94%', description: t('practice.cards.slip-fall.description'), href: '#' },
       {
         id: 'vehicle-accident',
-        title: 'Vehicle Accident',
-        description: 'Injured in a car crash? We fight to get you the compensation you deserve.',
+        title: t('practice.cards.vehicle-accident.title'),
+        description: t('practice.cards.vehicle-accident.description'),
         success: '95%',
         href: '#',
         image: '/images/vehicle-accident.jpg'
       },
-      { id: 'negligent-security', title: 'Negligent Security', success: '97%', description: 'Negligent security laws are designed to hold property owners liable for crimes that occur on their premises due to inadequate security measures.', href: '#' },
-      { id: 'sexual-assault-human-trafficking', title: 'Sexual Assault and Human Trafficking', success: '98%' },
-      { id: 'motorcycle-accident', title: 'Motorcycle Accident', success: '96%' },
-      { id: 'wrongful-death', title: 'Wrongful Death', success: '93%', description: 'No one ever expects to suffer the sudden and unexpected loss of a loved one.', href: '#' },
+      { id: 'negligent-security', title: t('practice.cards.negligent-security.title'), success: '97%', description: t('practice.cards.negligent-security.description'), href: '#' },
+      { id: 'sexual-assault-human-trafficking', title: t('practice.cards.sexual-assault-human-trafficking.title'), success: '98%' },
+      { id: 'motorcycle-accident', title: t('practice.cards.motorcycle-accident.title'), success: '96%' },
+      { id: 'wrongful-death', title: t('practice.cards.wrongful-death.title'), success: '93%', description: t('practice.cards.wrongful-death.description'), href: '#' },
     ],
-    []
+    [t]
   )
 
   
@@ -88,9 +90,9 @@ export default function PracticeAreas() {
     <section id="practice-areas" className="practice">
       <div className="practice-inner">
         <div className="practice-left">
-          <div className="eyebrow">PRACTICE AREAS</div>
-          <h2 className="practice-title"><span>Experienced.</span><span>Relentless.</span><span>Results-Driven.</span></h2>
-          <p className="practice-sub">Protecting your rights & securing maximum compensation.</p>
+          <div className="eyebrow">{t('practice.eyebrow')}</div>
+          <h2 className="practice-title"><span>{t('practice.title1')}</span><span>{t('practice.title2')}</span><span>{t('practice.title3')}</span></h2>
+          <p className="practice-sub">{t('practice.sub')}</p>
         </div>
         <div className="practice-right">
           <div className="pa2">
@@ -141,7 +143,7 @@ export default function PracticeAreas() {
                           {!isActive && (
                             <div className="pa2-footer">
                               <div className="pa2-rate">{a.success}</div>
-                              <div className="pa2-caption">success rate</div>
+                              <div className="pa2-caption">{t('practice.success_rate')}</div>
                             </div>
                           )}
                           {isActive && (
@@ -150,7 +152,7 @@ export default function PracticeAreas() {
                               <div className="pa2-feature-body">
                                 {a.description && <p className="pa2-feature-text">{a.description}</p>}
                                 <a className="pa2-feature-cta" href={a.href || '#'}>
-                                  Learn more <span className="arrow">→</span>
+                                  {t('practice.learn_more')} <span className="arrow">→</span>
                                 </a>
                               </div>
                             </div>
@@ -163,7 +165,7 @@ export default function PracticeAreas() {
               </div>
             </div>
             <div className="pa2-nav">
-              <a className="view-all" href="#">View all</a>
+              <a className="view-all" href="#">{t('practice.view_all')}</a>
               <div className="arrows">
                 <button className="nav-btn" aria-label="Previous" onClick={() => go2(-1)}>←</button>
                 <button className="nav-btn" aria-label="Next" onClick={() => go2(1)}>→</button>

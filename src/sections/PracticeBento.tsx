@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import './PracticeBento.css'
 
 export type PracticeBentoProps = {
@@ -20,6 +21,7 @@ export default function PracticeBento({
   actions,
   benefits,
 }: PracticeBentoProps) {
+  const { t } = useTranslation()
   const [active, setActive] = useState<number | null>(null)
   const Icon = ({ name }: { name?: PracticeBentoProps['benefits'][number]['icon'] }) => {
     if (name === 'clock') return (<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 11h4v-2h-3V6h-2v7Z"/></svg>)
@@ -35,7 +37,7 @@ export default function PracticeBento({
       <div className="pb-inner">
         <div className="pb-grid">
           <article className="pb-card pb-areas">
-            <h3 className="pb-title">Neighborhoods and Areas we serve for {areaName} Cases</h3>
+            <h3 className="pb-title">{t('practice_bento.areas_title', { areaName })}</h3>
             <div className="pb-chips">
               {neighborhoods.map((n, i) => (
                 <span className="pb-chip" key={i}>{n}</span>
@@ -52,7 +54,7 @@ export default function PracticeBento({
                     <div className="stars">
                       <span className="rating-score">{String(ratingScore)}</span>
                       <span className="rating-outof">/ 5.0</span>
-                      <span className="rating-reviews">From {ratingCount} Reviews</span>
+                      <span className="rating-reviews">{t('common.reviews_from_count', { count: ratingCount })}</span>
                       <img src="/SVG/Google__G__logo.svg" alt="Google" className="google-g" />
                     </div>
                   </div>
@@ -73,16 +75,12 @@ export default function PracticeBento({
           </article>
 
           <article className={`pb-card pb-actions${active !== null ? ' has-active' : ''}`}>
-            <h3 className="pb-title">What you should do before hiring us:</h3>
+            <h3 className="pb-title">{t('practice_bento.actions_title')}</h3>
             <div className="pb-acc">
               {active !== null ? (
                 <div className="pb-acc-inner">
-                  <p>
-                    {`${actions[active]} — Placeholder guidance: Document details, timelines, and any relevant materials. Keep notes organized and ready for your consultation.`}
-                  </p>
-                  <p>
-                    {`We’ll review this together and advise next steps specific to your ${areaName.toLowerCase()} case.`}
-                  </p>
+                  <p>{t('practice_bento.action_detail_intro', { action: actions[active] })}</p>
+                  <p>{t('practice_bento.action_detail_followup', { areaName })}</p>
                 </div>
               ) : null}
             </div>

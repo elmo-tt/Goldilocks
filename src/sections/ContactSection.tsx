@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PRACTICE_AREAS } from '@/admin/data/goldlaw'
 import './ContactSection.css'
 
@@ -10,6 +11,7 @@ type Review = {
 }
 
 export default function ContactSection() {
+  const { t } = useTranslation()
   const reviews: Review[] = useMemo(
     () => [
       {
@@ -90,9 +92,9 @@ export default function ContactSection() {
     <section id="contact" className="contact">
       <div className="contact-inner">
         <div className="contact-left">
-          <div className="eyebrow">LET’S GET STARTED</div>
+          <div className="eyebrow">{t('contact.eyebrow')}</div>
           <h2 className="contact-title">
-            <span className="muted">You made the right choice.</span> <span>Now, let&apos;s get started on your case.</span>
+            <span className="muted">{t('contact.title_muted')}</span> <span>{t('contact.title_strong')}</span>
           </h2>
           <div className="contact-review">
             <div className="cr-progress" style={{ ['--segments' as any]: reviews.length }}>
@@ -117,23 +119,23 @@ export default function ContactSection() {
           <form className="contact-form" onSubmit={(e) => e.preventDefault()}>
             <div className="form-grid">
               <label className="form-field">
-                <span className="form-label">First Name</span>
-                <input className="input" type="text" name="firstName" placeholder="Enter your first name" required />
+                <span className="form-label">{t('contact.first_name_label')}</span>
+                <input className="input" type="text" name="firstName" placeholder={t('contact.first_name_placeholder')} required />
               </label>
               <label className="form-field">
-                <span className="form-label">Last Name</span>
-                <input className="input" type="text" name="lastName" placeholder="Enter your last name" required />
+                <span className="form-label">{t('contact.last_name_label')}</span>
+                <input className="input" type="text" name="lastName" placeholder={t('contact.last_name_placeholder')} required />
               </label>
               <label className="form-field">
-                <span className="form-label">Email</span>
-                <input className="input" type="email" name="email" placeholder="Enter your email" required />
+                <span className="form-label">{t('contact.email_label')}</span>
+                <input className="input" type="email" name="email" placeholder={t('contact.email_placeholder')} required />
               </label>
               <label className="form-field">
-                <span className="form-label">Phone Number</span>
-                <input className="input" type="tel" name="phone" placeholder="Enter your phone number" required />
+                <span className="form-label">{t('contact.phone_label')}</span>
+                <input className="input" type="tel" name="phone" placeholder={t('contact.phone_placeholder')} required />
               </label>
               <label className="form-field form-field-full">
-                <span className="form-label">Type of case</span>
+                <span className="form-label">{t('contact.case_type_label')}</span>
                 <div className="case-select" ref={caseRef}>
                   <button
                     type="button"
@@ -143,7 +145,7 @@ export default function ContactSection() {
                     onClick={() => setCaseOpen((o) => !o)}
                     onKeyDown={onTriggerKey}
                   >
-                    <span className={`case-value${caseValue ? '' : ' placeholder'}`}>{caseValue || 'Select a case type'}</span>
+                    <span className={`case-value${caseValue ? '' : ' placeholder'}`}>{caseValue || t('contact.select_case_type')}</span>
                     <span className="case-arrow" aria-hidden="true">
                       <svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor"><path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"/></svg>
                     </span>
@@ -168,17 +170,17 @@ export default function ContactSection() {
                 </div>
               </label>
               <label className="form-field form-field-full">
-                <span className="form-label">Tell us what happened</span>
-                <textarea className="textarea" name="details" placeholder="Provide all the details of your incident" rows={6} />
+                <span className="form-label">{t('contact.tell_us_label')}</span>
+                <textarea className="textarea" name="details" placeholder={t('contact.provide_details_placeholder')} rows={6} />
               </label>
             </div>
 
             <div className="form-actions">
               <div className="agreement">
-                By submitting this form, I am agreeing to Goldlaw’s Privacy Policy.
+                {t('contact.agreement')}
               </div>
               <button className="btn primary" type="submit">
-                <span>Get a free case review</span>
+                <span>{t('nav.free_case_review')}</span>
               </button>
             </div>
           </form>

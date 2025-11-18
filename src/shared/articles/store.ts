@@ -22,6 +22,12 @@ export type Article = {
   canonicalUrl?: string
   noindex?: boolean
   featured?: boolean
+  // Optional Spanish translations
+  title_es?: string
+  excerpt_es?: string
+  body_es?: string
+  metaTitle_es?: string
+  metaDescription_es?: string
 }
 
 const STORAGE_KEY = 'gl_articles'
@@ -81,6 +87,12 @@ const LocalArticlesStore = {
       canonicalUrl: (input as any).canonicalUrl !== undefined ? (input as any).canonicalUrl : (existing as any)?.canonicalUrl,
       noindex: (input as any).noindex !== undefined ? (input as any).noindex : (existing as any)?.noindex,
       featured: (input as any).featured !== undefined ? (input as any).featured : (existing as any)?.featured,
+      // ES fields
+      title_es: (input as any).title_es !== undefined ? (input as any).title_es : (existing as any)?.title_es,
+      excerpt_es: (input as any).excerpt_es !== undefined ? (input as any).excerpt_es : (existing as any)?.excerpt_es,
+      body_es: (input as any).body_es !== undefined ? (input as any).body_es : (existing as any)?.body_es,
+      metaTitle_es: (input as any).metaTitle_es !== undefined ? (input as any).metaTitle_es : (existing as any)?.metaTitle_es,
+      metaDescription_es: (input as any).metaDescription_es !== undefined ? (input as any).metaDescription_es : (existing as any)?.metaDescription_es,
     }
     const applyIntoList = () => {
       if (existing) {

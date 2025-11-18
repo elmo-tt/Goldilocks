@@ -10,12 +10,15 @@ export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers: cors, body: 'Method Not Allowed' }
   }
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) {
-    return { statusCode: 500, headers: cors, body: 'Missing OPENAI_API_KEY' }
-  }
   let body
   try { body = JSON.parse(event.body || '{}') } catch { body = {} }
+  const mode = String(body.mode || 'copilot')
+  const primaryPrefEarly = String(process.env.TRANSLATE_PRIMARY || '').toLowerCase()
+  const allowNoOpenAI = (mode === 'translate') && (primaryPrefEarly === 'deepl' || primaryPrefEarly === 'azure')
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey && !allowNoOpenAI) {
+    return { statusCode: 500, headers: cors, body: 'Missing OPENAI_API_KEY' }
+  }
   const incoming = Array.isArray(body.messages) ? body.messages : []
   const model = body.model || process.env.COPILOT_MODEL || 'gpt-4o-mini'
   const temperature = Number(process.env.COPILOT_TEMPERATURE ?? body.temperature ?? 0.3)
@@ -150,6 +153,323 @@ export const handler = async (event) => {
   ]
 
   try {
+    if (mode === 'translate') {
+      const sysText = [
+        'You are a professional English→Spanish (LATAM) translator for legal blog content.',
+        'Maintain Markdown structure, headings, links, and image references.',
+        'Return JSON ONLY with keys: title, excerpt, body, metaTitle, metaDescription. No prose, no code fences.'
+      ].join(' ')
+      const userPrompt = String(body.prompt || '')
+      const temp = body.temperature ?? 0.2
+      const maxOut = body.max_tokens ?? 2000
+      const isProjectKey = /^sk-?proj-/i.test(apiKey)
+      const headersBase = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+      const orgHdr = process.env.OPENAI_ORG ? { 'OpenAI-Organization': process.env.OPENAI_ORG } : {}
+      const projHdr = process.env.OPENAI_PROJECT ? { 'OpenAI-Project': process.env.OPENAI_PROJECT } : {}
+      const headers = isProjectKey ? { ...headersBase } : { ...headersBase, ...orgHdr, ...projHdr }
+
+      const requested = String(body.model || process.env.COPILOT_MODEL || '').trim()
+      const models = Array.from(new Set([
+        requested,
+        'gpt-4o-mini',
+        'gpt-4o',
+        'gpt-4.1-mini',
+        'gpt-4.1'
+      ].filter(Boolean)))
+
+      const inputText = `${sysText}\n\n${userPrompt}`
+      const providersUsed = new Set()
+
+      // Helpers: no-key fallback translator
+      const chunkText = (s, max = 450) => {
+        const text = String(s || '')
+        if (text.length <= max) return [text]
+        const out = []
+        let i = 0
+        while (i < text.length) {
+          let j = Math.min(text.length, i + max)
+          const slice = text.slice(i, j)
+          // try to split at last period/newline
+          let k = Math.max(slice.lastIndexOf('\n'), slice.lastIndexOf('.'))
+          if (k < 60) k = slice.length
+          out.push(slice.slice(0, k))
+          i += k
+        }
+        return out
+      }
+      const looksLikeHtml = (s) => /<(?:\/|[^>]+)>/.test(String(s || ''))
+      const tryLibre = async (text) => {
+        const payload = { q: text, source: 'en', target: 'es', format: 'text' }
+        const eps = ['https://libretranslate.de/translate', 'https://translate.astian.org/translate']
+        for (const ep of eps) {
+          try {
+            const r = await fetch(ep, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            const j = await r.json().catch(async () => ({ error: await r.text().catch(()=> '') }))
+            if (r.ok && j && typeof j.translatedText === 'string') { providersUsed.add('libre'); return j.translatedText }
+          } catch {}
+        }
+        return ''
+      }
+      const tryMyMemory = async (text) => {
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|es`
+        try {
+          const r = await fetch(url)
+          const j = await r.json().catch(async () => ({ responseData: { translatedText: '' } }))
+          const t = String(j?.responseData?.translatedText || '')
+          if (t) providersUsed.add('mymemory')
+          return t
+        } catch { return '' }
+      }
+      const fallbackTranslate = async (text) => {
+        const pieces = chunkText(text, 420)
+        const out = []
+        for (const p of pieces) {
+          let es = await tryLibre(p)
+          if (!es) es = await tryMyMemory(p)
+          out.push(es || p)
+        }
+        return out.join('')
+      }
+      const translateWithAzure = async (text) => {
+        const key = process.env.AZURE_TRANSLATOR_KEY
+        const region = process.env.AZURE_TRANSLATOR_REGION || 'global'
+        const base = process.env.AZURE_TRANSLATOR_ENDPOINT || 'https://api.cognitive.microsofttranslator.com'
+        if (!key) return ''
+        const pieces = chunkText(text, 420)
+        try {
+          const bodyArr = pieces.map(t => ({ Text: t }))
+          const url = `${base.replace(/\/$/, '')}/translate?api-version=3.0&from=en&to=es`
+          const r = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Ocp-Apim-Subscription-Key': key,
+              'Ocp-Apim-Subscription-Region': region
+            },
+            body: JSON.stringify(bodyArr)
+          })
+          const j = await r.json().catch(async () => ({ error: await r.text().catch(()=> '') }))
+          if (!r.ok || !Array.isArray(j)) return ''
+          const out = []
+          for (const item of j) {
+            const t = String(item?.translations?.[0]?.text || '')
+            out.push(t)
+          }
+          const textOut = out.join('')
+          if (textOut) providersUsed.add('azure')
+          return textOut
+        } catch { return '' }
+      }
+      const translateWithDeepL = async (text) => {
+        const key = process.env.DEEPL_API_KEY
+        if (!key) return ''
+        const base = (process.env.DEEPL_API_URL || 'https://api.deepl.com/v2/translate').replace(/\/$/, '')
+        const glossary = String(process.env.TRANSLATE_GLOSSARY || '').split(',').map(s => s.trim()).filter(Boolean)
+        const protect = (s) => {
+          if (!glossary.length) return s
+          let out = String(s || '')
+          for (const term of glossary) {
+            const re = new RegExp(`\\b${term.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\b`, 'gi')
+            out = out.replace(re, (m) => `<keep>${m}</keep>`)
+          }
+          return out
+        }
+        const textProtected = protect(text)
+        const unwrapKeep = (s) => String(s || '').replace(/<\/?keep>/g, '')
+        const pieces = chunkText(textProtected, 2500)
+        const html = looksLikeHtml(textProtected) || glossary.length > 0
+        const doRequest = async () => {
+          const params = new URLSearchParams()
+          for (const p of pieces) params.append('text', p)
+          params.append('target_lang', 'ES')
+          params.append('source_lang', 'EN')
+          params.append('preserve_formatting', '1')
+          if (html) params.append('tag_handling', 'html')
+          if (glossary.length) params.append('ignore_tags', 'keep')
+          const r = await fetch(`${base}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': `DeepL-Auth-Key ${key}` },
+            body: params
+          })
+          const j = await r.json().catch(async () => ({}))
+          if (!r.ok || !Array.isArray(j?.translations)) return null
+          const arr = j.translations
+          const out = []
+          for (let i = 0; i < pieces.length; i++) {
+            const t = String(arr?.[i]?.text || '')
+            out.push(unwrapKeep(t || pieces[i]))
+          }
+          const textOut = out.join('')
+          if (textOut) providersUsed.add('deepl')
+          return textOut
+        }
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const res = await doRequest()
+          if (res) return res
+          await new Promise(r => setTimeout(r, 400 * (attempt + 1)))
+        }
+        // last resort: per-piece sequential to salvage as much as possible
+        const out = []
+        for (const p of pieces) {
+          try {
+            const params = new URLSearchParams()
+            params.append('text', p)
+            params.append('target_lang', 'ES')
+            params.append('source_lang', 'EN')
+            params.append('preserve_formatting', '1')
+            if (html) params.append('tag_handling', 'html')
+            const r = await fetch(`${base}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': `DeepL-Auth-Key ${key}` },
+              body: params
+            })
+            const j = await r.json().catch(async () => ({}))
+            const t = String(j?.translations?.[0]?.text || '')
+            out.push(unwrapKeep(t || p))
+          } catch { out.push(p) }
+        }
+        const textOut = out.join('')
+        if (textOut) providersUsed.add('deepl')
+        return textOut
+      }
+      const translateSmart = async (text) => {
+        const pref = String(process.env.TRANSLATE_PRIMARY || '').toLowerCase()
+        const order = pref === 'deepl' ? [translateWithDeepL, translateWithAzure, fallbackTranslate]
+          : (pref === 'azure' ? [translateWithAzure, translateWithDeepL, fallbackTranslate] : [translateWithAzure, translateWithDeepL, fallbackTranslate])
+        for (const fn of order) {
+          const es = await fn(text)
+          if (es) return es
+        }
+        return ''
+      }
+      const getProviderLabel = (primaryPref) => {
+        if (providersUsed.has('deepl')) return 'deepl'
+        if (providersUsed.has('azure')) return 'azure'
+        if (providersUsed.has('libre')) return 'libre'
+        if (providersUsed.has('mymemory')) return 'mymemory'
+        return primaryPref || undefined
+      }
+      const extractFromPrompt = (p) => {
+        const s = String(p || '')
+        const a = s.indexOf('English Title:')
+        const b = s.indexOf('English Excerpt:')
+        const c = s.indexOf('English Body:')
+        const end = s.lastIndexOf('Respond with JSON only.')
+        const e = end >= 0 ? end : s.length
+        const title = a >= 0 && b > a ? s.slice(a + 'English Title:'.length, b).trim() : ''
+        const excerpt = b >= 0 && c > b ? s.slice(b + 'English Excerpt:'.length, c).trim() : ''
+        const body = c >= 0 ? s.slice(c + 'English Body:'.length, e).trim() : ''
+        return { title, excerpt, body }
+      }
+
+      // Primary-direct path when configured
+      const primaryPref = String(process.env.TRANSLATE_PRIMARY || '').toLowerCase()
+      if (primaryPref === 'deepl' || primaryPref === 'azure') {
+        try {
+          const { title, excerpt, body } = extractFromPrompt(userPrompt)
+          const [tEs, eEs, bEs] = await Promise.all([
+            translateSmart(title),
+            translateSmart(excerpt),
+            translateSmart(body)
+          ])
+          const payload = JSON.stringify({ title: tEs, excerpt: eEs, body: bEs, metaTitle: tEs, metaDescription: eEs })
+          const prov = getProviderLabel(primaryPref)
+          return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content: payload, toolCalls: [], provider: prov }) }
+        } catch {}
+      }
+      // Try Responses API first across candidates
+      for (const m of models) {
+        try {
+          const r = await fetch('https://api.openai.com/v1/responses', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ model: m, input: inputText, temperature: temp, max_output_tokens: maxOut, response_format: { type: 'json_object' } })
+          })
+          const j = await r.json().catch(async () => ({ error: { message: await r.text().catch(()=> 'Upstream error') } }))
+          if (r.ok) {
+            const content = String(j?.output_text || '').trim()
+            if (content) return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content, toolCalls: [] }) }
+          } else {
+            const msg = (j?.error?.message || '').toLowerCase()
+            if (r.status === 401 || msg.includes('invalid_api_key')) {
+              // OpenAI unavailable for this key — perform fallback
+              const { title, excerpt, body } = extractFromPrompt(userPrompt)
+              const [tEs, eEs, bEs] = await Promise.all([
+                translateSmart(title),
+                translateSmart(excerpt),
+                translateSmart(body)
+              ])
+              const payload = JSON.stringify({ title: tEs, excerpt: eEs, body: bEs, metaTitle: tEs, metaDescription: eEs })
+              const prov = getProviderLabel(primaryPref)
+              return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content: payload, toolCalls: [], provider: prov }) }
+            }
+            // try next model on 400/404
+          }
+        } catch {}
+      }
+
+      // Fallback to Chat Completions
+      const messages = [{ role: 'system', content: sysText }, { role: 'user', content: userPrompt }]
+      for (const m of models) {
+        try {
+          const r1 = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST', headers, body: JSON.stringify({ model: m, messages, temperature: temp, max_tokens: maxOut, response_format: { type: 'json_object' } })
+          })
+          const j1 = await r1.json().catch(async () => ({ error: { message: await r1.text().catch(()=> 'Upstream error') } }))
+          if (r1.ok) {
+            const content = String(j1?.choices?.[0]?.message?.content || '').trim()
+            if (content) return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content, toolCalls: [] }) }
+          } else {
+            const msg = (j1?.error?.message || '').toLowerCase()
+            if (r1.status === 401 || msg.includes('invalid_api_key')) {
+              const { title, excerpt, body } = extractFromPrompt(userPrompt)
+              const [tEs, eEs, bEs] = await Promise.all([
+                translateSmart(title),
+                translateSmart(excerpt),
+                translateSmart(body)
+              ])
+              const payload = JSON.stringify({ title: tEs, excerpt: eEs, body: bEs, metaTitle: tEs, metaDescription: eEs })
+              return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content: payload, toolCalls: [] }) }
+            }
+            // Retry without response_format if not supported
+            if (msg.includes('response_format') || msg.includes('json_object')) {
+              const r2 = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST', headers, body: JSON.stringify({ model: m, messages, temperature: temp, max_tokens: maxOut })
+              })
+              const j2 = await r2.json().catch(async () => ({ error: { message: await r2.text().catch(()=> 'Upstream error') } }))
+              if (r2.ok) {
+                const content = String(j2?.choices?.[0]?.message?.content || '').trim()
+                if (content) return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content, toolCalls: [] }) }
+              } else if (r2.status === 401) {
+                const { title, excerpt, body } = extractFromPrompt(userPrompt)
+                const [tEs, eEs, bEs] = await Promise.all([
+                  translateSmart(title),
+                  translateSmart(excerpt),
+                  translateSmart(body)
+                ])
+                const payload = JSON.stringify({ title: tEs, excerpt: eEs, body: bEs, metaTitle: tEs, metaDescription: eEs })
+                const prov = getProviderLabel(primaryPref)
+                return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content: payload, toolCalls: [], provider: prov }) }
+              }
+            }
+          }
+        } catch {}
+      }
+      // Final fallback if all else failed (non-401)
+      try {
+        const { title, excerpt, body } = extractFromPrompt(userPrompt)
+        const [tEs, eEs, bEs] = await Promise.all([
+          translateSmart(title),
+          translateSmart(excerpt),
+          translateSmart(body)
+        ])
+        const payload = JSON.stringify({ title: tEs, excerpt: eEs, body: bEs, metaTitle: tEs, metaDescription: eEs })
+        const prov = getProviderLabel(primaryPref)
+        return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content: payload, toolCalls: [], provider: prov }) }
+      } catch {
+        return { statusCode: 500, headers: cors, body: 'Upstream error' }
+      }
+    }
     const textFromHtml = (html = '') => {
       try {
         let s = String(html)

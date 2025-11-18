@@ -6,6 +6,7 @@ import { AssetStore, type AssetMeta } from '../../shared/assets/store'
 import { getBackend } from '../../shared/config'
 import { CloudArticlesStore } from '../../shared/articles/cloud'
 import RichTextEditor from '../components/RichTextEditor'
+import { ensureSpanishForArticle, getTranslateStats } from '@/shared/translate/service'
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -73,6 +74,32 @@ async function inlineAssetsInBody(body: string): Promise<string> {
 }
 
 
+async function sha256Hex(s: string): Promise<string> {
+  const buf = new TextEncoder().encode(s)
+  const hash = await crypto.subtle.digest('SHA-256', buf)
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+function paraCt(s?: string) {
+  const x = String(s || '')
+  return x.split(/\n{2,}|<\/p>|<br\s*\/?\s*>/i).filter(v => v && v.trim()).length
+}
+
+function esNeeds(en?: string, es?: string) {
+  const a = String(en || '').trim()
+  const b = String(es || '').trim()
+  if (!b) return true
+  if (a.length > 1200 && b.length < a.length * 0.6) return true
+  const pa = paraCt(a)
+  const pb = paraCt(b)
+  if (pa >= 4 && pb < Math.max(2, Math.floor(pa * 0.6))) return true
+  return false
+}
+
+function getHashMap(): Record<string, string> { try { const r = localStorage.getItem('gl_es_hashes'); return r ? JSON.parse(r) : {} } catch { return {} } }
+function setHashMap(m: Record<string, string>) { try { localStorage.setItem('gl_es_hashes', JSON.stringify(m)) } catch {} }
+
+
 function StatusBadge({ status }: { status: Article['status'] }) {
   const s = status === 'published'
     ? { bg: 'rgba(34,197,94,0.18)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.35)' }
@@ -85,6 +112,7 @@ function ListView({ onCreate, onEdit }: { onCreate: () => void; onEdit: (id: str
   const reload = () => setItems(ArticlesStore.all())
   useEffect(reload, [])
   const [syncing, setSyncing] = useState(false)
+  const [translating, setTranslating] = useState(false)
 
   // Push all local articles to Supabase (when enabled)
   const syncAll = async () => {
@@ -112,6 +140,29 @@ function ListView({ onCreate, onEdit }: { onCreate: () => void; onEdit: (id: str
     try { bus.emit('toast', { message: `Sync complete: ${ok}/${all.length} succeeded` + (fail ? `, ${fail} failed` : ''), type: fail ? 'error' : 'success' }) } catch { /* no-op */ }
   }
 
+  const translateAll = async () => {
+    const all = ArticlesStore.all()
+    if (all.length === 0) return
+    setTranslating(true)
+    let done = 0
+    const map = getHashMap()
+    for (const a of all) {
+      try {
+        const en = [a.title || '', a.excerpt || '', a.body || ''].join('\n\n')
+        const h = await sha256Hex(en)
+        const need = esNeeds(a.body, (a as any).body_es) || map[a.id] !== h
+        if (need) {
+          const ok = await ensureSpanishForArticle(a)
+          if (ok) { map[a.id] = h; done++ }
+        }
+      } catch {}
+    }
+    setHashMap(map)
+    setTranslating(false)
+    reload()
+    try { bus.emit('toast', { message: `Translated ${done} article(s).`, type: 'success' }) } catch { alert(`Translated ${done} article(s).`) }
+  }
+
   return (
     <div className="section">
       <div className="card ops-media-head" style={{ marginBottom: 12 }}>
@@ -122,8 +173,20 @@ function ListView({ onCreate, onEdit }: { onCreate: () => void; onEdit: (id: str
         <div className="ops-media-actions">
           <button className="ops-btn" onClick={onCreate}>Create Article</button>
           <button className="ops-btn" onClick={syncAll} disabled={syncing}>{syncing ? 'Syncing…' : 'Sync Articles'}</button>
+          <button className="ops-btn" onClick={translateAll} disabled={translating}>{translating ? 'Translating…' : 'Translate Missing ES'}</button>
         </div>
       </div>
+
+      {(() => {
+        const stats = getTranslateStats()
+        return (
+          <div className="card" style={{ marginBottom: 12, padding: 12 }}>
+            <div style={{ fontSize: 12, color: 'var(--ops-muted)' }}>
+              <strong>Translate</strong> • Today: {stats.today.toLocaleString()} {stats.limit ? `/ ${stats.limit.toLocaleString()}` : ''} • Provider: {stats.provider || '—'} • Last: {stats.lastRun ? new Date(stats.lastRun).toLocaleString() : '—'}
+            </div>
+          </div>
+        )
+      })()}
 
       <div className="card">
         <h3>All</h3>
@@ -253,6 +316,19 @@ function EditorView({ initial, onBack }: { initial?: Article; onBack: () => void
         noindex,
         featured,
       })
+      try {
+        const finalStatus = nextStatus || status
+        if (finalStatus === 'published') {
+          const en = [saved.title || '', saved.excerpt || '', saved.body || ''].join('\n\n')
+          const h = await sha256Hex(en)
+          const ok = await ensureSpanishForArticle(saved)
+          if (ok) {
+            const map = getHashMap()
+            map[saved.id] = h
+            setHashMap(map)
+          }
+        }
+      } catch {}
       // Ensure only one featured article at a time
       if (featured) {
         const all = ArticlesStore.all()

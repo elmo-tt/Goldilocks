@@ -31,6 +31,18 @@
 .sticky-nav .left { display: inline-flex; align-items: center; gap: 22px; }
 .sticky-nav .right { display: inline-flex; align-items: center; gap: 10px; }
 
+/* Language toggle */
+.sticky-nav .lang-toggle {
+  width: 36px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  cursor: pointer;
+}
+.sticky-nav .lang-toggle:hover { background: rgba(255,255,255,0.22); }
+
 .sticky-nav .brand {
   display: inline-flex;
   align-items: center;

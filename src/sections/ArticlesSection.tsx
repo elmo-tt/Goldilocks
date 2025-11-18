@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
 export type Article = {
@@ -9,6 +10,7 @@ export type Article = {
 }
 
 export default function ArticlesSection() {
+  const { t } = useTranslation()
   const articles: Article[] = useMemo(
     () => [
       {
@@ -58,10 +60,10 @@ export default function ArticlesSection() {
     <section id="articles" className="articles">
       <div className="articles-inner">
         <div className="articles-header">
-          <div className="eyebrow">ARTICLES</div>
+          <div className="eyebrow">{t('articles.eyebrow')}</div>
           <h2 className="articles-title">
-            <span className="muted">Powerful people, impressive results.</span>
-            <span>We’ve supported high-profile, pro-bono and everything in between.</span>
+            <span className="muted">{t('articles.muted')}</span>
+            <span>{t('articles.strong')}</span>
           </h2>
         </div>
         <div className="articles-right">
@@ -77,13 +79,13 @@ export default function ArticlesSection() {
               >
                 <a className="tile" href={a.href || '#'}>
                   <div className="tile-image" style={{ backgroundImage: `url(${a.image})` }} />
-                  <div className="tile-title">{a.title}</div>
+                  <div className="tile-title">{t(`articles.items.${a.id}.title`)}</div>
                 </a>
               </article>
             ))}
           </div>
           <div className="articles-nav">
-            <Link className="view-all" to="/articles#hero">View all</Link>
+            <Link className="view-all" to="/articles#hero">{t('articles.view_all')}</Link>
             <div className="arrows">
               <button className="nav-btn" aria-label="Previous" onClick={() => go(-1)}>←</button>
               <button className="nav-btn" aria-label="Next" onClick={() => go(1)}>→</button>

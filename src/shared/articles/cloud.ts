@@ -122,30 +122,38 @@ export const CloudArticlesStore = {
     }
     let { data, error } = await supabase.from('articles').upsert(next as any, { onConflict: 'id' }).select().limit(1)
     if (error) {
-      const minimal = {
-        id: next.id,
-        slug: next.slug,
-        title: next.title,
-        tags: next.tags,
-        heroUrl: next.heroUrl,
-        heroDataUrl: next.heroDataUrl,
-        excerpt: next.excerpt,
-        body: next.body,
-        status: next.status,
-        createdAt: next.createdAt,
-        updatedAt: next.updatedAt,
-        // SEO fields
-        metaTitle: (next as any).metaTitle,
-        metaDescription: (next as any).metaDescription,
-        keyphrase: (next as any).keyphrase,
-        canonicalUrl: (next as any).canonicalUrl,
-        noindex: (next as any).noindex,
-        // intentionally omitting 'category' to avoid schema errors when column is absent
-        // intentionally omitting 'featured' to avoid schema errors when column is absent
+      const stripped: any = { ...(next as any) }
+      delete stripped.metaTitle_es
+      delete stripped.metaDescription_es
+      const tryStrip = await supabase.from('articles').upsert(stripped as any, { onConflict: 'id' }).select().limit(1)
+      if (!tryStrip.error) {
+        data = tryStrip.data as any
+      } else {
+        const minimal = {
+          id: next.id,
+          slug: next.slug,
+          title: next.title,
+          tags: next.tags,
+          heroUrl: next.heroUrl,
+          heroDataUrl: next.heroDataUrl,
+          excerpt: next.excerpt,
+          body: next.body,
+          status: next.status,
+          createdAt: next.createdAt,
+          updatedAt: next.updatedAt,
+          metaTitle: (next as any).metaTitle,
+          metaDescription: (next as any).metaDescription,
+          keyphrase: (next as any).keyphrase,
+          canonicalUrl: (next as any).canonicalUrl,
+          noindex: (next as any).noindex,
+          title_es: (next as any).title_es,
+          excerpt_es: (next as any).excerpt_es,
+          body_es: (next as any).body_es,
+        }
+        const res = await supabase.from('articles').upsert(minimal as any, { onConflict: 'id' }).select().limit(1)
+        if (res.error) throw res.error
+        data = res.data as any
       }
-      const res = await supabase.from('articles').upsert(minimal as any, { onConflict: 'id' }).select().limit(1)
-      if (res.error) throw res.error
-      data = res.data as any
     }
     return (data?.[0] || next) as Article
   },

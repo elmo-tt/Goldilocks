@@ -281,7 +281,10 @@ export default function ArticleTemplate({ article }: { article: Article }) {
     const hasFields = !!(article as any).body_es
     const hasI18n = !!(tTitleEs || tBodyEs)
     const hasMarkers = !!(getMarked(article.body || '', 'title', 'es') || getMarked(article.body || '', 'excerpt', 'es') || /<!--\s*lang:es\s*-->|\[lang:es\]/i.test(article.body || ''))
-    if (!hasFields && !hasI18n && !hasMarkers) {
+    const bodyAll = article.body || ''
+    const esOnly = filterLangBlocks(bodyAll, 'es').trim()
+    const esCoverageOk = esOnly.length > Math.min(bodyAll.length * 0.6, bodyAll.length - 400)
+    if (!hasFields && !hasI18n && (!hasMarkers || !esCoverageOk)) {
       ensureSpanishForArticle(article).catch(() => {})
     }
   }, [i18n.language, article.id, article.slug, article.body])

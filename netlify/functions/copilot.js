@@ -10,17 +10,19 @@ export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers: cors, body: 'Method Not Allowed' }
   }
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) {
-    return { statusCode: 500, headers: cors, body: 'Missing OPENAI_API_KEY' }
-  }
   let body
   try { body = JSON.parse(event.body || '{}') } catch { body = {} }
+  const mode = String(body.mode || 'copilot')
+  const primaryPrefEarly = String(process.env.TRANSLATE_PRIMARY || '').toLowerCase()
+  const allowNoOpenAI = (mode === 'translate') && (primaryPrefEarly === 'deepl' || primaryPrefEarly === 'azure')
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey && !allowNoOpenAI) {
+    return { statusCode: 500, headers: cors, body: 'Missing OPENAI_API_KEY' }
+  }
   const incoming = Array.isArray(body.messages) ? body.messages : []
   const model = body.model || process.env.COPILOT_MODEL || 'gpt-4o-mini'
   const temperature = Number(process.env.COPILOT_TEMPERATURE ?? body.temperature ?? 0.3)
   const max_tokens = Number(process.env.COPILOT_MAX_TOKENS ?? body.max_tokens ?? 900)
-  const mode = String(body.mode || 'copilot')
 
   const sys = {
     role: 'system',
@@ -176,6 +178,7 @@ export const handler = async (event) => {
       ].filter(Boolean)))
 
       const inputText = `${sysText}\n\n${userPrompt}`
+      const providersUsed = new Set()
 
       // Helpers: no-key fallback translator
       const chunkText = (s, max = 450) => {
@@ -194,6 +197,7 @@ export const handler = async (event) => {
         }
         return out
       }
+      const looksLikeHtml = (s) => /<(?:\/|[^>]+)>/.test(String(s || ''))
       const tryLibre = async (text) => {
         const payload = { q: text, source: 'en', target: 'es', format: 'text' }
         const eps = ['https://libretranslate.de/translate', 'https://translate.astian.org/translate']
@@ -201,7 +205,7 @@ export const handler = async (event) => {
           try {
             const r = await fetch(ep, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
             const j = await r.json().catch(async () => ({ error: await r.text().catch(()=> '') }))
-            if (r.ok && j && typeof j.translatedText === 'string') return j.translatedText
+            if (r.ok && j && typeof j.translatedText === 'string') { providersUsed.add('libre'); return j.translatedText }
           } catch {}
         }
         return ''
@@ -212,6 +216,7 @@ export const handler = async (event) => {
           const r = await fetch(url)
           const j = await r.json().catch(async () => ({ responseData: { translatedText: '' } }))
           const t = String(j?.responseData?.translatedText || '')
+          if (t) providersUsed.add('mymemory')
           return t
         } catch { return '' }
       }
@@ -250,14 +255,60 @@ export const handler = async (event) => {
             const t = String(item?.translations?.[0]?.text || '')
             out.push(t)
           }
-          return out.join('')
+          const textOut = out.join('')
+          if (textOut) providersUsed.add('azure')
+          return textOut
         } catch { return '' }
       }
       const translateWithDeepL = async (text) => {
         const key = process.env.DEEPL_API_KEY
         if (!key) return ''
         const base = (process.env.DEEPL_API_URL || 'https://api.deepl.com/v2/translate').replace(/\/$/, '')
-        const pieces = chunkText(text, 420)
+        const glossary = String(process.env.TRANSLATE_GLOSSARY || '').split(',').map(s => s.trim()).filter(Boolean)
+        const protect = (s) => {
+          if (!glossary.length) return s
+          let out = String(s || '')
+          for (const term of glossary) {
+            const re = new RegExp(`\\b${term.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}\\b`, 'gi')
+            out = out.replace(re, (m) => `<keep>${m}</keep>`)
+          }
+          return out
+        }
+        const textProtected = protect(text)
+        const unwrapKeep = (s) => String(s || '').replace(/<\/?keep>/g, '')
+        const pieces = chunkText(textProtected, 2500)
+        const html = looksLikeHtml(textProtected) || glossary.length > 0
+        const doRequest = async () => {
+          const params = new URLSearchParams()
+          for (const p of pieces) params.append('text', p)
+          params.append('target_lang', 'ES')
+          params.append('source_lang', 'EN')
+          params.append('preserve_formatting', '1')
+          if (html) params.append('tag_handling', 'html')
+          if (glossary.length) params.append('ignore_tags', 'keep')
+          const r = await fetch(`${base}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': `DeepL-Auth-Key ${key}` },
+            body: params
+          })
+          const j = await r.json().catch(async () => ({}))
+          if (!r.ok || !Array.isArray(j?.translations)) return null
+          const arr = j.translations
+          const out = []
+          for (let i = 0; i < pieces.length; i++) {
+            const t = String(arr?.[i]?.text || '')
+            out.push(unwrapKeep(t || pieces[i]))
+          }
+          const textOut = out.join('')
+          if (textOut) providersUsed.add('deepl')
+          return textOut
+        }
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const res = await doRequest()
+          if (res) return res
+          await new Promise(r => setTimeout(r, 400 * (attempt + 1)))
+        }
+        // last resort: per-piece sequential to salvage as much as possible
         const out = []
         for (const p of pieces) {
           try {
@@ -265,6 +316,8 @@ export const handler = async (event) => {
             params.append('text', p)
             params.append('target_lang', 'ES')
             params.append('source_lang', 'EN')
+            params.append('preserve_formatting', '1')
+            if (html) params.append('tag_handling', 'html')
             const r = await fetch(`${base}`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': `DeepL-Auth-Key ${key}` },
@@ -272,16 +325,29 @@ export const handler = async (event) => {
             })
             const j = await r.json().catch(async () => ({}))
             const t = String(j?.translations?.[0]?.text || '')
-            out.push(t || p)
+            out.push(unwrapKeep(t || p))
           } catch { out.push(p) }
         }
-        return out.join('')
+        const textOut = out.join('')
+        if (textOut) providersUsed.add('deepl')
+        return textOut
       }
       const translateSmart = async (text) => {
-        let es = await translateWithAzure(text)
-        if (!es) es = await translateWithDeepL(text)
-        if (!es) es = await fallbackTranslate(text)
-        return es
+        const pref = String(process.env.TRANSLATE_PRIMARY || '').toLowerCase()
+        const order = pref === 'deepl' ? [translateWithDeepL, translateWithAzure, fallbackTranslate]
+          : (pref === 'azure' ? [translateWithAzure, translateWithDeepL, fallbackTranslate] : [translateWithAzure, translateWithDeepL, fallbackTranslate])
+        for (const fn of order) {
+          const es = await fn(text)
+          if (es) return es
+        }
+        return ''
+      }
+      const getProviderLabel = (primaryPref) => {
+        if (providersUsed.has('deepl')) return 'deepl'
+        if (providersUsed.has('azure')) return 'azure'
+        if (providersUsed.has('libre')) return 'libre'
+        if (providersUsed.has('mymemory')) return 'mymemory'
+        return primaryPref || undefined
       }
       const extractFromPrompt = (p) => {
         const s = String(p || '')
@@ -296,6 +362,21 @@ export const handler = async (event) => {
         return { title, excerpt, body }
       }
 
+      // Primary-direct path when configured
+      const primaryPref = String(process.env.TRANSLATE_PRIMARY || '').toLowerCase()
+      if (primaryPref === 'deepl' || primaryPref === 'azure') {
+        try {
+          const { title, excerpt, body } = extractFromPrompt(userPrompt)
+          const [tEs, eEs, bEs] = await Promise.all([
+            translateSmart(title),
+            translateSmart(excerpt),
+            translateSmart(body)
+          ])
+          const payload = JSON.stringify({ title: tEs, excerpt: eEs, body: bEs, metaTitle: tEs, metaDescription: eEs })
+          const prov = getProviderLabel(primaryPref)
+          return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content: payload, toolCalls: [], provider: prov }) }
+        } catch {}
+      }
       // Try Responses API first across candidates
       for (const m of models) {
         try {
@@ -319,7 +400,8 @@ export const handler = async (event) => {
                 translateSmart(body)
               ])
               const payload = JSON.stringify({ title: tEs, excerpt: eEs, body: bEs, metaTitle: tEs, metaDescription: eEs })
-              return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content: payload, toolCalls: [] }) }
+              const prov = getProviderLabel(primaryPref)
+              return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content: payload, toolCalls: [], provider: prov }) }
             }
             // try next model on 400/404
           }
@@ -366,7 +448,8 @@ export const handler = async (event) => {
                   translateSmart(body)
                 ])
                 const payload = JSON.stringify({ title: tEs, excerpt: eEs, body: bEs, metaTitle: tEs, metaDescription: eEs })
-                return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content: payload, toolCalls: [] }) }
+                const prov = getProviderLabel(primaryPref)
+                return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content: payload, toolCalls: [], provider: prov }) }
               }
             }
           }
@@ -381,7 +464,8 @@ export const handler = async (event) => {
           translateSmart(body)
         ])
         const payload = JSON.stringify({ title: tEs, excerpt: eEs, body: bEs, metaTitle: tEs, metaDescription: eEs })
-        return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content: payload, toolCalls: [] }) }
+        const prov = getProviderLabel(primaryPref)
+        return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content: payload, toolCalls: [], provider: prov }) }
       } catch {
         return { statusCode: 500, headers: cors, body: 'Upstream error' }
       }

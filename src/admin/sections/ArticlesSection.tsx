@@ -43,7 +43,7 @@ async function inlineAssetsInBody(body: string): Promise<string> {
             const dataUrl = await blobToDataUrl(blob)
             const compressed = await compressDataUrl(dataUrl, 1600, 0.82)
             img.setAttribute('src', compressed)
-            img.removeAttribute('data-asset-id')
+            // Keep data-asset-id so saved captions with data-caption-for remain associated
           }
         } catch {}
       }
@@ -71,6 +71,58 @@ async function inlineAssetsInBody(body: string): Promise<string> {
     } catch {}
   }
   return out
+}
+
+async function embedAssetCaptions(body: string): Promise<string> {
+  try {
+    if (!body) return body
+    if (looksLikeHtml(body)) {
+      const container = document.createElement('div')
+      container.innerHTML = body
+      const imgs = Array.from(container.querySelectorAll('img')) as HTMLImageElement[]
+      for (const img of imgs) {
+        const dataId = img.getAttribute('data-asset-id') || ''
+        const src = img.getAttribute('src') || ''
+        const id = dataId || (src.startsWith('asset:') ? src.slice(6) : '')
+        if (!id) continue
+        const next = img.nextElementSibling as HTMLElement | null
+        const hasParaCaption = !!(next && next.tagName.toLowerCase() === 'p' && next.getAttribute('data-caption-for') === id)
+        const hasFigureCaption = !!(img.parentElement && img.parentElement.tagName.toLowerCase() === 'figure' && !!img.parentElement.querySelector('figcaption'))
+        if (hasParaCaption || hasFigureCaption) continue
+        try {
+          const meta = await (AssetStore as any).getMeta?.(id)
+          const cap = String(meta?.caption || '').trim()
+          if (!cap) continue
+          const p = document.createElement('p')
+          p.setAttribute('data-caption-for', id)
+          p.className = 'caption'
+          p.textContent = cap
+          img.insertAdjacentElement('afterend', p)
+        } catch {}
+      }
+      return container.innerHTML
+    }
+    // Markdown: add title from asset caption when missing
+    let s = body
+    const re = /!\[([^\]]*)\]\((asset:[^\s\)]+)(?:\s+"([^"]*)")?\)/g
+    const matches = Array.from(body.matchAll(re))
+    for (const m of matches) {
+      const full = m[0]
+      const alt = m[1]
+      const token = m[2]
+      const title = (m[3] || '').trim()
+      if (title) continue
+      const id = token.replace(/^asset:/, '')
+      try {
+        const meta = await (AssetStore as any).getMeta?.(id)
+        const cap = String(meta?.caption || '').trim()
+        if (!cap) continue
+        const replacement = `![${alt}](${token} "${cap}")`
+        s = s.replace(full, replacement)
+      } catch {}
+    }
+    return s
+  } catch { return body }
 }
 
 
@@ -295,9 +347,11 @@ function EditorView({ initial, onBack }: { initial?: Article; onBack: () => void
       const tagArr = tags.split(',').map(s => s.trim()).filter(Boolean)
       const enforcedBody = enforceEditorialRules(body, tagArr, title, excerpt, category || '')
 
+      // First, embed asset captions into the body so they persist and get translated.
+      const withCaptions = await embedAssetCaptions(enforcedBody)
       // For local backend, inline assets into body so it doesn't depend on local IndexedDB.
       // For Supabase, keep asset: tokens and resolve at render time via signed URLs.
-      const processedBody = (getBackend() === 'supabase') ? enforcedBody : await inlineAssetsInBody(enforcedBody)
+      const processedBody = (getBackend() === 'supabase') ? withCaptions : await inlineAssetsInBody(withCaptions)
       const saved = ArticlesStore.save({
         id: initial?.id,
         title: title.trim() || 'Untitled',

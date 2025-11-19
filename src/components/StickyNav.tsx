@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { PRACTICE_AREAS } from '@/admin/data/goldlaw'
+import { PRACTICE_AREAS_MAP } from '@/pages/practice/areas'
 import './StickyNav.css'
 
 const ABOUT_LINKS = [
@@ -101,9 +102,21 @@ export default function StickyNav() {
                 </Link>
                 <div className="dropdown wide">
                   <ul>
-                    {PRACTICE_AREAS.map((pa) => (
-                      <li key={pa.key}><Link to="/practice/motor-accidents">{pa.label}</Link></li>
-                    ))}
+                    {PRACTICE_AREAS.map((pa) => {
+                      const KEY_ALIASES: Record<string, string> = { car: 'car-accidents' }
+                      const internalKey = (KEY_ALIASES[pa.key] ?? pa.key) as keyof typeof PRACTICE_AREAS_MAP
+                      const isInternal = !!PRACTICE_AREAS_MAP[internalKey]
+                      const href = isInternal ? `/practice/${internalKey}` : pa.url
+                      return (
+                        <li key={pa.key}>
+                          {isInternal ? (
+                            <Link to={href}>{pa.label}</Link>
+                          ) : (
+                            <a href={href} target="_blank" rel="noopener noreferrer">{pa.label}</a>
+                          )}
+                        </li>
+                      )
+                    })}
                   </ul>
                 </div>
               </li>
@@ -165,9 +178,21 @@ export default function StickyNav() {
               <svg className="caret" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 10l5 5 5-5z"/></svg>
             </button>
             <ul className={`sub${mCasesOpen ? ' open' : ''}`}>
-              {PRACTICE_AREAS.map((pa) => (
-                <li key={pa.key}><Link to="/practice/motor-accidents" onClick={() => setMenuOpen(false)}>{pa.label}</Link></li>
-              ))}
+              {PRACTICE_AREAS.map((pa) => {
+                const KEY_ALIASES: Record<string, string> = { car: 'car-accidents' }
+                const internalKey = (KEY_ALIASES[pa.key] ?? pa.key) as keyof typeof PRACTICE_AREAS_MAP
+                const isInternal = !!PRACTICE_AREAS_MAP[internalKey]
+                const href = isInternal ? `/practice/${internalKey}` : pa.url
+                return (
+                  <li key={pa.key}>
+                    {isInternal ? (
+                      <Link to={href} onClick={() => setMenuOpen(false)}>{pa.label}</Link>
+                    ) : (
+                      <a href={href} target="_blank" rel="noopener noreferrer" onClick={() => setMenuOpen(false)}>{pa.label}</a>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           </li>
           <li><Link to="/articles#hero" onClick={() => setMenuOpen(false)}>{t('nav.blog')}</Link></li>

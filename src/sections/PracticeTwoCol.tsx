@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 export type PracticeTwoColProps = {
   imageUrl: string
   detail: string
+  areaKey?: string
 }
 
  
@@ -30,18 +31,20 @@ function Icon({ type }: { type: 'check' | 'loop' | 'support' }) {
   )
 }
 
-export default function PracticeTwoCol({ imageUrl, detail }: PracticeTwoColProps) {
+export default function PracticeTwoCol({ imageUrl, detail, areaKey }: PracticeTwoColProps) {
   const { t } = useTranslation()
-  const BENEFITS: Array<{ icon: 'check' | 'loop' | 'support'; title: string; text: string }> = [
-    { icon: 'check', title: t('practice_two_col.benefits.0.title'), text: t('practice_two_col.benefits.0.text') },
-    { icon: 'loop', title: t('practice_two_col.benefits.1.title'), text: t('practice_two_col.benefits.1.text') },
-    { icon: 'support', title: t('practice_two_col.benefits.2.title'), text: t('practice_two_col.benefits.2.text') },
-  ]
+  const titleMuted = areaKey ? t(`practice_two_col_pages.${areaKey}.title_muted`, { defaultValue: t('practice_two_col.title_muted') }) : t('practice_two_col.title_muted')
+  const titleStrong = areaKey ? t(`practice_two_col_pages.${areaKey}.title_strong`, { defaultValue: t('practice_two_col.title_strong') }) : t('practice_two_col.title_strong')
+  const BENEFITS: Array<{ icon: 'check' | 'loop' | 'support'; title: string; text: string }> = [0,1,2].map((i) => ({
+    icon: (i === 0 ? 'check' : i === 1 ? 'loop' : 'support') as 'check' | 'loop' | 'support',
+    title: areaKey ? t(`practice_two_col_pages.${areaKey}.benefits.${i}.title`, { defaultValue: t(`practice_two_col.benefits.${i}.title`) }) : t(`practice_two_col.benefits.${i}.title`),
+    text: areaKey ? t(`practice_two_col_pages.${areaKey}.benefits.${i}.text`, { defaultValue: t(`practice_two_col.benefits.${i}.text`) }) : t(`practice_two_col.benefits.${i}.text`),
+  }))
   return (
     <section className="pa-two-col">
       <div className="pa2-inner">
         <div className="pa2-left">
-          <h2 className="pa2-title"><span className="muted">{t('practice_two_col.title_muted')}</span> <span className="strong">{t('practice_two_col.title_strong')}</span></h2>
+          <h2 className="pa2-title"><span className="muted">{titleMuted}</span> <span className="strong">{titleStrong}</span></h2>
           <p className="pa2-detail">{detail}</p>
           <ul className="pa2-benefits">
             {BENEFITS.map((b, i) => (

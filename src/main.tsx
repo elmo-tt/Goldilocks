@@ -7,6 +7,7 @@ import './styles/global.css'
 import './i18n'
 import App from './App.tsx'
 import MotorAccidents from '@/pages/practice/MotorAccidents'
+import PracticeAreaPage from '@/pages/practice/PracticeAreaPage'
 import ArticlesList from './pages/articles/ArticlesList'
 import ArticlePage from './pages/articles/ArticlePage'
 import ArticleTemplatePreview from './pages/templates/ArticleTemplatePreview'
@@ -24,6 +25,7 @@ createRoot(document.getElementById('root')!).render(
         <Routes>
           <Route path="/" element={<App />} />
           <Route path="/practice/motor-accidents" element={<MotorAccidents />} />
+          <Route path="/practice/:key" element={<PracticeAreaPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/articles" element={<ArticlesList />} />
           <Route path="/articles/:slug" element={<ArticlePage />} />

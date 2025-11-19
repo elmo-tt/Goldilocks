@@ -25,6 +25,9 @@ export type PracticeAreaData = {
   details: string
   ratingScore?: string
   ratingCount?: number
+  videoId?: string
+  testimonialsFolder?: string
+  aboutStackTitle?: boolean
 }
 
 export default function PracticeAreaTemplate({ area }: { area: PracticeAreaData }) {
@@ -32,10 +35,17 @@ export default function PracticeAreaTemplate({ area }: { area: PracticeAreaData 
   const score = area.ratingScore || '4.8'
   const count = area.ratingCount || 918
   const style = area.heroUrl ? { backgroundImage: `url('${area.heroUrl}')` } as React.CSSProperties : undefined
-  const testimonialsFolder = (area.key || '').toLowerCase().replace(/-/g, '_')
+  const testimonialsFolder = (area.testimonialsFolder || (area.key || '').toLowerCase().replace(/-/g, '_'))
   const nameText = t(`practice_pages.${area.key}.name`, { defaultValue: area.name })
   const headlineText = t(`practice_pages.${area.key}.headline`, { defaultValue: area.headline })
   const detailsText = t(`practice_pages.${area.key}.details`, { defaultValue: area.details })
+  const twoColDetailText = t(`practice_two_col_pages.${area.key}.detail`, { defaultValue: detailsText })
+  const whyStrong = t(`practice_why_pages.${area.key}.strong`, { defaultValue: t('practice_why.strong') })
+  const whyMuted = t(`practice_why_pages.${area.key}.muted`, { defaultValue: t('practice_why.muted') })
+  const whyItems = [0,1,2,3].map(i => ({
+    title: t(`practice_why_pages.${area.key}.items.${i}.title`, { defaultValue: t(`practice_why.items.${i}.title`) }),
+    body: t(`practice_why_pages.${area.key}.items.${i}.body`, { defaultValue: t(`practice_why.items.${i}.body`) }),
+  }))
   const makeMuted = (a: PracticeAreaData) => {
     const key = (a.key || '').toLowerCase()
     const name = (a.name || '').trim()
@@ -52,7 +62,9 @@ export default function PracticeAreaTemplate({ area }: { area: PracticeAreaData 
     // Fallback
     return t('practice_about.fallback', { lower })
   }
-  const mutedLine = makeMuted(area)
+  const aboutMutedOverride = (t(`practice_about_pages.${area.key}.muted`, { defaultValue: '' }) || '').trim()
+  const mutedLine = aboutMutedOverride || makeMuted(area)
+  const aboutStackTitle = typeof area.aboutStackTitle === 'boolean' ? area.aboutStackTitle : true
   return (
     <>
       <section className="pa-hero" id="hero" style={style}>
@@ -84,14 +96,14 @@ export default function PracticeAreaTemplate({ area }: { area: PracticeAreaData 
       </section>
 
       <PracticeWelcomeVideo
-        videoId="hBeQHy67wTo"
+        videoId={area.videoId || 'hBeQHy67wTo'}
         placeholderSrc="/images/practice/welcome-video-placeholder.png"
       />
 
       <AboutSection
         eyebrow={t('practice_about_section.eyebrow')}
         strongFirst
-        stackTitleLines
+        stackTitleLines={aboutStackTitle}
         strong={t('practice_about_section.strong')}
         muted={mutedLine}
         showImage={false}
@@ -100,19 +112,15 @@ export default function PracticeAreaTemplate({ area }: { area: PracticeAreaData 
 
       <PracticeTwoCol
         imageUrl={area.benefitsImageUrl || area.heroUrl || '/images/practice/motor-accidents-hero.png'}
-        detail={detailsText}
+        detail={twoColDetailText}
+        areaKey={area.key}
       />
 
       <PracticeWhy
         eyebrow={t('practice_why.eyebrow')}
-        strong={t('practice_why.strong')}
-        muted={t('practice_why.muted')}
-        items={[
-          { title: t('practice_why.items.0.title'), body: t('practice_why.items.0.body') },
-          { title: t('practice_why.items.1.title'), body: t('practice_why.items.1.body') },
-          { title: t('practice_why.items.2.title'), body: t('practice_why.items.2.body') },
-          { title: t('practice_why.items.3.title'), body: t('practice_why.items.3.body') },
-        ]}
+        strong={whyStrong}
+        muted={whyMuted}
+        items={whyItems}
       />
 
       <PracticeTestimonials folder={testimonialsFolder} />
@@ -125,8 +133,8 @@ export default function PracticeAreaTemplate({ area }: { area: PracticeAreaData 
         ratingScore={score}
         ratingCount={count}
         quotes={[
-          { text: 'What a wonderful experience. At GOLDLAW, you are treated like family! Thank you, Paul, and the entire team. Outstanding!!!!!', author: 'Karen R.', context: 'Auto Accident' },
-          { text: 'Professional, responsive, and compassionate from start to finish.', author: 'Daniela M.', context: 'Auto Accident' },
+          { text: 'What a wonderful experience. At GOLDLAW, you are treated like family! Thank you, Paul, and the entire team. Outstanding!!!!!', author: 'Karen R.', context: nameText },
+          { text: 'Professional, responsive, and compassionate from start to finish.', author: 'Daniela M.', context: nameText },
         ]}
         actions={[
           t('practice_bento.actions.0'),

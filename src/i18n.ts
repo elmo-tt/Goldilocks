@@ -236,6 +236,57 @@ void i18n
               headline: 'Turning Crash Claims Into Cash Outcomes',
               details: 'From fender benders to catastrophic collisions, Goldlaw navigates the legal roadblocks so you can recover with peace of mind.',
             },
+            'car-accidents': {
+              name: 'Car Accidents',
+              headline: 'Turning Crash Claims Into Cash Outcomes',
+              details: 'From fender benders to catastrophic collisions, Goldlaw navigates the legal roadblocks so you can recover with peace of mind.',
+            },
+            'accidental-drownings': {
+              name: 'Accidental Drownings',
+              headline: 'Legal Action After a Preventable Drowning',
+              details: 'From pools to open water, drownings often stem from poor warnings, unsafe conditions, or failed oversight. We document what went wrong and hold owners/operators accountable so families can focus on healing.',
+            },
+          },
+          practice_why_pages: {
+            'accidental-drownings': {
+              strong: 'Many Drownings Are Preventable.',
+              muted: 'Here’s how we build and prove these cases.',
+              items: {
+                0: {
+                  title: 'Hazards, Warnings, and Barriers',
+                  body: 'We document missing or inadequate warnings (e.g., riptides), fences, locks, covers, and other safety measures that should have been in place.'
+                },
+                1: {
+                  title: 'Supervision and Lifeguards',
+                  body: 'We evaluate whether reasonable supervision or trained lifeguards were required and absent, and how that failure contributed to the incident.'
+                },
+                2: {
+                  title: 'Premises and Operator Negligence',
+                  body: 'We investigate owners, managers, HOA/community lakes, hotels, and tour/boating operators for negligent conduct that created or failed to correct risks.'
+                },
+                3: {
+                  title: 'Damages and Accountability',
+                  body: 'We pursue compensation for medical care, lost wages, pain and suffering, and wrongful death where applicable.'
+                }
+              }
+            }
+          },
+          practice_two_col_pages: {
+            'accidental-drownings': {
+              title_muted: 'Clarity, compassion,',
+              title_strong: 'and results for families.',
+              detail: 'We move quickly to preserve evidence, interview witnesses, and consult water‑safety experts. We explain each step, coordinate support, and pursue accountability while you focus on family.',
+              benefits: {
+                0: { title: 'Evidence-led investigations', text: 'We secure warnings, training, and safety records to show where systems failed.' },
+                1: { title: 'Consistent communication', text: 'You’ll always know what’s happening and what’s next.' },
+                2: { title: 'Full-service support', text: 'We coordinate care and resources while we pursue your claim.' },
+              }
+            }
+          },
+          practice_about_pages: {
+            'accidental-drownings': {
+              muted: 'seeking answers and accountability.',
+            },
           },
           practice_welcome: {
             title_default: 'Welcome video',
@@ -512,6 +563,57 @@ void i18n
               name: 'Accidentes de motor',
               headline: 'Transformamos reclamos por choques en resultados reales',
               details: 'Desde choques leves hasta colisiones catastróficas, GOLDLAW sortea los obstáculos legales para que te recuperes con tranquilidad.',
+            },
+            'car-accidents': {
+              name: 'Accidentes de motor',
+              headline: 'Transformamos reclamos por choques en resultados reales',
+              details: 'Desde choques leves hasta colisiones catastróficas, GOLDLAW sortea los obstáculos legales para que te recuperes con tranquilidad.',
+            },
+            'accidental-drownings': {
+              name: 'Ahogamientos accidentales',
+              headline: 'Acción legal tras un ahogamiento prevenible',
+              details: 'Desde piscinas hasta aguas abiertas, muchos ahogamientos ocurren por advertencias deficientes, condiciones inseguras o falta de supervisión. Documentamos qué falló y responsabilizamos a propietarios y operadores para que las familias puedan enfocarse en sanar.',
+            },
+          },
+          practice_why_pages: {
+            'accidental-drownings': {
+              strong: 'Muchos ahogamientos se pueden prevenir.',
+              muted: 'Así construimos y probamos estos casos.',
+              items: {
+                0: {
+                  title: 'Peligros, advertencias y barreras',
+                  body: 'Documentamos advertencias faltantes o inadecuadas (p. ej., corrientes de resaca), cercas, cerraduras, cobertores y otras medidas de seguridad.'
+                },
+                1: {
+                  title: 'Supervisión y salvavidas',
+                  body: 'Evaluamos si se requería una supervisión razonable o personal capacitado y cómo su ausencia contribuyó al incidente.'
+                },
+                2: {
+                  title: 'Negligencia del propietario u operador',
+                  body: 'Investigamos dueños, administradores, lagos/comunidades, hoteles y operadores de tours/embarcaciones por conductas negligentes.'
+                },
+                3: {
+                  title: 'Daños y responsabilidad',
+                  body: 'Buscamos compensación por atención médica, salarios perdidos, dolor y sufrimiento, y por muerte por negligencia, cuando corresponda.'
+                }
+              }
+            }
+          },
+          practice_two_col_pages: {
+            'accidental-drownings': {
+              title_muted: 'Claridad, compasión,',
+              title_strong: 'y resultados para las familias.',
+              detail: 'Actuamos con rapidez para preservar evidencia, entrevistar testigos y consultar expertos en seguridad acuática. Explicamos cada paso, coordinamos apoyo y buscamos responsabilidad mientras te enfocas en tu familia.',
+              benefits: {
+                0: { title: 'Investigaciones basadas en evidencia', text: 'Obtenemos advertencias, registros de capacitación y seguridad para mostrar dónde fallaron los sistemas.' },
+                1: { title: 'Comunicación constante', text: 'Siempre sabrás qué está pasando y qué sigue.' },
+                2: { title: 'Apoyo integral', text: 'Coordinamos atención y recursos mientras tramitamos tu reclamación.' },
+              }
+            }
+          },
+          practice_about_pages: {
+            'accidental-drownings': {
+              muted: 'buscando respuestas y responsabilidad.',
             },
           },
           practice_welcome: {

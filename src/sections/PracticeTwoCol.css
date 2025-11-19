@@ -24,7 +24,7 @@
 }
 
 @media (max-width: 900px) {
-  .pa-two-col .pa2-inner { grid-template-columns: 1fr; }
+  .pa-two-col .pa2-inner { grid-template-columns: 1fr; gap: clamp(16px, 4vw, 28px); }
   .pa-two-col .pa2-right { order: 2; }
   .pa-two-col .pa2-left { order: 1; max-width: none; }
 }

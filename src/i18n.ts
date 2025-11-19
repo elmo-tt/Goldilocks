@@ -120,6 +120,13 @@ void i18n
             title_muted: 'Meet our exceptional',
             title_strong: 'team of attorneys',
           },
+          team_attorney: {
+            education: 'Education',
+            professional_affiliations: 'Professional Affiliations',
+            awards: 'Awards & Accolades',
+            notable_case_wins: 'Notable case wins',
+            close_profile: 'Close profile',
+          },
           contact: {
             eyebrow: 'LET’S GET STARTED',
             title_muted: 'You made the right choice.',
@@ -451,6 +458,130 @@ void i18n
           team_page: {
             title_muted: 'Conoce a nuestro excepcional',
             title_strong: 'equipo de abogados',
+          },
+          team_attorney: {
+            education: 'Educación',
+            professional_affiliations: 'Afiliaciones profesionales',
+            awards: 'Premios y reconocimientos',
+            notable_case_wins: 'Casos destacados ganados',
+            close_profile: 'Cerrar perfil',
+          },
+          team_attorney_details: {
+            craig_goldenfarb: {
+              bio_heading: 'Craig Goldenfarb: Un líder y experto abogado de lesiones personales',
+              bio_p1:
+                'Tras una carrera muy exitosa como litigante, el enfoque principal de Craig es formar y dirigir los equipos que gestionan directamente los casos de los clientes y supervisar los casos más grandes del bufete. Sigue supervisando asuntos de pre‑demanda y litigio que implican pérdidas significativas, como lesiones catastróficas, negligencia médica, accidentes de vehículos y casos de muerte por negligencia.',
+              bio_p2:
+                'Craig Goldenfarb es un abogado experto en lesiones personales y un ponente reconocido a nivel nacional ante organizaciones comunitarias, abogados y otros profesionales del derecho sobre una amplia variedad de temas relacionados con el derecho de lesiones personales, el litigio civil y el sistema de justicia. Es fundador de varias iniciativas benéficas que apoyan la educación superior y la salud del corazón.',
+              bio_p3:
+                'Craig y su familia viven en el condado de Palm Beach. Cuando no está luchando por sus clientes, le gusta apoyar a organizaciones comunitarias locales y pasar tiempo con su esposa e hijos.',
+              case1_amount: '$3.5M',
+              case1_caption: 'Motociclista fallecido por conductor ebrio',
+              case2_amount: '$375,000',
+              case2_caption: 'El auto del cliente fue rayado ("keyed")',
+            },
+            spencer_kuvin: {
+              bio_heading: 'Spencer Kuvin: Un destacado abogado de lesiones personales',
+              bio_p1:
+                'Aunque comenzó su carrera defendiendo a grandes corporaciones multinacionales y compañías de seguros, Spencer Kuvin ha pasado los últimos 20 años de su distinguida trayectoria representando a personas frente a esos mismos gigantes, disfrutando el reto de ponerse del lado de quienes aparentemente tienen las probabilidades en contra.',
+              bio_p2:
+                'Como Director Jurídico y de Litigios de GOLDLAW, Spencer maneja muchos de los casos de lesiones personales más críticos del bufete. Ha tenido especial éxito dirigiendo el proceso de litigio en casos de alto perfil relacionados con muerte por negligencia, abuso y negligencia en asilos, agresión sexual, choques automovilísticos y lesiones cerebrales.',
+              case1_amount: '$7.25M',
+              case1_caption: 'Muerte por negligencia de un menor en accidente automovilístico (Francisco, Rivera v. Safeco)',
+              case2_amount: '$5.25M',
+              case2_caption: 'Choque automovilístico con colisión trasera (Higgins v. Geico)',
+            },
+            jorge_maxion: {
+              bio_heading: 'Jorge L. Maxion: Una carrera diversa en el derecho de lesiones personales',
+              bio_p1:
+                'Durante su labor como Magistrado, Jorge presidió mociones previas al juicio y juicios sin jurado en casos de ejecución hipotecaria, en un momento en que Florida tenía uno de los mayores atrasos del país tras la crisis inmobiliaria de 2007‑2008.',
+              bio_p2:
+                'Hoy aplica esa experiencia en litigios para preparar de forma eficiente los casos de lesiones personales para juicio y obtener una compensación justa para los clientes lesionados, al tiempo que sirve a la comunidad hispana como abogado bilingüe y colaborador frecuente en programas de radio comunitarios.',
+              case1_amount: '$2.3M',
+              case1_caption: 'Caso de caída con lesiones graves',
+              case2_amount: '$810K',
+              case2_caption: 'Caso de resbalón y caída',
+            },
+            jeffrey_kirby: {
+              bio_heading: 'Jeffrey D. Kirby: Un abogado hábil en lesiones personales',
+              bio_p1:
+                'Tras graduarse de la facultad de derecho Cumberland de la Universidad Samford, Jeffrey Kirby comenzó su carrera en la defensa de lesiones personales, representando a compañías de seguros y empresas auto‑aseguradas.',
+              bio_p2:
+                'Desde el año 2000 litiga casos de lesiones personales en nombre de clientes lesionados y sus familias, con una amplia experiencia en atropellos a peatones, negligencia médica, abuso en asilos, accidentes automovilísticos, seguridad negligente y productos defectuosos.',
+              case1_amount: '$7.2M',
+              case1_caption: 'Muerte por negligencia de un menor en accidente automovilístico (Francisco Rivera v. Safeco)',
+              case2_amount: '$5.2M',
+              case2_caption: 'Choque automovilístico con colisión trasera (Thomas Higgins v. GEICO)',
+            },
+            rafael_roca: {
+              bio_heading: 'Rafael Roca: Un defensor experto en casos de lesiones personales',
+              bio_p1:
+                'Nacido en Cuba y criado en Miami, Rafael Roca ha dedicado su carrera a representar a clientes lesionados y a servir a las comunidades hispanas del condado de Palm Beach.',
+              bio_p2:
+                'Como abogado certificado en juicio civil, ha obtenido millones de dólares en veredictos y acuerdos en casos de muerte por negligencia, accidentes automovilísticos catastróficos y resbalones y caídas, además de ocupar cargos de liderazgo en numerosas organizaciones cívicas y jurídicas.',
+              case1_amount: '$2.7M',
+              case1_caption: 'Acuerdo por colisión de camión en la I‑95',
+              case2_amount: '$2.5M',
+              case2_caption: 'Servin v. Construction Co. — muerte laboral por caída de pluma elevadora',
+            },
+            michael_wasserman: {
+              bio_heading: 'Michael Wasserman: De consultor de juicios a abogado de lesiones personales',
+              bio_p1:
+                'Después de graduarse de la Facultad de Derecho de Tulane, Michael Wasserman trabajó como consultor de juicios y luego como Defensor Público en Tallahassee y Miami durante casi una década, representando a clientes indigentes desde la primera comparecencia hasta el juicio por jurado en más de 50 juicios con jurado y más de 100 juicios en total.',
+              bio_p2:
+                'Posteriormente litigó casos de defensa de seguros y empleo antes de pasar al derecho de lesiones personales, donde ahora aporta décadas de experiencia en juicios a casos complejos de accidentes automovilísticos, responsabilidad de locales, negligencia médica, abuso y negligencia en asilos y muerte por negligencia.',
+              case1_amount: '$825K',
+              case1_caption: 'Responsabilidad de locales',
+              case2_amount: '$675K',
+              case2_caption: 'Abuso en asilo de ancianos',
+            },
+            paul_mcbride: {
+              bio_heading: 'Paul McBride: Un abogado dedicado a tus necesidades legales',
+              bio_p1:
+                'Graduado de la Facultad de Derecho Levin de la Universidad de Florida, Paul McBride fue presidente de la Asociación de Derecho Penal y vicepresidente ejecutivo del equipo de juicios, obteniendo el máximo reconocimiento de la UF por trabajo pro bono y realizando varios juicios con jurado antes de graduarse.',
+              bio_p2:
+                'Inspirado por sus propias experiencias con el sistema judicial, trabajó como fiscal manejando casos de víctimas especiales y violencia doméstica, luego se incorporó a una de las firmas de lesiones personales más grandes del país antes de unirse a GOLDLAW, donde lleva casos que van desde choques automovilísticos y caídas hasta muerte por negligencia, responsabilidad por productos, seguridad negligente, negligencia médica y agresión sexual.',
+              case1_amount: '$653K',
+              case1_caption: 'Caída en tienda de gran superficie — enfermera retirada requirió cirugía',
+              case2_amount: '$500K',
+              case2_caption: 'Bicicleta vs. camioneta — ciclista atropellado en paso de peatones',
+            },
+            timothy_kenison: {
+              bio_heading: 'Timothy Kenison: Abogado de juicio y apelaciones con pasión por la justicia',
+              bio_p1:
+                'Graduado de la Universidad de Florida y de la Facultad de Derecho Beasley de la Universidad Temple, Timothy Kenison comenzó su carrera en 2004 en la Oficina del Defensor Público del 15.º Circuito Judicial en West Palm Beach, donde llevó como primer abogado dieciséis juicios con jurado por delitos graves, incluidos agresión sexual capital y robo de vehículo, calificándolo para la certificación en derecho penal antes de pasar al ámbito civil.',
+              bio_p2:
+                'Posteriormente defendió a hospitales y proveedores médicos antes de unirse a GOLDLAW en 2020, donde combina su experiencia en juicios y apelaciones para representar a víctimas de negligencia en casos complejos de lesiones personales y negligencia médica.',
+              case1_amount: '$3.5M',
+              case1_caption: 'Acuerdo confidencial — caso de abuso y negligencia en centro de vida asistida',
+              case2_amount: '$700K',
+              case2_caption: 'Acuerdo confidencial — seguridad negligente en centro comercial con lesión de rodilla',
+            },
+            michael_kugler: {
+              bio_heading: 'Michael Kugler: De fiscal estatal a defensor de las víctimas',
+              bio_p1:
+                'Michael Kugler comenzó su carrera jurídica en la Oficina del Fiscal Estatal del condado de Palm Beach, donde llevó a cabo más de 100 juicios con jurado por todo tipo de delitos, desde DUI hasta agresión sexual capital y casos de pena de muerte, dando voz a víctimas infantiles como parte de la Unidad de Víctimas Especiales.',
+              bio_p2:
+                'Ahora persigue casos de lesiones catastróficas y muerte por negligencia contra grandes fabricantes de automóviles, compañías de dispositivos médicos y grandes sistemas hospitalarios, combinando tenacidad, compasión y un fuerte sentido de la ética en su trabajo para las víctimas de negligencia.',
+              case1_amount: '$8.0M',
+              case1_caption: 'Acuerdo confidencial — negligencia médica',
+              case2_amount: '$5.0M',
+              case2_caption: 'Acuerdo confidencial — lesión de nacimiento',
+            },
+            ursula_cogswell: {
+              bio_heading: 'Ursula C. Cogswell: Abogada litigante veterana y defensora compasiva',
+              bio_p1:
+                'Ursula C. Cogswell es una litigante civil con más de 20 años de experiencia en sala, reconocida por su visión estratégica y habilidades de juicio.',
+              bio_p2:
+                'Maneja una amplia gama de asuntos graves de lesiones personales, incluidos accidentes de vehículos y camiones, responsabilidad de locales y productos, accidentes en obras de construcción, seguridad negligente, ahogamientos accidentales, muerte por negligencia, lesiones cerebrales traumáticas, agresión sexual, abuso y negligencia en asilos, negligencia médica y reclamaciones multijurisdiccionales complejas.',
+            },
+            bryan_graves: {
+              bio_heading: 'Bryan Graves: Defensor de los lesionados',
+              bio_p1:
+                'Nacido y criado en el sur de Florida, Bryan Graves ha dedicado su carrera a luchar por las víctimas de lesiones y a exigir responsabilidad a grandes corporaciones y compañías de seguros.',
+              bio_p2:
+                'Comenzó su práctica en las Islas Vírgenes de EE. UU., trabajando en acciones colectivas complejas relacionadas con exposición a asbesto y demandas contra la industria tabacalera, y hoy representa a clientes en el sur de Florida y la Costa del Tesoro en casos de accidentes de auto, motocicleta y camión, muerte por negligencia, responsabilidad por productos, seguridad negligente, responsabilidad de locales, lesiones laborales y víctimas de delitos violentos.',
+            },
           },
           contact: {
             eyebrow: 'EMPECEMOS',

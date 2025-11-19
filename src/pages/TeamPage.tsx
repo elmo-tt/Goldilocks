@@ -37,6 +37,7 @@ export default function TeamPage() {
 
   const DETAILS: Record<string, AttorneyDetail> = {
     'Craig M. Goldenfarb, Esq.': {
+      code: 'craig_goldenfarb',
       bioHeading: 'Craig Goldenfarb: A Leader and Expert Personal Injury Lawyer',
       bioParagraphs: [
         "After a highly successful career as a litigator, Craig's primary focus is building the teams that directly manage client cases, and overseeing the firm's largest cases. He still oversees pre-suit and litigation matters that involve significant loss, such as catastrophic injury, medical malpractice, vehicle accidents, and wrongful death cases.",
@@ -55,6 +56,7 @@ export default function TeamPage() {
       ],
     },
     'Spencer T. Kuvin, Esq.': {
+      code: 'spencer_kuvin',
       bioHeading: 'Spencer Kuvin: A Leading Personal Injury Lawyer',
       bioParagraphs: [
         'Although he began his career defending large, multi-national corporations and insurance companies, Spencer Kuvin has spent the last 20 years of his highly distinguished legal career representing folks against the giants he once defended, relishing the challenge of standing up for those that seemingly have the odds stacked against them.',
@@ -81,6 +83,7 @@ export default function TeamPage() {
       ],
     },
     'Jorge L. Maxion, Esq.': {
+      code: 'jorge_maxion',
       bioHeading: 'Jorge L. Maxion: A Diverse Career in Personal Injury Law',
       bioParagraphs: [
         'During his tenure as a Magistrate, Jorge presided over pretrial motions and non-jury trials in foreclosure cases when Florida faced one of the highest foreclosure backlogs in the nation.',
@@ -104,6 +107,7 @@ export default function TeamPage() {
       ],
     },
     'Jeffrey D. Kirby, Esq.': {
+      code: 'jeffrey_kirby',
       bioHeading: 'Jeffrey D. Kirby: A Skilled Personal Injury Lawyer',
       bioParagraphs: [
         'After graduating from the Samford University Cumberland School of Law, Jeffrey Kirby began his career in personal injury defense, representing insurance companies and self-insured businesses.',
@@ -127,6 +131,7 @@ export default function TeamPage() {
       ],
     },
     'Rafael J. Roca, Esq. BSC.': {
+      code: 'rafael_roca',
       bioHeading: 'Rafael Roca: A Skilled Advocate for Personal Injury Cases',
       bioParagraphs: [
         'Born in Cuba and raised in Miami, Rafael Roca has devoted his career to representing injured clients and serving Hispanic communities in Palm Beach County.',
@@ -152,6 +157,7 @@ export default function TeamPage() {
       ],
     },
     'Michael A. Wasserman, Esq.': {
+      code: 'michael_wasserman',
       bioHeading: 'Michael Wasserman: From Trial Consultant to Personal Injury Lawyer',
       bioParagraphs: [
         'After graduating from Tulane University School of Law, Michael Wasserman worked as a trial consultant and Public Defender in Tallahassee and Miami, trying more than 50 jury trials and over 100 trials total.',
@@ -177,6 +183,7 @@ export default function TeamPage() {
       ],
     },
     'Paul McBride, Esq.': {
+      code: 'paul_mcbride',
       bioHeading: 'Paul McBride: A Dedicated Lawyer for Your Legal Needs',
       bioParagraphs: [
         'A graduate of the Levin College of Law at the University of Florida, Paul McBride served as President of the Criminal Law Association and Executive VP of the Trial Team, earning UF’s highest pro bono honor and trying several jury trials before graduation.',
@@ -201,6 +208,7 @@ export default function TeamPage() {
       ],
     },
     'Timothy D. Kenison, Esq.': {
+      code: 'timothy_kenison',
       bioHeading: 'Timothy Kenison: A Trial and Appellate Attorney with a Passion for Justice',
       bioParagraphs: [
         'A graduate of the University of Florida and Temple University Beasley School of Law, Timothy Kenison began his career as a Public Defender in West Palm Beach, trying sixteen felony jury trials as first chair in serious cases including capital sexual battery and carjacking.',
@@ -218,6 +226,7 @@ export default function TeamPage() {
       ],
     },
     'Michael H. Kugler, Esq.': {
+      code: 'michael_kugler',
       bioHeading: 'Michael Kugler: From State Attorney to Champion for Victims',
       bioParagraphs: [
         'Michael Kugler began his legal career at the Office of the State Attorney in Palm Beach County, trying over 100 jury trials ranging from DUI to capital sexual battery and death penalty cases, and giving a voice to child victims as part of the Special Victims Unit.',
@@ -242,6 +251,7 @@ export default function TeamPage() {
       ],
     },
     'Ursula C. Cogswell, Esq.': {
+      code: 'ursula_cogswell',
       bioHeading: 'Ursula C. Cogswell: Veteran Trial Attorney and Compassionate Advocate',
       bioParagraphs: [
         'Ursula C. Cogswell is a dedicated civil litigator with more than 20 years of courtroom experience, known for her strategic insight and trial acumen.',
@@ -256,6 +266,7 @@ export default function TeamPage() {
       cases: [],
     },
     'Bryan Graves, Esq.': {
+      code: 'bryan_graves',
       bioHeading: 'Bryan Graves: Advocate for the Injured',
       bioParagraphs: [
         'South Florida native Bryan Graves has devoted his career to fighting for injury victims and holding large corporations and insurers accountable.',
@@ -331,6 +342,7 @@ type AttorneyPanelProps = {
 }
 
 type AttorneyDetail = {
+  code: string
   bioHeading: string
   bioParagraphs: string[]
   education: { school: string; detail: string; year?: string }[]
@@ -340,6 +352,27 @@ type AttorneyDetail = {
 }
 
 function AttorneyPanel({ lawyer, imageSrc, details, onClose }: AttorneyPanelProps) {
+  const { t, i18n } = useTranslation()
+  const isEs = i18n.language.startsWith('es')
+
+  const localizedBioParagraphs = details
+    ? details.bioParagraphs.map((p, idx) =>
+        isEs
+          ? t(`team_attorney_details.${details.code}.bio_p${idx + 1}`, { defaultValue: p })
+          : p
+      )
+    : []
+
+  const localizedCases = details?.cases
+    ? details.cases.map((c, idx) => ({
+        amount: isEs
+          ? t(`team_attorney_details.${details.code}.case${idx + 1}_amount`, { defaultValue: c.amount })
+          : c.amount,
+        caption: isEs
+          ? t(`team_attorney_details.${details.code}.case${idx + 1}_caption`, { defaultValue: c.caption })
+          : c.caption,
+      }))
+    : []
   return (
     <div className="attorney-overlay" role="dialog" aria-modal="true">
       <div
@@ -355,7 +388,7 @@ function AttorneyPanel({ lawyer, imageSrc, details, onClose }: AttorneyPanelProp
             </div>
             {details?.education?.length ? (
               <div className="attorney-section">
-                <div className="attorney-section-title">Education</div>
+                <div className="attorney-section-title">{t('team_attorney.education')}</div>
                 {details.education.map((edu) => (
                   <div key={edu.school + edu.detail} className="attorney-edu-item">
                     <div>
@@ -369,7 +402,7 @@ function AttorneyPanel({ lawyer, imageSrc, details, onClose }: AttorneyPanelProp
             ) : null}
             {details?.affiliations && details.affiliations.length > 0 && (
               <div className="attorney-section">
-                <div className="attorney-section-title">Professional Affiliations</div>
+                <div className="attorney-section-title">{t('team_attorney.professional_affiliations')}</div>
                 <ul className="attorney-list">
                   {details.affiliations.map((item) => (
                     <li key={item}>{item}</li>
@@ -379,7 +412,7 @@ function AttorneyPanel({ lawyer, imageSrc, details, onClose }: AttorneyPanelProp
             )}
             {details?.awards && details.awards.length > 0 && (
               <div className="attorney-section">
-                <div className="attorney-section-title">Awards &amp; Accolades</div>
+                <div className="attorney-section-title">{t('team_attorney.awards')}</div>
                 <ul className="attorney-list">
                   {details.awards.map((item) => (
                     <li key={item}>{item}</li>
@@ -399,16 +432,16 @@ function AttorneyPanel({ lawyer, imageSrc, details, onClose }: AttorneyPanelProp
                 type="button"
                 onClick={onClose}
                 onTouchStart={onClose}
-                aria-label="Close profile"
+                aria-label={t('team_attorney.close_profile')}
               >
                 ×
               </button>
             </header>
             {details?.cases && details.cases.length > 0 && (
               <section className="attorney-notable">
-                <h3 className="attorney-subtitle">Notable case wins</h3>
+                <h3 className="attorney-subtitle">{t('team_attorney.notable_case_wins')}</h3>
                 <div className="attorney-cases">
-                  {details.cases.slice(0, 2).map((c) => (
+                  {localizedCases.slice(0, 2).map((c) => (
                     <div key={c.amount + c.caption} className="attorney-case-card">
                       <div className="attorney-case-amount">{c.amount}</div>
                       <div className="attorney-case-caption">{c.caption}</div>
@@ -420,9 +453,13 @@ function AttorneyPanel({ lawyer, imageSrc, details, onClose }: AttorneyPanelProp
             )}
             {details && (
               <section className="attorney-bio">
-                <h3 className="attorney-subtitle">{details.bioHeading}</h3>
+                <h3 className="attorney-subtitle">
+                  {isEs
+                    ? t(`team_attorney_details.${details.code}.bio_heading`, { defaultValue: details.bioHeading })
+                    : details.bioHeading}
+                </h3>
                 <div className="attorney-bio-copy">
-                  {details.bioParagraphs.map((p) => (
+                  {localizedBioParagraphs.map((p) => (
                     <p key={p}>{p}</p>
                   ))}
                 </div>

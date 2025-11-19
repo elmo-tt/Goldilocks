@@ -1,5 +1,6 @@
 import './FooterSection.css'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 
 export default function FooterSection() {
   const { t } = useTranslation()
@@ -78,7 +79,7 @@ export default function FooterSection() {
             <div className="fl-title">{t('footer.company')}</div>
             <ul className="fl-list">
               <li><a href="#">{t('footer.about')}</a></li>
-              <li><a href="#">{t('footer.team')}</a></li>
+              <li><Link to="/team">{t('footer.team')}</Link></li>
               <li><a href="#">{t('footer.careers')}</a></li>
               <li><a href="#">{t('footer.community')}</a></li>
               <li><a href="#">{t('footer.press')}</a></li>

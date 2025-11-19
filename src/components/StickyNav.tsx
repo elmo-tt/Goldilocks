@@ -6,6 +6,7 @@ import { PRACTICE_AREAS_MAP } from '@/pages/practice/areas'
 import './StickyNav.css'
 
 const ABOUT_LINKS = [
+  { label: 'Team', to: '/team' },
   { label: 'Testimonials', to: '/about/testimonials' },
   { label: 'Careers', to: '/about/careers' },
   { label: 'Community Events', to: '/about/community-events' },

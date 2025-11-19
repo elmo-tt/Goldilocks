@@ -8,6 +8,7 @@ import './i18n'
 import App from './App.tsx'
 import MotorAccidents from '@/pages/practice/MotorAccidents'
 import PracticeAreaPage from '@/pages/practice/PracticeAreaPage'
+import TeamPage from './pages/TeamPage'
 import ArticlesList from './pages/articles/ArticlesList'
 import ArticlePage from './pages/articles/ArticlePage'
 import ArticleTemplatePreview from './pages/templates/ArticleTemplatePreview'
@@ -24,6 +25,7 @@ createRoot(document.getElementById('root')!).render(
       <Suspense fallback={<div style={{ padding: 24 }}>Loading…</div>}>
         <Routes>
           <Route path="/" element={<App />} />
+          <Route path="/team" element={<TeamPage />} />
           <Route path="/practice/motor-accidents" element={<MotorAccidents />} />
           <Route path="/practice/:key" element={<PracticeAreaPage />} />
           <Route path="/login" element={<Login />} />

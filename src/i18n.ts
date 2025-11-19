@@ -116,6 +116,10 @@ void i18n
               r4_desc: 'Young child dies of undiagnosed illness',
             },
           },
+          team_page: {
+            title_muted: 'Meet our exceptional',
+            title_strong: 'team of attorneys',
+          },
           contact: {
             eyebrow: 'LET’S GET STARTED',
             title_muted: 'You made the right choice.',
@@ -443,6 +447,10 @@ void i18n
               r3_desc: 'Ng, Sandi v. Walmart — Veredicto',
               r4_desc: 'Niño pequeño fallece por enfermedad no diagnosticada',
             },
+          },
+          team_page: {
+            title_muted: 'Conoce a nuestro excepcional',
+            title_strong: 'equipo de abogados',
           },
           contact: {
             eyebrow: 'EMPECEMOS',

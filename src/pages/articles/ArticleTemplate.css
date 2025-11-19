@@ -47,6 +47,7 @@
 .article-body, .article-body * { overflow-wrap: break-word; word-break: normal; hyphens: auto; white-space: normal; max-width: 100%; }
 
 /* Markdown wrapper ensures shrinkage as well */
+.mk-body { display: grid; gap: 14px; }
 .mk-body, .mk-body * { min-width: 0; max-width: 100%; }
 
 @media (max-width: 600px) {
@@ -66,3 +67,22 @@
 .article-body img, .article-body video, .article-body iframe { max-width: 100%; height: auto; }
 .article-body pre, .article-body code { white-space: pre-wrap; word-break: break-word; }
 .article-body table { width: 100%; border-collapse: collapse; }
+
+.mk-body h1,
+.mk-body h2,
+.mk-body h3,
+.mk-body h4,
+.mk-body h5,
+.mk-body h6 { margin-top: 16px; }
+
+.mk-body h1 + p,
+.mk-body h2 + p,
+.mk-body h3 + p,
+.mk-body h4 + p,
+.mk-body h5 + p,
+.mk-body h6 + p { margin-top: 6px; }
+
+.mk-body ul,
+.mk-body ol { margin-top: 6px; }
+
+.mk-body blockquote { margin-top: 8px; }

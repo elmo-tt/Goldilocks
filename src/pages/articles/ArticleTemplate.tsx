@@ -53,7 +53,12 @@ function HtmlBody({ html, heroMaxWidth, excerpt }: { html: string; heroMaxWidth?
       return `<img${pre} src=${q}${placeholder}${q2} data-asset-id="${id}" data-src=${q}asset:${id}${q2}${post}>`
     }
   )
-  const safe = DOMPurify.sanitize(prepped, { ADD_ATTR: ['data-asset-id', 'data-width', 'data-align', 'data-caption-for', 'data-src'], ALLOW_UNKNOWN_PROTOCOLS: true })
+  const safe = DOMPurify.sanitize(prepped, {
+    ADD_ATTR: ['data-asset-id', 'data-width', 'data-align', 'data-caption-for', 'data-src'],
+    ALLOW_UNKNOWN_PROTOCOLS: true,
+    FORBID_ATTR: ['style'],
+    FORBID_TAGS: ['style', 'nobr'],
+  })
   useEffect(() => {
     const el = ref.current
     if (!el) return
@@ -209,7 +214,7 @@ function HtmlBody({ html, heroMaxWidth, excerpt }: { html: string; heroMaxWidth?
       for (const id of usedIds) AssetStore.revokeUrl(id)
     }
   }, [safe, heroMaxWidth])
-  return <div ref={ref} style={{ display: 'grid', gap: 14 }} dangerouslySetInnerHTML={{ __html: safe }} />
+  return <div ref={ref} style={{ display: 'grid', gap: 14, minWidth: 0, width: '100%' }} dangerouslySetInnerHTML={{ __html: safe }} />
 }
 
 export default function ArticleTemplate({ article }: { article: Article }) {
@@ -333,7 +338,7 @@ export default function ArticleTemplate({ article }: { article: Article }) {
     <>
       <section className="hiw article-shell">
         <div className="hiw-inner" style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ display: 'grid', rowGap: 16 }}>
+          <div className="article-head" style={{ display: 'grid', rowGap: 16, maxWidth: 840, width: '100%' }}>
             <div
               className="eyebrow"
               style={{
@@ -347,7 +352,7 @@ export default function ArticleTemplate({ article }: { article: Article }) {
             >
               {useMemo(() => PRACTICE_AREAS.find(p => p.key === article.category)?.label || t('related.category_fallback'), [article.category, t])}
             </div>
-            <h1 className="hiw-title" style={{ margin: 0, fontSize: 40, fontWeight: 400, lineHeight: 1.25 }}>
+            <h1 className="hiw-title" style={{ margin: 0, fontSize: 40, fontWeight: 400, lineHeight: 1.25, maxWidth: '22ch', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
               <span className="strong">{(() => {
                 const isEs = i18n.language?.startsWith('es')
                 const slug = article.slug
@@ -384,11 +389,11 @@ export default function ArticleTemplate({ article }: { article: Article }) {
           const markExcerptEs = isEs ? getMarked(src.body || '', 'excerpt', 'es') : ''
           const ex = (isEs ? ((src as any).excerpt_es || tExcerptEs || markExcerptEs) : undefined) || src.excerpt
           return ex ? (
-            <p className="article-excerpt" style={{ margin: '0 0 16px', color: 'rgba(255,255,255,0.78)' }}>{ex}</p>
+            <p className="article-excerpt" style={{ margin: '0 0 16px', color: 'rgba(255,255,255,0.78)', maxWidth: 840, width: '100%' }}>{ex}</p>
           ) : null
         })()}
 
-        <div className="article-body" style={{ display: 'grid', gap: 14, lineHeight: 1.7, color: 'rgba(255,255,255,0.9)', maxWidth: 840 }}>
+        <div className="article-body" style={{ display: 'grid', gap: 14, lineHeight: 1.7, color: 'rgba(255,255,255,0.9)', maxWidth: 840, width: '100%' }}>
           {(() => {
             const isEs = i18n.language?.startsWith('es')
             const slug = article.slug
@@ -472,36 +477,38 @@ function normalizeMarkdown(text?: string, excerpt?: string) {
 function BodyRenderer({ body, excerpt }: { body?: string; excerpt?: string }) {
   if (!body) return null
   return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      components={{
-        a: (props: any) => <a href={props.href} target="_blank" rel="noopener noreferrer">{props.children}</a>,
-        img: (props: any) => {
-          const src = String(props.src || '')
-          const alt = String(props.alt || '')
-          const caption = typeof props.title === 'string' && props.title.trim() ? props.title.trim() : ''
-          const imgEl = src.startsWith('asset:')
-            ? <InlineAssetImage id={src.slice(6)} alt={alt} title={caption} />
-            : <img src={src} alt={alt} style={{ width: '100%', borderRadius: 8 }} />
-          if (!caption) return imgEl
-          return (
-            <figure style={{ margin: 0 }}>
-              {imgEl}
-              <figcaption style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, fontStyle: 'italic', marginTop: 6 }}>{caption}</figcaption>
-            </figure>
-          )
-        },
-        h1: (p: any) => <h2 style={{ color: '#fff', margin: 0 }} {...p} />,
-        h2: (p: any) => <h3 style={{ color: '#fff', margin: 0 }} {...p} />,
-        h3: (p: any) => <h4 style={{ color: '#fff', margin: 0 }} {...p} />,
-        p: (p: any) => <p style={{ margin: 0 }} {...p} />,
-        ul: (p: any) => <ul style={{ margin: 0, paddingLeft: 20 }} {...p} />,
-        ol: (p: any) => <ol style={{ margin: 0, paddingLeft: 22 }} {...p} />,
-        blockquote: (p: any) => <blockquote style={{ margin: 0, paddingLeft: 14, borderLeft: '3px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.85)' }} {...p} />,
-      }}
-    >
-      {normalizeMarkdown(body, excerpt)}
-    </ReactMarkdown>
+    <div className="mk-body" style={{ minWidth: 0, width: '100%' }}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          a: (props: any) => <a href={props.href} target="_blank" rel="noopener noreferrer">{props.children}</a>,
+          img: (props: any) => {
+            const src = String(props.src || '')
+            const alt = String(props.alt || '')
+            const caption = typeof props.title === 'string' && props.title.trim() ? props.title.trim() : ''
+            const imgEl = src.startsWith('asset:')
+              ? <InlineAssetImage id={src.slice(6)} alt={alt} title={caption} />
+              : <img src={src} alt={alt} style={{ width: '100%', borderRadius: 8 }} />
+            if (!caption) return imgEl
+            return (
+              <figure style={{ margin: 0 }}>
+                {imgEl}
+                <figcaption style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, fontStyle: 'italic', marginTop: 6 }}>{caption}</figcaption>
+              </figure>
+            )
+          },
+          h1: (p: any) => <h2 style={{ color: '#fff', margin: 0 }} {...p} />,
+          h2: (p: any) => <h3 style={{ color: '#fff', margin: 0 }} {...p} />,
+          h3: (p: any) => <h4 style={{ color: '#fff', margin: 0 }} {...p} />,
+          p: (p: any) => <p style={{ margin: 0 }} {...p} />,
+          ul: (p: any) => <ul style={{ margin: 0, paddingLeft: 20 }} {...p} />,
+          ol: (p: any) => <ol style={{ margin: 0, paddingLeft: 22 }} {...p} />,
+          blockquote: (p: any) => <blockquote style={{ margin: 0, paddingLeft: 14, borderLeft: '3px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.85)' }} {...p} />,
+        }}
+      >
+        {normalizeMarkdown(body, excerpt)}
+      </ReactMarkdown>
+    </div>
   )
 }
 

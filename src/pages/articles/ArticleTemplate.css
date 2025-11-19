@@ -34,3 +34,35 @@
 @media (min-width: 769px) {
   .article-shell { padding-top: 152px; }
 }
+
+/* Content width and wrapping */
+.article-shell .hiw-inner { min-width: 0; width: 100%; display: grid; grid-template-columns: minmax(0, 1fr); padding-inline: clamp(24px, 8vw, 160px) !important; }
+.article-shell .hiw-inner > * { min-width: 0; max-width: 100%; }
+.article-head { display: grid; row-gap: 16px; max-width: 840px; width: 100%; min-width: 0; }
+.article-head, .article-head * { overflow-wrap: break-word; word-break: normal; hyphens: auto; white-space: normal; }
+.article-head .hiw-title { max-width: 22ch; width: 100%; }
+.article-excerpt { max-width: 840px; width: 100%; min-width: 0; }
+.article-body { max-width: 840px; width: 100%; min-width: 0; }
+.article-body > * { min-width: 0; max-width: 100%; }
+.article-body, .article-body * { overflow-wrap: break-word; word-break: normal; hyphens: auto; white-space: normal; max-width: 100%; }
+
+/* Markdown wrapper ensures shrinkage as well */
+.mk-body, .mk-body * { min-width: 0; max-width: 100%; }
+
+@media (max-width: 600px) {
+  .article-head .hiw-title { font-size: clamp(28px, 8vw, 36px); line-height: 1.2; }
+}
+
+/* Normalize default margins so grid gap controls spacing */
+.article-body p,
+.article-body h1,
+.article-body h2,
+.article-body h3,
+.article-body h4,
+.article-body h5,
+.article-body h6 { margin: 0; }
+
+/* Safe defaults for rich content */
+.article-body img, .article-body video, .article-body iframe { max-width: 100%; height: auto; }
+.article-body pre, .article-body code { white-space: pre-wrap; word-break: break-word; }
+.article-body table { width: 100%; border-collapse: collapse; }

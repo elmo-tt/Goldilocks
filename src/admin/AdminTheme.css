@@ -34,16 +34,27 @@
 /* font-size handled by clamp above to prevent overflow/clipping */
 
 /* Marketing layout and shared controls */
-.ops .marketing-layout{ display:grid; grid-template-columns: 1fr 360px; gap:16px; }
+.ops .marketing-layout{ display:grid; grid-template-columns: minmax(0,1fr) 360px; gap:16px; }
+.ops .marketing-layout > *{ min-width: 0; }
 .ops .right-rail{ position: sticky; top: 72px; height: calc(100vh - 88px); overflow: auto; display: grid; gap: 12px; overflow-x: hidden; }
 .ops .right-rail > *{ min-width: 0; }
 .ops .panel{ background: var(--ops-blue-2); border:1px solid var(--ops-border); border-radius:12px; padding:16px; box-sizing: border-box; }
 .ops .panel h4{ margin:0 0 8px; font-size:14px; color:var(--ops-muted); font-weight:600; }
 .ops .panel .actions{ display:flex; gap:8px; margin-top:8px; flex-wrap: wrap; }
 .ops .panel *{ min-width: 0; }
+.ops .card{ min-width: 0; max-width: 100%; }
 .ops .input, .ops textarea{ width:100%; background: var(--ops-blue-3); color: var(--ops-text); border:1px solid var(--ops-border); border-radius:10px; padding:10px 12px; }
 .ops .panel input, .ops .panel textarea{ max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
 .ops textarea{ min-height: 120px; resize: vertical; }
+
+/* Ensure TipTap editor content never overflows horizontally */
+.ops .rich-editor{ min-width: 0; max-width: 100%; overflow-wrap: break-word; word-break: break-word; white-space: normal; }
+.ops .rich-editor .ProseMirror{ min-width: 0; max-width: 100%; }
+.ops .rich-editor *{ max-width: 100%; }
+.ops .rich-editor pre, .ops .rich-editor code{ white-space: pre-wrap; word-break: break-word; }
+.ops .rich-editor table{ width: 100%; border-collapse: collapse; }
+.ops .rich-editor img, .ops .rich-editor video, .ops .rich-editor iframe{ max-width: 100%; height: auto; display: block; }
+.ops .rich-editor [style*="white-space:nowrap"], .ops .rich-editor nobr{ white-space: normal !important; }
 .ops .button{ background:#12306a; border:1px solid #1b3d84; color:#dfe8ff; padding:10px 12px; border-radius:10px; cursor:pointer; }
 .ops .button:hover{ filter:brightness(1.05); }
 .ops[data-theme='light'] .button{ background:#eef2ff; border:1px solid #c7d2fe; color:#1e293b; }

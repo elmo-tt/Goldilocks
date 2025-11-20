@@ -25,7 +25,7 @@ export const PRACTICE_AREAS_MAP: Record<string, PracticeAreaData> = {
   'accidental-drownings': {
     key: 'accidental-drownings',
     name: 'Accidental Drownings',
-    heroUrl: '/images/practice/accidental-drowning/accidental-drowning-hero.jpeg',
+    heroUrl: '/images/practice/accidental-drowning/accidental-drowning-hero.webp',
     benefitsImageUrl: '/images/practice/accidental-drowning/accidental-drowning-benefits.jpeg',
     headline: 'Legal Action After a Preventable Drowning',
     details: 'From pools to open water, drownings often stem from poor warnings, unsafe conditions, or failed oversight. We document what went wrong and hold owners/operators accountable so families can focus on healing.',

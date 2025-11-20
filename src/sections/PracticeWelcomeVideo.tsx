@@ -154,14 +154,17 @@ export default function PracticeWelcomeVideo({
       <div className="video-shell">
         {!playing && (
           <>
-            <img
-              className="ph"
-              src={placeholderSrc}
-              alt={titleText}
-              width={346}
-              height={195}
-              loading="lazy"
-            />
+            <picture>
+              <source srcSet="/images/practice/welcome-video-placeholder.webp" type="image/webp" />
+              <img
+                className="ph"
+                src={placeholderSrc}
+                alt={titleText}
+                width={346}
+                height={195}
+                loading="lazy"
+              />
+            </picture>
             <button className="play" type="button" aria-label={t('practice_welcome.play_label')} onClick={start}>
               <svg viewBox="0 0 48 48" width="28" height="28" aria-hidden="true" focusable="false">
                 <path fill="#fff" d="M19 16l14 8-14 8z"/>

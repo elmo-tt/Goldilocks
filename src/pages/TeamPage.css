@@ -40,8 +40,11 @@
 
 .attorney-overlay {
   position: fixed;
-  inset: 0;
-  z-index: 2000;
+  left: 0;
+  right: 0;
+  top: var(--nav-stack-h, 64px);
+  bottom: 0;
+  z-index: 10; /* below sticky nav so nav always sits visually and interactively on top */
 }
 
 .attorney-backdrop {
@@ -290,14 +293,19 @@
 
 @media (max-width: 640px) {
   .attorney-panel {
-    padding: 18px 12px;
+    padding: 18px 12px; /* restore top padding so the card sits below the nav/backdrop edge */
   }
 
   .attorney-inner {
     min-height: auto;
+    margin-top: 0; /* allow a natural gap between card and nav while backdrop touches nav */
   }
 
   .attorney-cases {
     grid-template-columns: 1fr;
+  }
+
+  .attorney-header {
+    margin-top: 0;
   }
 }

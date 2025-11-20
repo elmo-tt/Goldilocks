@@ -85,8 +85,8 @@
 
 .attorney-close {
   position: absolute;
-  top: 18px;
-  right: 22px;
+  top: 0px;
+  right: 0px;
   width: 36px;
   height: 36px;
   border-radius: 999px;

@@ -4,8 +4,8 @@ export const PRACTICE_AREAS_MAP: Record<string, PracticeAreaData> = {
   'motor-accidents': {
     key: 'motor-accidents',
     name: 'Motor Accidents',
-    heroUrl: '/images/practice/motor-accidents-hero.png',
-    benefitsImageUrl: '/images/practice/motor-accidents-benefits.jpg',
+    heroUrl: '/images/practice/car-accidents/motor-accidents-hero.png',
+    benefitsImageUrl: '/images/practice/car-accidents/motor-accidents-benefits.jpg',
     headline: 'Turning Crash Claims Into Cash Outcomes',
     details: 'From fender benders to catastrophic collisions, Goldlaw navigates the legal roadblocks so you can recover with peace of mind.',
     ratingScore: '4.8',
@@ -14,8 +14,8 @@ export const PRACTICE_AREAS_MAP: Record<string, PracticeAreaData> = {
   'car-accidents': {
     key: 'car-accidents',
     name: 'Car Accidents',
-    heroUrl: '/images/practice/motor-accidents-hero.png',
-    benefitsImageUrl: '/images/practice/motor-accidents-benefits.jpg',
+    heroUrl: '/images/practice/car-accidents/motor-accidents-hero.png',
+    benefitsImageUrl: '/images/practice/car-accidents/motor-accidents-benefits.jpg',
     headline: 'Turning Crash Claims Into Cash Outcomes',
     details: 'From fender benders to catastrophic collisions, Goldlaw navigates the legal roadblocks so you can recover with peace of mind.',
     ratingScore: '4.8',

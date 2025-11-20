@@ -1,5 +1,6 @@
 import { getBackend } from '../config'
 import { CloudArticlesStore } from './cloud'
+import { supabase } from '../cloud/supabaseClient'
 
 export type ArticleStatus = 'draft' | 'published'
 
@@ -151,41 +152,33 @@ function ensureUniqueSlug(base: string, list: Article[], ignoreId?: string) {
 
 // Hydrate local cache from Supabase on startup in supabase mode
 if (getBackend() === 'supabase') {
-  CloudArticlesStore.all().then((remote) => {
-    if (!Array.isArray(remote)) return
-    const local = readAll()
-    if (local.length === 0) { writeAll(remote as Article[]); return }
-    // Merge by id, prefer the newer updatedAt. Preserve local-only flags when remote schema lacks them.
-    const map = new Map<string, Article>()
-    for (const r of remote as Article[]) map.set(r.id, r)
-    const merged: Article[] = []
-    const seen = new Set<string>()
-    for (const l of local) {
-      const r = map.get(l.id)
-      if (r) {
-        if (r.updatedAt >= l.updatedAt) {
-          const chosen: Article = { ...r }
-          // If remote doesn't carry 'featured' but local does, keep local value.
+  // Avoid wiping local cache when Supabase credentials are missing
+  if (supabase) {
+    CloudArticlesStore.all().then((remote) => {
+      if (!Array.isArray(remote)) return
+      const remoteArr = remote as Article[]
+      // Remote-as-source-of-truth: start from remote, optionally preserve select local-only flags
+      const local = readAll()
+      const byIdLocal = new Map(local.map(l => [l.id, l] as const))
+      const merged: Article[] = []
+      for (const r of remoteArr) {
+        const l = byIdLocal.get(r.id)
+        const chosen: Article = { ...r }
+        // If remote doesn’t carry optional fields but local does, preserve them
+        if (l) {
           if ((chosen as any).featured === undefined && (l as any).featured !== undefined) {
             (chosen as any).featured = (l as any).featured
           }
-          // Preserve local-only 'category' if remote lacks it
           if ((chosen as any).category === undefined && (l as any).category !== undefined) {
             (chosen as any).category = (l as any).category
           }
-          merged.push(chosen)
-        } else {
-          merged.push(l)
         }
-        seen.add(l.id)
-      } else {
-        merged.push(l)
+        merged.push(chosen)
       }
-    }
-    for (const r of remote as Article[]) { if (!seen.has(r.id)) merged.push(r) }
-    merged.sort((a,b) => b.updatedAt - a.updatedAt)
-    writeAll(merged)
-  }).catch(() => {})
+      merged.sort((a, b) => (b.updatedAt - a.updatedAt))
+      writeAll(merged)
+    }).catch(() => {})
+  }
 }
 
 export const ArticlesStore = LocalArticlesStore

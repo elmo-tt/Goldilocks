@@ -9,6 +9,8 @@ import { useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { ArticlesStore } from '@/shared/articles/store'
 import { useTranslation } from 'react-i18next'
+import { getBackend } from '@/shared/config'
+import { CloudArticlesStore } from '@/shared/articles/cloud'
 
 export default function ArticlePage() {
   const { slug } = useParams<{ slug: string }>()
@@ -18,10 +20,17 @@ export default function ArticlePage() {
   // Scroll to top on article change
   useEffect(() => {
     window.scrollTo(0, 0)
-    setA(slug ? ArticlesStore.getBySlug(slug) : undefined)
-    const on = () => setA(slug ? ArticlesStore.getBySlug(slug) : undefined)
+    let cancelled = false
+    const updateFromLocal = () => setA(slug ? ArticlesStore.getBySlug(slug) : undefined)
+    updateFromLocal()
+    const on = () => updateFromLocal()
     window.addEventListener('gl:articles-updated', on as any)
-    return () => window.removeEventListener('gl:articles-updated', on as any)
+    if (getBackend() === 'supabase' && slug) {
+      CloudArticlesStore.getBySlug(slug).then((res) => {
+        if (!cancelled) setA(res as any)
+      }).catch(() => {})
+    }
+    return () => { cancelled = true; window.removeEventListener('gl:articles-updated', on as any) }
   }, [slug])
 
   return (

@@ -10,6 +10,8 @@ import { AssetStore } from '@/shared/assets/store'
 import { PRACTICE_AREAS } from '@/admin/data/goldlaw'
 import { useTranslation } from 'react-i18next'
 import { ensureSpanishForArticle } from '@/shared/translate/service'
+import { getBackend } from '@/shared/config'
+import { CloudArticlesStore } from '@/shared/articles/cloud'
 
 function formatDate(ts?: number) {
   if (!ts) return ''
@@ -38,6 +40,15 @@ function usePublished() {
     const on = () => setItems(ArticlesStore.published())
     window.addEventListener('gl:articles-updated', on as any)
     return () => window.removeEventListener('gl:articles-updated', on as any)
+  }, [])
+  useEffect(() => {
+    let cancelled = false
+    if (getBackend() !== 'supabase') return
+    CloudArticlesStore.published().then((list) => {
+      if (cancelled) return
+      if (Array.isArray(list)) setItems(list as Article[])
+    }).catch(() => {})
+    return () => { cancelled = true }
   }, [])
   return items
 }

@@ -26,10 +26,10 @@ export default function HeroSection() {
             <span className="label">{t('hero.as_featured_on')}</span>
             <span className="divider" aria-hidden="true"></span>
             <div className="logos">
-              <img src="/SVG/CNN.svg" alt="CNN" />
-              <img src="/SVG/TMZ_Logo.svg" alt="TMZ" />
-              <img src="/SVG/ABC_News_logo_2021.svg" alt="ABC News" />
-              <img src="/SVG/MSNBC_2015-2021_logo.svg" alt="MSNBC" className="msnbc" />
+              <img src="/SVG/CNN.svg" alt="CNN" width={88} height={22} />
+              <img src="/SVG/TMZ_Logo.svg" alt="TMZ" width={88} height={22} />
+              <img src="/SVG/ABC_News_logo_2021.svg" alt="ABC News" width={88} height={22} />
+              <img src="/SVG/MSNBC_2015-2021_logo.svg" alt="MSNBC" className="msnbc" width={88} height={22} />
             </div>
           </div>
         </div>
@@ -48,13 +48,13 @@ export default function HeroSection() {
           </div>
           <div className="hero-card rating-card">
             <div className="rating-top">
-              <img src="/SVG/wreath.svg" alt="" aria-hidden="true" className="wreath" />
+              <img src="/SVG/wreath.svg" alt="" aria-hidden="true" className="wreath" width={155} height={155} />
               <div className="rating-overlay">
                 <div className="stars">
                   <span className="rating-score">4.8</span>
                   <span className="rating-outof">/ 5.0</span>
                   <span className="rating-reviews">{t('hero.rating_from_reviews')}</span>
-                  <img src="/SVG/Google__G__logo.svg" alt="Google" className="google-g" />
+                  <img src="/SVG/Google__G__logo.svg" alt="Google" className="google-g" width={18} height={18} />
                 </div>
               </div>
             </div>

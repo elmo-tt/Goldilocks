@@ -49,13 +49,13 @@ export default function PracticeBento({
             <div className="pb-scorebox">
               <div className="rating-card">
                 <div className="rating-top">
-                  <img src="/SVG/wreath.svg" alt="" aria-hidden="true" className="wreath" />
+                  <img src="/SVG/wreath.svg" alt="" aria-hidden="true" className="wreath" width={155} height={155} />
                   <div className="rating-overlay">
                     <div className="stars">
                       <span className="rating-score">{String(ratingScore)}</span>
                       <span className="rating-outof">/ 5.0</span>
                       <span className="rating-reviews">{t('common.reviews_from_count', { count: ratingCount })}</span>
-                      <img src="/SVG/Google__G__logo.svg" alt="Google" className="google-g" />
+                      <img src="/SVG/Google__G__logo.svg" alt="Google" className="google-g" width={18} height={18} />
                     </div>
                   </div>
                 </div>

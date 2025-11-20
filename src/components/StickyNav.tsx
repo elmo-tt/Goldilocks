@@ -82,7 +82,7 @@ export default function StickyNav() {
         <div className="inner">
           <div className="left">
             <Link className="brand" to="/" aria-label="GOLDLAW home">
-              <img className="logo" src="/SVG/GOLDLAW_logo.svg" alt="GOLDLAW" />
+              <img className="logo" src="/SVG/GOLDLAW_logo.svg" alt="GOLDLAW" width={160} height={32} />
             </Link>
             <ul className="nav-links">
               <li className="has-dropdown">

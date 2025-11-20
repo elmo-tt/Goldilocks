@@ -70,7 +70,7 @@ export default function PracticeAreaTemplate({ area }: { area: PracticeAreaData 
       <section className="pa-hero" id="hero" style={style}>
         <div className="pa-block">
           <div className="pa-rating">
-            <img src="/SVG/Google__G__logo.svg" alt="Google" className="google-g" />
+            <img src="/SVG/Google__G__logo.svg" alt="Google" className="google-g" width={18} height={18} />
             <span className="score">{score} {t('common.rating')}</span>
             <span className="sep">•</span>
             <span className="reviews">{t('common.reviews_from_count', { count })}</span>

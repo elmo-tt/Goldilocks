@@ -78,7 +78,15 @@ export default function ArticlesSection() {
                 }}
               >
                 <a className="tile" href={a.href || '#'}>
-                  <div className="tile-image" style={{ backgroundImage: `url(${a.image})` }} />
+                  <div className="tile-image">
+                    <img
+                      src={a.image}
+                      alt={t(`articles.items.${a.id}.title`)}
+                      loading="lazy"
+                      width={400}
+                      height={240}
+                    />
+                  </div>
                   <div className="tile-title">{t(`articles.items.${a.id}.title`)}</div>
                 </a>
               </article>

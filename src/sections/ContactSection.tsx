@@ -105,7 +105,7 @@ export default function ContactSection() {
             <div className="cr-body">
               <blockquote className="cr-text">{reviews[active].text}</blockquote>
               <div className="cr-meta">
-                <img src="/SVG/Google__G__logo.svg" alt="Google" className="google-g" />
+                <img src="/SVG/Google__G__logo.svg" alt="Google" className="google-g" width={18} height={18} />
                 <div className="cr-lines">
                   <div className="cr-name">{reviews[active].name}</div>
                   <div className="cr-area">{reviews[active].area}</div>

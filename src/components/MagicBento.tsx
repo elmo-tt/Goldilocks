@@ -571,6 +571,7 @@ export default function MagicBento({
                     <img src="/SVG/Florida.svg" alt="" aria-hidden="true" className="florida-map-img" />
                     <div className="pin pin-psl"><span className="dot" /><span className="label">Port St. Lucie</span></div>
                     <div className="pin pin-wpb"><span className="dot" /><span className="label">West Palm Beach</span></div>
+                    <div className="pin pin-belle"><span className="dot" /><span className="label">Belle Glade</span></div>
                   </div>
                 </div>
                 <div className="magic-bento-card__header">
@@ -585,6 +586,10 @@ export default function MagicBento({
                     <div className="office">
                       <div className="office-title">Port St. Lucie</div>
                       <div className="office-address">1100 St Lucie W Blvd, Suite 103<br/>Port St. Lucie, FL 34986</div>
+                    </div>
+                    <div className="office">
+                      <div className="office-title">Belle Glade</div>
+                      <div className="office-address">624 S. Main St., Suite 4<br/>Belle Glade, FL 33430</div>
                     </div>
                   </div>
                 </div>

@@ -54,7 +54,8 @@ export const PRACTICE_AREAS: PracticeArea[] = [
 
 export const OFFICES: Office[] = [
   { city: "West Palm Beach", mapsUrl: "https://goo.gl/maps/QndytSC7SfKd1cCr6" },
-  { city: "Port Saint Lucie", mapsUrl: "https://goo.gl/maps/okd9XC74LxR5Tp1z7" }
+  { city: "Port Saint Lucie", mapsUrl: "https://goo.gl/maps/okd9XC74LxR5Tp1z7" },
+  { city: "Belle Glade", mapsUrl: "" }
 ];
 
 export const CTA = {

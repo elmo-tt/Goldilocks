@@ -57,7 +57,7 @@ void i18n
               free: { title: 'Free Consultation', description: 'Speak with our legal team to review your case—no cost, no pressure.', label: '01' },
               build: { title: 'We Build Your Case', description: 'We investigate and gather evidence to build the strongest case.', label: '02' },
               fight: { title: 'We Fight For Results', description: 'We negotiate or go to trial to maximize the compensation you deserve.', label: '03' },
-              locations: { title: 'Locations', description: 'West Palm Beach • Port St. Lucie', label: 'Info' },
+              locations: { title: 'Locations', description: 'West Palm Beach • Port St. Lucie • Belle Glade', label: 'Info' },
               rating: { title: 'Our Rating', description: '4.8 / 5.0 from 918 reviews', label: 'Score' },
               why: { title: 'Why GOLDLAW', description: 'Available 24/7 • Board‑certified • No fees unless we win', label: 'Benefits' },
             },
@@ -144,6 +144,25 @@ void i18n
             tell_us_label: 'Tell us what happened',
             provide_details_placeholder: 'Provide all the details of your incident',
             agreement: 'By submitting this form, I am agreeing to Goldlaw’s Privacy Policy.',
+          },
+          contact_page: {
+            eyebrow: 'GET IN TOUCH',
+            title_line1: 'Get in touch with',
+            title_line2: 'our office today',
+            body:
+              "Whether you have been injured in a car accident or slip and fall, we're here to help. Get in touch with us via form or give us a call to get the quickest response.",
+            visit_us_title: 'Visit Us',
+            visit_us_office1_line1: '1641 Worthington Rd, Ste 300',
+            visit_us_office1_line2: 'West Palm Beach, FL 33409',
+            visit_us_office2_line1: '1100 St Lucie W Blvd, Suite 103',
+            visit_us_office2_line2: 'Port St. Lucie, FL 34986',
+            visit_us_office3_line1: '624 S. Main St., Suite 4',
+            visit_us_office3_line2: 'Belle Glade, FL 33430',
+            follow_us_title: 'Follow us',
+            checkbox_immediate_ok: "Check this box if it's okay to contact you right away if needed.",
+            checkbox_sms_consent:
+              'By checking this box, I agree to receive SMS communication from GOLDLAW according to the privacy policy.',
+            submit_label: 'Start your free case review',
           },
           footer: {
             tagline: 'A South Florida based Personal Injury Law Firm representing clients who deserve results.',
@@ -396,7 +415,7 @@ void i18n
               free: { title: 'Consulta gratuita', description: 'Habla con nuestro equipo legal para revisar tu caso—sin costo, sin presión.', label: '01' },
               build: { title: 'Construimos tu caso', description: 'Investigamos y reunimos evidencia para construir el caso más sólido.', label: '02' },
               fight: { title: 'Luchamos por resultados', description: 'Negociamos o vamos a juicio para maximizar la compensación que mereces.', label: '03' },
-              locations: { title: 'Ubicaciones', description: 'West Palm Beach • Port St. Lucie', label: 'Info' },
+              locations: { title: 'Ubicaciones', description: 'West Palm Beach • Port St. Lucie • Belle Glade', label: 'Info' },
               rating: { title: 'Nuestra calificación', description: '4.8 / 5.0 de 918 reseñas', label: 'Puntaje' },
               why: { title: 'Por qué GOLDLAW', description: 'Disponible 24/7 • Certificados por la junta • Sin honorarios a menos que ganemos', label: 'Beneficios' },
             },
@@ -600,6 +619,24 @@ void i18n
             tell_us_label: 'Cuéntanos qué pasó',
             provide_details_placeholder: 'Proporciona todos los detalles de tu incidente',
             agreement: 'Al enviar este formulario, acepto la Política de Privacidad de Goldlaw.',
+          },
+          contact_page: {
+            eyebrow: 'PONTE EN CONTACTO',
+            title_line1: 'Ponte en contacto',
+            title_line2: 'con nuestra oficina hoy',
+            body:
+              'Si has resultado lesionado en un accidente automovilístico o en una caída, estamos aquí para ayudarte. Contáctanos por medio del formulario o llámanos para obtener la respuesta más rápida.',
+            visit_us_title: 'Visítanos',
+            visit_us_office1_line1: '1641 Worthington Rd, Ste 300',
+            visit_us_office1_line2: 'West Palm Beach, FL 33409',
+            visit_us_office2_line1: '1100 St Lucie W Blvd, Suite 103',
+            visit_us_office2_line2: 'Port St. Lucie, FL 34986',
+            follow_us_title: 'Síguenos',
+            checkbox_immediate_ok:
+              'Marca esta casilla si está bien que nos pongamos en contacto contigo de inmediato si es necesario.',
+            checkbox_sms_consent:
+              'Al marcar esta casilla, acepto recibir comunicaciones por SMS de GOLDLAW de acuerdo con la política de privacidad.',
+            submit_label: 'Comienza tu evaluación gratuita del caso',
           },
           footer: {
             tagline: 'Firma de lesiones personales con sede en el sur de Florida que representa a clientes que merecen resultados.',

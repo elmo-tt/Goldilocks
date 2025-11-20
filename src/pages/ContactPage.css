@@ -1,0 +1,92 @@
+ .contact-page { background: var(--color-7-0a0d48, #0a0d48); color: #fff; min-height: 100vh; }
+
+.contact-hero { padding-top: calc(var(--nav-stack-h, 84px) + 24px); padding-bottom: clamp(40px, 6vw, 80px); }
+
+@media (min-width: 1024px) {
+  .contact-hero {
+    padding-top: calc(var(--nav-stack-h, 84px) + 84px);
+  }
+}
+
+.contact-hero-inner { margin: 0 auto; padding-inline: clamp(32px, 14vw, 240px); display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); column-gap: clamp(48px, 10vw, 140px); align-items: stretch; }
+
+.cp-left { display: grid; grid-template-rows: auto auto auto 1fr; row-gap: 16px; }
+
+.cp-eyebrow { font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+
+.cp-title { font-size: clamp(32px, 4vw, 40px); line-height: 1.05; margin: 4px 0 8px; }
+
+ .cp-body { font-size: 15px; line-height: 1.6; max-width: 40ch; color: rgba(255,255,255,0.78); }
+
+ .cp-cta { margin-top: 2px; }
+
+.cp-bottom { margin-top: 32px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-self: end; }
+
+.cp-card { background: #030535; border-radius: 10px; padding: 24px 22px; display: grid; row-gap: 10px; min-height: 180px; }
+
+.cp-card-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+
+.cp-card-body { font-size: 14px; line-height: 1.5; color: rgba(255,255,255,0.85); }
+
+.cp-card-body p { margin: 0 0 6px; }
+
+.cp-card-body p:last-child { margin-bottom: 0; }
+
+.cp-socials { display: flex; flex-wrap: wrap; gap: 10px; margin-top: auto; align-items: flex-end; }
+
+.cp-soc { width: 32px; height: 32px; border-radius: 999px; background: #1c1d2b; display: inline-flex; align-items: center; justify-content: center; color: #ffffff; text-decoration: none; }
+
+.cp-right { min-width: 0; }
+
+.cp-form-shell { background: #ffffff; color: #030305; border-radius: 16px; padding: 20px 22px 22px; display: grid; row-gap: 16px; box-shadow: 0 18px 40px rgba(0,0,0,0.45); }
+
+/* Contact page: adjust form fields for white card background */
+.cp-form-shell .input,
+.cp-form-shell .textarea {
+  background: #f4f4f6;
+  color: #030305;
+}
+
+.cp-form-shell .input::placeholder,
+.cp-form-shell .textarea::placeholder {
+  color: rgba(3,3,5,0.55);
+}
+
+.cp-form-shell .case-select .case-trigger {
+  background: #f4f4f6;
+  color: #030305;
+}
+
+.cp-form-shell .case-value.placeholder {
+  color: rgba(3,3,5,0.55);
+}
+
+.cp-checks { display: grid; row-gap: 8px; font-size: 12px; color: rgba(0,0,0,0.78); margin-top: 12px; }
+
+.cp-check { display: flex; align-items: flex-start; gap: 8px; }
+
+.cp-check input { margin-top: 2px; }
+
+ .cp-submit { margin-top: 4px; width: 100%; border: 0; border-radius: 999px; padding: 14px 20px; display: flex; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(90deg,#f2e0a9,#d0ae63); color: #030305; font-weight: 600; cursor: pointer; }
+
+.cp-submit-arrow { font-size: 16px; }
+
+@media (max-width: 900px) {
+  /* Switch to flex column so we can control order */
+  .contact-hero-inner { display: flex; flex-direction: column; row-gap: 24px; }
+
+  /* Flatten left column so its children become flex items */
+  .cp-left { display: contents; }
+
+  /* Order: eyebrow (0), title (1), body (2), CTA (3), form (4), boxes (5) */
+  .cp-eyebrow { order: 0; }
+  .cp-title { order: 1; max-width: 32ch; }
+  .cp-body { order: 2; }
+  .cp-cta { order: 3; }
+  .cp-right { order: 4; margin-top: 8px; }
+  .cp-bottom { order: 5; margin-top: 20px; grid-template-columns: minmax(0,1fr); align-self: stretch; }
+}
+
+@media (max-width: 600px) {
+  .cp-form-shell { padding: 18px 16px 20px; }
+}

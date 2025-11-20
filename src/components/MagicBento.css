@@ -245,9 +245,15 @@
 .pin .dot { width: 16px; height: 16px; border-radius: 50%; background: rgba(var(--glow-color), 1); box-shadow: 0 0 0 4px rgba(var(--glow-color), 0.2), 0 0 10px rgba(var(--glow-color), 0.35); border: 2px solid rgba(3,5,53,0.8); position: relative; overflow: visible; z-index: 1; }
 .pin .label { margin-left: 10px; font-size: 18px; white-space: nowrap; }
 
+/* Belle Glade pin: stack label below the dot instead of to the right */
+.pin-belle { flex-direction: column; align-items: center; }
+.pin-belle .label { margin-left: 0; margin-top: 6px; text-align: center; }
+
 /* Approximate positions on the Florida map image */
 .pin-psl { top: 48%; left: 100%; }
 .pin-wpb { top: 55%; left: 106%; }
+/* Slightly lower Belle Glade so the dot aligns with WPB while label sits underneath */
+.pin-belle { top: 59%; left: 81%; }
 
 /* Radar pulse animation on pin dots */
 .pin .dot::after,

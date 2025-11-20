@@ -69,6 +69,11 @@ export default function StickyNav() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 00-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 00-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>
               <span>West Palm Beach, FL 33409</span>
             </span>
+            <span className="sep">•</span>
+            <span className="loc">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 00-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 00-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>
+              <span>Belle Glade, FL 33430</span>
+            </span>
           </div>
           <div className="topbar-right">
             <a className="phone" href="tel:15612222222">
@@ -122,7 +127,7 @@ export default function StickyNav() {
                 </div>
               </li>
               <li><Link to="/articles#hero">{t('nav.blog')}</Link></li>
-              <li><Link to="/#contact">{t('nav.contact')}</Link></li>
+              <li><Link to="/contact">{t('nav.contact')}</Link></li>
               <li>
                 <Link to={authed ? '/admin' : '/login'}>{authed ? t('nav.admin') : t('nav.login')}</Link>
               </li>
@@ -197,7 +202,7 @@ export default function StickyNav() {
             </ul>
           </li>
           <li><Link to="/articles#hero" onClick={() => setMenuOpen(false)}>{t('nav.blog')}</Link></li>
-          <li><Link to="/#contact" onClick={() => setMenuOpen(false)}>{t('nav.contact')}</Link></li>
+          <li><Link to="/contact" onClick={() => setMenuOpen(false)}>{t('nav.contact')}</Link></li>
           <li>
             <Link to={authed ? '/admin' : '/login'} onClick={() => setMenuOpen(false)}>
               {authed ? t('nav.admin') : t('nav.login')}

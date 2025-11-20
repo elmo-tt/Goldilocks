@@ -20,6 +20,7 @@ export default function FooterSection() {
               <div className="ft-addresses">
                 <p>1641 Worthington Rd., Suite 300<br/>West Palm Beach, FL 33409</p>
                 <p>1100 St Lucie W Blvd, Suite 103<br/>Port St. Lucie, FL 34986</p>
+                <p>624 S. Main St., Suite 4<br/>Belle Glade, FL 33430</p>
               </div>
             </div>
           </div>

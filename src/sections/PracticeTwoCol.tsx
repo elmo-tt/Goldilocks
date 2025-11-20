@@ -59,7 +59,7 @@ export default function PracticeTwoCol({ imageUrl, detail, areaKey }: PracticeTw
           </ul>
         </div>
         <div className="pa2-right">
-          <img src={imageUrl} alt="Practice area" />
+          <img src={imageUrl} alt="Practice area" width={364} height={210} loading="lazy" />
         </div>
       </div>
     </section>

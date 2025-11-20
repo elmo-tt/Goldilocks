@@ -57,13 +57,16 @@ export default function AboutSection({
           </div>
           {showImage && (
             <div className="about-image">
-              <img
-                src="/images/hero_attorneys.png"
-                alt="GOLDLAW attorneys"
-                width={364}
-                height={158}
-                loading="lazy"
-              />
+              <picture>
+                <source srcSet="/images/hero_attorneys.webp" type="image/webp" />
+                <img
+                  src="/images/hero_attorneys.png"
+                  alt="GOLDLAW attorneys"
+                  width={364}
+                  height={158}
+                  loading="lazy"
+                />
+              </picture>
               <div className="image-vignette" aria-hidden="true" />
             </div>
           )}

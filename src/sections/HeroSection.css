@@ -6,7 +6,7 @@
   min-height: calc(100svh - var(--nav-stack-h, 98px));
   color: #fff;
   background-color: var(--color-7-0a0d48, #0a0d48);
-  background-image: url('/images/hero_craig.png');
+  background-image: url('/images/hero_craig.webp');
   background-repeat: no-repeat;
   background-position: center center;
   background-size: cover;

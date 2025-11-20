@@ -88,5 +88,6 @@
 }
 
 @media (max-width: 600px) {
+  .contact-hero-inner { padding-inline: clamp(24px, 8vw, 160px); }
   .cp-form-shell { padding: 18px 16px 20px; }
 }

@@ -166,6 +166,17 @@ function ListView({ onCreate, onEdit }: { onCreate: () => void; onEdit: (id: str
   const [syncing, setSyncing] = useState(false)
   const [translating, setTranslating] = useState(false)
 
+  // Clear local cache and force rehydrate from Supabase on next load
+  const resetLocal = () => {
+    if (getBackend() !== 'supabase') {
+      try { bus.emit('toast', { message: 'Reset requires Supabase mode to rehydrate from cloud (set VITE_BACKEND and Supabase env).', type: 'error' }) } catch { alert('Reset requires Supabase mode to rehydrate from cloud.') }
+      return
+    }
+    try { localStorage.removeItem('gl_articles') } catch {}
+    try { bus.emit('toast', { message: 'Local cache cleared. Reloading…', type: 'success' }) } catch {}
+    try { window.location.reload() } catch {}
+  }
+
   // Push all local articles to Supabase (when enabled)
   const syncAll = async () => {
     if (getBackend() !== 'supabase') {
@@ -226,6 +237,9 @@ function ListView({ onCreate, onEdit }: { onCreate: () => void; onEdit: (id: str
           <button className="ops-btn" onClick={onCreate}>Create Article</button>
           <button className="ops-btn" onClick={syncAll} disabled={syncing}>{syncing ? 'Syncing…' : 'Sync Articles'}</button>
           <button className="ops-btn" onClick={translateAll} disabled={translating}>{translating ? 'Translating…' : 'Translate Missing ES'}</button>
+          {getBackend() === 'supabase' && (
+            <button className="ops-btn" onClick={resetLocal}>Reset Local Cache</button>
+          )}
         </div>
       </div>
 

@@ -11,6 +11,8 @@ import { ArticlesStore, type Article } from '@/shared/articles/store'
 import { useTranslation } from 'react-i18next'
 import { ensureSpanishForArticle } from '@/shared/translate/service'
 
+const assetWidthCache = new Map<string, number>()
+
 function filterLangBlocks(s: string, lang: 'en' | 'es') {
   try {
     if (!s) return ''
@@ -108,14 +110,28 @@ function HtmlBody({ html, heroMaxWidth, excerpt }: { html: string; heroMaxWidth?
       } catch {}
       const imgs = Array.from(el.querySelectorAll('img')) as HTMLImageElement[]
       imgs.forEach(img => {
-        // Constrain images to hero width (if provided) and apply optional data-width percentage
-        img.style.maxWidth = heroMaxWidth ? `${heroMaxWidth}px` : '100%'
+        // Constrain images to the article content width so language toggling
+        // (which can slightly change hero width) does not rescale inline images.
+        img.style.maxWidth = '100%'
         img.style.height = 'auto'
         img.style.display = 'block'
         img.style.borderRadius = '8px'
         const dw = img.getAttribute('data-width')
-        if (dw) {
-          const pct = Math.max(10, Math.min(100, parseInt(dw)))
+        const dataIdForWidth = img.getAttribute('data-asset-id') || ''
+        const srcForWidth = img.getAttribute('src') || ''
+        const isAssetSrcForWidth = srcForWidth.startsWith('asset:')
+        const idForWidth = dataIdForWidth || (isAssetSrcForWidth ? srcForWidth.slice(6) : '')
+        let pct: number | undefined
+        if (idForWidth && assetWidthCache.has(idForWidth)) {
+          pct = assetWidthCache.get(idForWidth) as number
+        } else if (dw) {
+          const parsed = parseInt(dw)
+          if (!Number.isNaN(parsed)) {
+            pct = Math.max(10, Math.min(100, parsed))
+            if (idForWidth) assetWidthCache.set(idForWidth, pct)
+          }
+        }
+        if (pct !== undefined) {
           img.style.width = pct + '%'
         } else {
           img.style.width = ''

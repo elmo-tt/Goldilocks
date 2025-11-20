@@ -5,6 +5,7 @@ export default function ScrollToTop() {
   const { pathname, hash } = useLocation()
   const prevPathRef = useRef(pathname)
   const prevHashRef = useRef(hash)
+  const isFirstLoadRef = useRef(true)
 
   useLayoutEffect(() => {
     try {
@@ -17,6 +18,7 @@ export default function ScrollToTop() {
   useLayoutEffect(() => {
     let cancelled = false
     const pathChanged = pathname !== prevPathRef.current
+    const hashChanged = hash !== prevHashRef.current
     prevPathRef.current = pathname
     prevHashRef.current = hash
 
@@ -59,6 +61,8 @@ export default function ScrollToTop() {
         }
       }
       requestAnimationFrame(tick)
+      // Any hash-based navigation counts as having completed the first load
+      isFirstLoadRef.current = false
       return () => { cancelled = true }
     }
 
@@ -72,8 +76,9 @@ export default function ScrollToTop() {
       }
       requestAnimationFrame(tick)
       setTimeout(() => { if (!cancelled) scrollTop() }, 120)
-    } else {
-      // Initial load on same path (e.g., refresh). Ensure we start at the very top when no hash.
+      isFirstLoadRef.current = false
+    } else if (isFirstLoadRef.current && !hash && !hashChanged) {
+      // Initial load on same path with no hash. Ensure we start at the very top only once.
       let tries = 0
       const tick = () => {
         if (cancelled) return
@@ -82,6 +87,7 @@ export default function ScrollToTop() {
       }
       requestAnimationFrame(tick)
       setTimeout(() => { if (!cancelled) scrollTop() }, 150)
+      isFirstLoadRef.current = false
     }
 
     return () => { cancelled = true }

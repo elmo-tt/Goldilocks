@@ -23,14 +23,16 @@ export default function App() {
   return (
     <>
       <StickyNav />
-      <HeroSection />
-      <PracticeAreas />
-      <AboutSection />
-      <TestimonialsSection />
-      <HowItWorksSection />
-      <ArticlesSection />
-      <ContactSection />
-      <FAQSection />
+      <main>
+        <HeroSection />
+        <PracticeAreas />
+        <AboutSection />
+        <TestimonialsSection />
+        <HowItWorksSection />
+        <ArticlesSection />
+        <ContactSection />
+        <FAQSection />
+      </main>
       <FooterSection />
     </>
   )

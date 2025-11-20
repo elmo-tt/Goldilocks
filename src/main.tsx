@@ -6,17 +6,17 @@ import './styles/tokens.css'
 import './styles/global.css'
 import './i18n'
 import App from './App.tsx'
-import MotorAccidents from '@/pages/practice/MotorAccidents'
-import PracticeAreaPage from '@/pages/practice/PracticeAreaPage'
-import TeamPage from './pages/TeamPage'
-import ArticlesList from './pages/articles/ArticlesList'
-import ArticlePage from './pages/articles/ArticlePage'
-import ArticleTemplatePreview from './pages/templates/ArticleTemplatePreview'
-import PracticeAreaTemplatePreview from './pages/templates/PracticeAreaTemplatePreview'
 import ProtectedRoute from './routes/ProtectedRoute'
-import Login from './pages/Login'
 
 const AdminApp = lazy(() => import('./admin/AdminApp'))
+const TeamPage = lazy(() => import('./pages/TeamPage'))
+const MotorAccidents = lazy(() => import('@/pages/practice/MotorAccidents'))
+const PracticeAreaPage = lazy(() => import('@/pages/practice/PracticeAreaPage'))
+const Login = lazy(() => import('./pages/Login'))
+const ArticlesList = lazy(() => import('./pages/articles/ArticlesList'))
+const ArticlePage = lazy(() => import('./pages/articles/ArticlePage'))
+const ArticleTemplatePreview = lazy(() => import('./pages/templates/ArticleTemplatePreview'))
+const PracticeAreaTemplatePreview = lazy(() => import('./pages/templates/PracticeAreaTemplatePreview'))
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -3,8 +3,11 @@ import '@/components/StickyNav.css'
 import FooterSection from '@/sections/FooterSection'
 import '@/sections/FooterSection.css'
 import './PromosIncentivesPage.css'
+import { useTranslation } from 'react-i18next'
 
 export default function PromosIncentives() {
+  const { t } = useTranslation()
+
   return (
     <>
       <StickyNav />
@@ -15,7 +18,7 @@ export default function PromosIncentives() {
         {/* Top hero: card + steps */}
         <section className="promos-hero">
           <div className="promos-hero-inner">
-            <h1 className="promos-title">Promos &amp; Incentives</h1>
+            <h1 className="promos-title">{t('promos_hero.page_title')}</h1>
 
             <div className="promos-grid">
               {/* Left: promo card */}
@@ -25,40 +28,36 @@ export default function PromosIncentives() {
                     {/* Update this image path if needed */}
                     <img
                       src="/images/promos/thanksgiving-giveaway.jpg"
-                      alt="Thanksgiving giveaway promo"
+                      alt={t('promos_hero.image_alt')}
                       className="promo-image"
                     />
                   </div>
                   <p className="promo-terms">
-                    <strong>* Terms &amp; Conditions:</strong>{' '}
-                    Entrants must reside in Palm Beach County, Martin County, St. Lucie County or
-                    Broward County to be eligible to enter to win. One entry per person. GOLDLAW
-                    employees and immediate family may not participate.
+                    <strong>{t('promos_hero.card_terms_prefix')}</strong>{' '}
+                    {t('promos_hero.card_terms_body')}
                   </p>
                 </div>
               </div>
 
               {/* Right: copy + numbered steps */}
               <div className="promo-copy">
-                <h2 className="promo-headline">Enter to win a $100 Gift Card and FREE Turkey</h2>
+                <h2 className="promo-headline">{t('promos_hero.headline')}</h2>
                 <p className="promo-subcopy">
-                  GIVEAWAY DETAILS:
+                  {t('promos_hero.details_heading')}
                   <br />
-                  📅 Runs: Monday, November 3 – Friday, November 21 at 12:00 PM
+                  {t('promos_hero.runs_line')}
                   <br />
-                  🏆 Winners Announced: Friday, November 21
+                  {t('promos_hero.winners_line')}
                   <br />
-                  📍 Pickup Location: GOLDLAW Office – West Palm Beach
-                  <br />
-                  <br />
-                  TERMS &amp; CONDITIONS:
-                  <br />
-                  Must live in Palm Beach, Martin, St. Lucie, or Broward County and be able to
-                  receive prizes in person at our West Palm Beach Office.
+                  {t('promos_hero.location_line')}
                   <br />
                   <br />
-                  Don&apos;t miss out—enter NOW for a chance to make this Thanksgiving one to remember!
-                  🦃💛🍂
+                  {t('promos_hero.terms_heading')}
+                  <br />
+                  {t('promos_hero.terms_body')}
+                  <br />
+                  <br />
+                  {t('promos_hero.closing_line')}
                 </p>
                 <a
                   href="https://www.instagram.com/p/DQmtFsLiVK4/?img_index=1"
@@ -66,32 +65,24 @@ export default function PromosIncentives() {
                   rel="noopener noreferrer"
                   className="promos-submit"
                 >
-                  Go to Post →
+                  {t('promos_hero.go_to_post')}
                 </a>
                 <ol className="promo-steps">
                   <li>
                     <span className="step-number">01</span>
-                    <span className="step-text">
-                      Follow @800goldlaw
-                    </span>
+                    <span className="step-text">{t('promos_hero.steps.s1')}</span>
                   </li>
                   <li>
                     <span className="step-number">02</span>
-                    <span className="step-text">
-                      Like this post
-                    </span>
+                    <span className="step-text">{t('promos_hero.steps.s2')}</span>
                   </li>
                   <li>
                     <span className="step-number">03</span>
-                    <span className="step-text">
-                      Tag a friend you&apos;re thankful for in the comments
-                    </span>
+                    <span className="step-text">{t('promos_hero.steps.s3')}</span>
                   </li>
                   <li>
                     <span className="step-number">04</span>
-                    <span className="step-text">
-                      Share this post to your story &amp; tag @800goldlaw for an extra entry
-                    </span>
+                    <span className="step-text">{t('promos_hero.steps.s4')}</span>
                   </li>
                 </ol>
               </div>
@@ -103,41 +94,32 @@ export default function PromosIncentives() {
         <section className="promos-body">
           <div className="promos-body-inner">
             <div className="promos-col promos-col-left">
-              <h2 className="promos-section-title">
-                Discover the Exciting Promotions &amp; Incentives at GOLDLAW
-              </h2>
-              <p className="promos-body-copy">
-                To recognize and reward the support and dedication of our clients, past clients,
-                future clients, and supporters, GOLDLAW is constantly running promotions and
-                incentive programs, and it is time that you are well aware of them.
-              </p>
+              <h2 className="promos-section-title">{t('promos_page.title')}</h2>
+              <p className="promos-body-copy">{t('promos_page.body')}</p>
               <form className="promos-form" onSubmit={(e) => e.preventDefault()}>
                 <label className="promos-label" htmlFor="promos-email">
-                  Enter your email
+                  {t('promos_page.email_label')}
                 </label>
                 <input
                   id="promos-email"
                   type="email"
                   required
                   className="promos-input"
-                  placeholder="Enter your email"
+                  placeholder={t('promos_page.email_placeholder')}
                 />
                 <button type="submit" className="promos-submit">
-                  Get notified of promos →
+                  {t('promos_page.cta')}
                 </button>
               </form>
             </div>
 
             <div className="promos-col promos-col-right">
-              <p className="promos-body-copy strong">
-                The GOLDLAW Marketing team will be holding at least one promotion each month, where
-                lucky "winners" can take home cool prizes like:
-              </p>
+              <p className="promos-body-copy strong">{t('promos_page.right_body')}</p>
               <ul className="promos-prizes">
-                <li>Gift Cards</li>
-                <li>Tickets to Sports Events</li>
-                <li>Tickets to Concerts, Shows, and Cultural Events</li>
-                <li>Electronic devices and other cool swag!</li>
+                <li>{t('promos_page.prizes.gift_cards')}</li>
+                <li>{t('promos_page.prizes.sports_tickets')}</li>
+                <li>{t('promos_page.prizes.concert_tickets')}</li>
+                <li>{t('promos_page.prizes.electronics')}</li>
               </ul>
             </div>
           </div>

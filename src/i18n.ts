@@ -195,6 +195,46 @@ void i18n
               wrongful_death: 'Wrongful Death',
             },
           },
+          promos_page: {
+            title: 'Discover the Exciting Promotions & Incentives at GOLDLAW',
+            body:
+              'To recognize and reward the support and dedication of our clients, past clients, future clients, and supporters, GOLDLAW is constantly running promotions and incentive programs, and it is time that you are well aware of them.',
+            email_label: 'Enter your email',
+            email_placeholder: 'Enter your email',
+            cta: 'Get notified of promos →',
+            right_body:
+              'The GOLDLAW Marketing team will be holding at least one promotion each month, where lucky "winners" can take home cool prizes like:',
+            prizes: {
+              gift_cards: 'Gift Cards',
+              sports_tickets: 'Tickets to Sports Events',
+              concert_tickets: 'Tickets to Concerts, Shows, and Cultural Events',
+              electronics: 'Electronic devices and other cool swag!',
+            },
+          },
+          promos_hero: {
+            page_title: 'Promos & Incentives',
+            headline: 'Enter to win a $100 Gift Card and FREE Turkey',
+            details_heading: 'GIVEAWAY DETAILS:',
+            runs_line: '📅 Runs: Monday, November 3 – Friday, November 21 at 12:00 PM',
+            winners_line: '🏆 Winners Announced: Friday, November 21',
+            location_line: '📍 Pickup Location: GOLDLAW Office – West Palm Beach',
+            terms_heading: 'TERMS & CONDITIONS:',
+            terms_body:
+              'Must live in Palm Beach, Martin, St. Lucie, or Broward County and be able to receive prizes in person at our West Palm Beach Office.',
+            closing_line:
+              'Don\'t miss out—enter NOW for a chance to make this Thanksgiving one to remember! 🦃💛🍂',
+            go_to_post: 'Go to Post →',
+            steps: {
+              s1: 'Follow @800goldlaw',
+              s2: 'Like this post',
+              s3: 'Tag a friend you\'re thankful for in the comments',
+              s4: 'Share this post to your story & tag @800goldlaw for an extra entry',
+            },
+            card_terms_prefix: '* Terms & Conditions:',
+            card_terms_body:
+              'Entrants must reside in Palm Beach County, Martin County, St. Lucie County or Broward County to be eligible to enter to win. One entry per person. GOLDLAW employees and immediate family may not participate.',
+            image_alt: 'Thanksgiving giveaway promo',
+          },
           faq: {
             title_muted: 'Check out our most',
             title_strong: 'Frequently Asked Questions.',
@@ -388,6 +428,46 @@ void i18n
             admin: 'Admin',
             login: 'Iniciar sesión',
             toggle_label: 'Idioma',
+          },
+          promos_page: {
+            title: 'Descubre las increíbles promociones e incentivos de GOLDLAW',
+            body:
+              'Para reconocer y recompensar el apoyo y la dedicación de nuestros clientes, exclientes, futuros clientes y simpatizantes, GOLDLAW realiza constantemente promociones y programas de incentivos, y es momento de que estés al tanto de ellos.',
+            email_label: 'Ingresa tu correo electrónico',
+            email_placeholder: 'Ingresa tu correo electrónico',
+            cta: 'Recibe avisos de promociones →',
+            right_body:
+              'El equipo de marketing de GOLDLAW realizará al menos una promoción cada mes, donde afortunados “ganadores” podrán llevarse premios como:',
+            prizes: {
+              gift_cards: 'Tarjetas de regalo',
+              sports_tickets: 'Boletos para eventos deportivos',
+              concert_tickets: 'Boletos para conciertos, espectáculos y eventos culturales',
+              electronics: 'Dispositivos electrónicos y otros artículos increíbles',
+            },
+          },
+          promos_hero: {
+            page_title: 'Promociones e incentivos',
+            headline: 'Participa para ganar una tarjeta de regalo de $100 y un PAVO GRATIS',
+            details_heading: 'DETALLES DEL SORTEO:',
+            runs_line: '📅 Vigencia: lunes 3 de noviembre – viernes 21 de noviembre a las 12:00 p. m.',
+            winners_line: '🏆 Ganadores anunciados: viernes 21 de noviembre',
+            location_line: '📍 Lugar de recogida: Oficina de GOLDLAW – West Palm Beach',
+            terms_heading: 'TÉRMINOS Y CONDICIONES:',
+            terms_body:
+              'Debes vivir en los condados de Palm Beach, Martin, St. Lucie o Broward y poder recibir los premios en persona en nuestra oficina de West Palm Beach.',
+            closing_line:
+              'No te lo pierdas: ¡participa AHORA para tener la oportunidad de hacer que este Día de Acción de Gracias sea inolvidable! 🦃💛🍂',
+            go_to_post: 'Ver publicación →',
+            steps: {
+              s1: 'Sigue a @800goldlaw',
+              s2: 'Dale “me gusta” a esta publicación',
+              s3: 'Etiqueta en los comentarios a un amigo por el que estés agradecido',
+              s4: 'Comparte esta publicación en tu historia y etiqueta a @800goldlaw para una entrada extra',
+            },
+            card_terms_prefix: '* Términos y condiciones:',
+            card_terms_body:
+              'Los participantes deben residir en los condados de Palm Beach, Martin, St. Lucie o Broward para poder participar. Una entrada por persona. Empleados de GOLDLAW y sus familiares directos no pueden participar.',
+            image_alt: 'Promoción de sorteo de Acción de Gracias',
           },
           hero: {
             title: 'Hacemos responsables a quienes lastiman a otros',

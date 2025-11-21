@@ -11,6 +11,7 @@ import ProtectedRoute from './routes/ProtectedRoute'
 const AdminApp = lazy(() => import('./admin/AdminApp'))
 const TeamPage = lazy(() => import('./pages/TeamPage'))
 const ContactPage = lazy(() => import('./pages/ContactPage'))
+const PromosIncentivesPage = lazy(() => import('./pages/PromosIncentives'))
 const MotorAccidents = lazy(() => import('@/pages/practice/MotorAccidents'))
 const PracticeAreaPage = lazy(() => import('@/pages/practice/PracticeAreaPage'))
 const Login = lazy(() => import('./pages/Login'))
@@ -28,6 +29,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/" element={<App />} />
           <Route path="/team" element={<TeamPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/about/promos-and-incentives" element={<PromosIncentivesPage />} />
           <Route path="/practice/motor-accidents" element={<MotorAccidents />} />
           <Route path="/practice/:key" element={<PracticeAreaPage />} />
           <Route path="/login" element={<Login />} />

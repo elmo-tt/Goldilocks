@@ -1,7 +1,7 @@
 .team-page { background: #fff; color: inherit; }
-.team-hero { background: var(--color-7-0a0d48, #0a0d48); color: #fff; padding-top: calc(var(--nav-stack-h, 84px) + 24px); padding-bottom: clamp(40px, 6vw, 80px); }
+.team-hero { background: var(--color-7-0a0d48, #0a0d48); color: #fff; padding-top: 100px; padding-bottom: clamp(40px, 6vw, 80px); }
 .team-hero-inner { padding-inline: clamp(24px, 8vw, 160px); }
-.team-title { font-size: clamp(36px, 8vw, 56px); line-height: 1.1; font-weight: 500; margin: 0; }
+.team-title { font-size: 40px; line-height: 1.2; font-weight: 500; margin: 0; }
 .team-title .muted { display: block; font-weight: 500; color: #fff; }
 .team-title .strong { display: block; color: #fff; }
 
@@ -32,10 +32,14 @@
 @media (max-width: 900px) { .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .team-grid { grid-template-columns: 1fr; } }
 
-@media (min-width: 1024px) {
+@media (min-width: 769px) {
   .team-hero {
-    padding-top: calc(var(--nav-stack-h, 84px) + 84px);
+    padding-top: 152px;
   }
+}
+
+@media (max-width: 640px) {
+  .team-title { font-size: 32px; }
 }
 
 .attorney-overlay {

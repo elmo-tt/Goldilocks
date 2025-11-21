@@ -4,13 +4,13 @@
 }
 
 .promos-hero {
-  padding-top: calc(var(--nav-stack-h, 84px) + 24px);
+  padding-top: 100px;
   padding-bottom: clamp(40px, 6vw, 80px);
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 769px) {
   .promos-hero {
-    padding-top: calc(var(--nav-stack-h, 84px) + 84px);
+    padding-top: 152px;
   }
 }
 

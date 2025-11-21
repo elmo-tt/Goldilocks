@@ -24,6 +24,7 @@ export default function PracticeAreaTemplatePreview() {
   return (
     <>
       <StickyNav />
+      <div id="hero" style={{ height: 1, width: 1, overflow: 'hidden' }} />
       <PracticeAreaTemplate area={area} />
       <FooterSection />
     </>

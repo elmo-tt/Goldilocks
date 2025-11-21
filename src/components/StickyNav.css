@@ -112,6 +112,14 @@
 .sticky-nav .dropdown.wide ul > li + li { border-top: 1px solid rgba(255,255,255,0.12); }
 .sticky-nav .dropdown.wide a { white-space: normal; padding: 12px 14px; display: block; border-radius: 0; }
 
+/* Disabled items in About dropdown (pages not yet linked) */
+.sticky-nav .nav-link-disabled {
+  display: block;
+  padding: 12px 14px;
+  color: rgba(255,255,255,0.45);
+  cursor: default;
+}
+
 /* Full-bleed gold hover for Cases We Handle */
 .sticky-nav .dropdown.wide ul > li:hover { background: linear-gradient(90deg, #f2e0a9 0%, #d0ae63 100%); border-top-color: transparent; }
 .sticky-nav .dropdown.wide ul > li:hover a { color: #0a0d48; }

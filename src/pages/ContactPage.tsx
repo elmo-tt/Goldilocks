@@ -12,6 +12,7 @@ export default function ContactPage() {
   return (
     <>
       <StickyNav />
+      <div id="hero" style={{ height: 1, width: 1, overflow: 'hidden' }} />
       <main className="contact-page">
         <section className="contact-hero">
           <div className="contact-hero-inner">

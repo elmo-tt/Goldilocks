@@ -285,7 +285,7 @@ export default function TeamPage() {
   return (
     <>
       <StickyNav />
-      <div id="hero" style={{ position: 'absolute', top: 0, height: 1, width: 1, overflow: 'hidden' }} />
+      <div id="hero" style={{ height: 1, width: 1, overflow: 'hidden' }} />
       <main className="team-page">
         <section className="team-hero">
           <div className="team-hero-inner">

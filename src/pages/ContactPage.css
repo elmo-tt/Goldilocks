@@ -1,14 +1,12 @@
  .contact-page { background: var(--color-7-0a0d48, #0a0d48); color: #fff; min-height: 100vh; }
 
-.contact-hero { padding-top: calc(var(--nav-stack-h, 84px) + 24px); padding-bottom: clamp(40px, 6vw, 80px); }
+.contact-hero { padding-top: 100px; padding-bottom: clamp(40px, 6vw, 80px); }
 
-@media (min-width: 1024px) {
-  .contact-hero {
-    padding-top: calc(var(--nav-stack-h, 84px) + 84px);
-  }
+@media (min-width: 769px) {
+  .contact-hero { padding-top: 152px; }
 }
 
-.contact-hero-inner { margin: 0 auto; padding-inline: clamp(32px, 14vw, 240px); display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); column-gap: clamp(48px, 10vw, 140px); align-items: stretch; }
+.contact-hero-inner { margin: 0 auto; padding-inline: clamp(24px, 8vw, 160px); display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); column-gap: clamp(48px, 10vw, 140px); align-items: stretch; }
 
 .cp-left { display: grid; grid-template-rows: auto auto auto 1fr; row-gap: 16px; }
 

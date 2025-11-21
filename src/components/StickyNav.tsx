@@ -6,16 +6,16 @@ import { PRACTICE_AREAS_MAP } from '@/pages/practice/areas'
 import './StickyNav.css'
 
 const ABOUT_LINKS = [
-  { label: 'Team', to: '/team' },
-  { label: 'Testimonials', to: '/about/testimonials' },
-  { label: 'Careers', to: '/about/careers' },
-  { label: 'Community Events', to: '/about/community-events' },
-  { label: 'Press Releases', to: '/about/press' },
-  { label: 'Promos and Incentives', to: '/about/promos-and-incentives' },
-  { label: 'Newsletters', to: '/about/newsletters' },
-  { label: 'FAQ', to: '/about/faq' },
-  { label: '7 Big Reasons to Refer PI Cases to GOLDLAW', to: '/about/7-reasons-to-refer' },
-  { label: 'Product Recalls', to: '/about/product-recalls' },
+  { label: 'Team', to: '/team', active: true },
+  { label: 'Testimonials', to: '/about/testimonials', active: false },
+  { label: 'Careers', to: '/about/careers', active: false },
+  { label: 'Community Events', to: '/about/community-events', active: false },
+  { label: 'Press Releases', to: '/about/press', active: false },
+  { label: 'Promos and Incentives', to: '/about/promos-and-incentives', active: true },
+  { label: 'Newsletters', to: '/about/newsletters', active: false },
+  { label: 'FAQ', to: '/about/faq', active: false },
+  { label: '7 Big Reasons to Refer PI Cases to GOLDLAW', to: '/about/7-reasons-to-refer', active: false },
+  { label: 'Product Recalls', to: '/about/product-recalls', active: false },
 ]
 
 export default function StickyNav() {
@@ -97,7 +97,13 @@ export default function StickyNav() {
                 <div className="dropdown wide">
                   <ul>
                     {ABOUT_LINKS.map((it) => (
-                      <li key={it.to}><Link to={it.to}>{it.label}</Link></li>
+                      <li key={it.to}>
+                        {it.active ? (
+                          <Link to={it.to}>{it.label}</Link>
+                        ) : (
+                          <span className="nav-link-disabled">{it.label}</span>
+                        )}
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -174,7 +180,13 @@ export default function StickyNav() {
             </button>
             <ul className={`sub${mAboutOpen ? ' open' : ''}`}>
               {ABOUT_LINKS.map((it) => (
-                <li key={it.to}><Link to={it.to} onClick={() => setMenuOpen(false)}>{it.label}</Link></li>
+                <li key={it.to}>
+                  {it.active ? (
+                    <Link to={it.to} onClick={() => setMenuOpen(false)}>{it.label}</Link>
+                  ) : (
+                    <span className="nav-link-disabled">{it.label}</span>
+                  )}
+                </li>
               ))}
             </ul>
           </li>

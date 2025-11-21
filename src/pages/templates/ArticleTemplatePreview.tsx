@@ -41,7 +41,7 @@ CTA: Request a free consultation today.`,
     <>
       <StickyNav />
       {/* Minimal hero anchor to enable StickyNav topbar behavior */}
-      <div id="hero" style={{ position: 'absolute', top: 0, height: 1, width: 1, overflow: 'hidden' }} />
+      <div id="hero" style={{ height: 1, width: 1, overflow: 'hidden' }} />
 
       <ArticleTemplate article={sample} />
 

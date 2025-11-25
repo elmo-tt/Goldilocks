@@ -22,7 +22,8 @@ export const handler = async (event) => {
   const incoming = Array.isArray(body.messages) ? body.messages : []
   const model = body.model || process.env.COPILOT_MODEL || 'gpt-4o-mini'
   const temperature = Number(process.env.COPILOT_TEMPERATURE ?? body.temperature ?? 0.3)
-  const max_tokens = Number(process.env.COPILOT_MAX_TOKENS ?? body.max_tokens ?? 900)
+  // Allow env/body to fully control max_tokens; use a higher default so we aren't artificially capping articles at ~900 tokens.
+  const max_tokens = Number(process.env.COPILOT_MAX_TOKENS ?? body.max_tokens ?? 2400)
 
   const sys = {
     role: 'system',

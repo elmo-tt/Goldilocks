@@ -505,6 +505,10 @@ export const handler = async (event) => {
         return { statusCode: 500, headers: cors, body: 'Upstream error' }
       }
     }
+    // Time budget for upstream calls (ms)
+    const started = Date.now()
+    const BUDGET_MS = Number(process.env.COPILOT_BUDGET_MS || 9000)
+    const budgetLeft = () => Math.max(0, BUDGET_MS - (Date.now() - started))
     const textFromHtml = (html = '') => {
       try {
         let s = String(html)
@@ -518,12 +522,22 @@ export const handler = async (event) => {
       } catch { return { title: '', text: '' } }
     }
 
+    // Helper: fetch with timeout
+    const fetchWithTimeout = async (url, options = {}, ms = 8000) => {
+      const ctrl = new AbortController()
+      const id = setTimeout(() => ctrl.abort(), ms)
+      try {
+        const r = await fetch(url, { ...options, signal: ctrl.signal })
+        return r
+      } finally { clearTimeout(id) }
+    }
+
     const runServerTool = async (name, args) => {
       if (name === 'fetchUrl') {
         const url = String(args?.url || '')
         if (!/^https?:\/\//i.test(url)) return { error: 'INVALID_URL' }
         try {
-          const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 GOLDLAW-Copilot' } })
+          const r = await fetchWithTimeout(url, { headers: { 'User-Agent': 'Mozilla/5.0 GOLDLAW-Copilot' } }, Math.min(7000, budgetLeft()))
           const ct = r.headers.get('content-type') || ''
           if (!ct.includes('text/html')) {
             const text = await r.text().catch(()=> '')
@@ -540,11 +554,11 @@ export const handler = async (event) => {
         const key = process.env.TAVILY_API_KEY || ''
         if (!key) return { error: 'SEARCH_UNAVAILABLE', results: [] }
         try {
-          const r = await fetch('https://api.tavily.com/search', {
+          const r = await fetchWithTimeout('https://api.tavily.com/search', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ api_key: key, query, max_results: Math.min(8, Math.max(1, maxResults)), include_answer: false, include_raw_content: false })
-          })
+          }, Math.min(7000, budgetLeft()))
           const data = await r.json().catch(()=>({}))
           const results = Array.isArray(data?.results) ? data.results.map(x => ({ title: x.title, url: x.url, snippet: x.content })) : []
           return { query, results }
@@ -557,11 +571,10 @@ export const handler = async (event) => {
     const lastUser = incoming[incoming.length - 1] || {}
     const urlMatches = String(lastUser.content || '').match(/https?:\/\/[^\s)"'<>]+/g) || []
     const uniqueUrls = Array.from(new Set(urlMatches)).slice(0, 2)
-    const fetchedSources = []
-    for (const u of uniqueUrls) {
+    const fetchedSources = await Promise.all(uniqueUrls.map(async (u) => {
       const out = await runServerTool('fetchUrl', { url: u })
-      fetchedSources.push({ url: u, title: out?.title || '', text: out?.text || '' })
-    }
+      return { url: u, title: out?.title || '', text: out?.text || '' }
+    }))
     // Build conversation with long-form and creation intent hints
     let convo = [sys]
     const lastUserText = String(lastUser.content || '')
@@ -605,12 +618,14 @@ export const handler = async (event) => {
     const chatTemperature = articleLike ? Math.min(0.7, temperature + 0.2) : temperature
     const chatMaxTokens = articleLike ? Math.max(max_tokens, 1800) : max_tokens
     const toolChoice = clearlyCreate ? { type: 'function', function: { name: 'createArticle' } } : 'auto'
-    for (let step = 0; step < 3; step++) {
-      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    const steps = 1
+    for (let step = 0; step < steps; step++) {
+      if (budgetLeft() < 1500) break
+      const resp = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
         body: JSON.stringify({ model, messages: convo, temperature: chatTemperature, max_tokens: chatMaxTokens, tools, tool_choice: toolChoice })
-      })
+      }, Math.min(9000, budgetLeft()))
       const data = await resp.json()
       if (!resp.ok) {
         const msg = data?.error?.message || 'Upstream error'
@@ -643,11 +658,12 @@ export const handler = async (event) => {
           role: 'system',
           content: 'Return JSON ONLY with keys: title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl. No prose, no code fences.'
         }
-        const r2 = await fetch('https://api.openai.com/v1/chat/completions', {
+        if (budgetLeft() > 2500) {
+        const r2 = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
           body: JSON.stringify({ model, messages: [...convo, jsonOnlyHint], temperature: Math.min(0.6, chatTemperature), max_tokens: Math.max(chatMaxTokens, 2000), response_format: { type: 'json_object' } })
-        })
+        }, Math.min(8000, budgetLeft()))
         const j2 = await r2.json().catch(()=>({}))
         const content2 = String(j2?.choices?.[0]?.message?.content || '').trim()
         if (r2.ok && content2) {
@@ -671,19 +687,20 @@ export const handler = async (event) => {
             }
           } catch {}
         }
+        }
       } catch {}
       // Third-stage: if still no tool calls, ask for a full Markdown article and synthesize createArticle
-      if (clientCalls.length === 0) {
+      if (clientCalls.length === 0 && budgetLeft() > 2500) {
         try {
           const articleHint = {
             role: 'system',
             content: 'Draft a comprehensive long-form legal article in Markdown with a single H1 title line, multiple H2/H3 sections (Key Changes, Timeline, How a Lawyer Helps, Hidden Issues, FAQ, Pro Tips), and a strong localized GOLDLAW call-to-action. Do not include any meta notes; output article content only.'
           }
-          const r3 = await fetch('https://api.openai.com/v1/chat/completions', {
+          const r3 = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
             body: JSON.stringify({ model, messages: [...convo, articleHint], temperature: Math.min(0.7, chatTemperature), max_tokens: Math.max(chatMaxTokens, 2200), tool_choice: 'none' })
-          })
+          }, Math.min(8000, budgetLeft()))
           const j3 = await r3.json().catch(()=>({}))
           const content3 = String(j3?.choices?.[0]?.message?.content || '').trim()
           if (r3.ok && content3) {

@@ -203,24 +203,6 @@ function normalizeAiMarkdown(text: string) {
   return s.trim()
 }
 
-function detectArticleCreateIntent(text: string) {
-  const s = (text || '').toLowerCase()
-  const mentionsArticle = /\b(article|post|blog)\b/.test(s)
-  const mentionsCreate = /\b(create|draft|write|generate|new)\b/.test(s)
-  return mentionsArticle && mentionsCreate
-}
-
-function detectArticleEditIntent(text: string) {
-  const s = (text || '').toLowerCase()
-  const wantsSEO = /\b(seo|meta\s*title|meta\s*description|key\s*phrase|keyphrase|canonical)\b/.test(s)
-  const mentionsArticle =
-    /\b(article|post|blog)\b/.test(s) ||
-    /slug:\s*[a-z0-9-]+/.test(s) ||
-    /"[^"]{5,}"/.test(s)
-  const mentionsEditVerb = /\b(update|edit|modify|append|revise|publish|unpublish)\b/.test(s)
-  return mentionsArticle && (mentionsEditVerb || wantsSEO)
-}
-
 export default function CopilotOverlay({
   open,
   onClose,
@@ -398,13 +380,7 @@ export default function CopilotOverlay({
           const res = await fetch('/.netlify/functions/copilot', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              messages: [...active.messages, userMsg],
-              intentHints: {
-                articleCreate: detectArticleCreateIntent(text),
-                articleEdit: detectArticleEditIntent(text),
-              },
-            }),
+            body: JSON.stringify({ messages: [...active.messages, userMsg] })
           })
           const data = await res.json().catch(() => ({} as any))
           reply = (data?.content || '').trim() || ''
@@ -617,73 +593,69 @@ export default function CopilotOverlay({
           if (calls.length === 0) {
             try {
               const raw = userMsg.content || ''
-              const recentCtx = active.messages.slice(-3).map(m => m.content).join(' ') + ' ' + raw
-              const wantsCreate = detectArticleCreateIntent(recentCtx)
-              const wantsEdit = detectArticleEditIntent(recentCtx)
-
-              {
-                // Try slug pattern first
-                let art = undefined as undefined | ReturnType<typeof ArticlesStore.getBySlug>
-                const sm = raw.match(/slug:\s*([a-z0-9-]+)/i)
-                if (sm && sm[1]) art = ArticlesStore.getBySlug(sm[1].trim())
-                // Try quoted exact title
-                if (!art) {
-                  const qm = raw.match(/["](.[^"“”]{5,})["]|["](.[^"“”]{5,})["]/)
-                  const title = qm ? (qm[1] || '').trim() : ''
-                  if (title) {
-                    const all = ArticlesStore.all()
-                    art = all.find(a => a.title.toLowerCase() === title.toLowerCase()) || all.find(a => a.title.toLowerCase().includes(title.toLowerCase()))
-                  }
+              const recentCtx = (active.messages.slice(-3).map(m => m.content).join(' ') + ' ' + raw).toLowerCase()
+              const wantsSEO = /\b(seo|meta\s*title|meta\s*description|key\s*phrase|keyphrase|canonical)\b/i.test(recentCtx)
+              const mentionsArticle = /\b(article|post)\b/i.test(recentCtx) || /slug:\s*[a-z0-9-]+/i.test(raw) || /"[^"]{5,}"/.test(raw)
+              const wantsEdit = ((/(update|edit|modify|append|revise|publish|unpublish)\b/i.test(recentCtx) || wantsSEO) && mentionsArticle)
+              // Try slug pattern first
+              let art = undefined as undefined | ReturnType<typeof ArticlesStore.getBySlug>
+              const sm = raw.match(/slug:\s*([a-z0-9-]+)/i)
+              if (sm && sm[1]) art = ArticlesStore.getBySlug(sm[1].trim())
+              // Try quoted exact title
+              if (!art) {
+                const qm = raw.match(/[\"]([^\"“”]{5,})[\"]/)
+                const title = qm ? (qm[1] || '').trim() : ''
+                if (title) {
+                  const all = ArticlesStore.all()
+                  art = all.find(a => a.title.toLowerCase() === title.toLowerCase()) || all.find(a => a.title.toLowerCase().includes(title.toLowerCase()))
                 }
-                // Supabase fallback by slug
-                if (!art && sm && sm[1] && getBackend() === 'supabase') {
-                  try { art = await CloudArticlesStore.getBySlug(sm[1].trim()) as any } catch {}
-                }
-                if (art && wantsEdit) {
-                  const fields: any = { id: art.id, slug: art.slug, title: art.title }
-                  // Auto-generate SEO fields
-                  const baseTitle = (art.metaTitle || art.title || '').trim()
-                  const max60 = (s: string) => s.length > 60 ? s.slice(0, 60).replace(/\s+\S*$/, '') : s
-                  const stripHtml = (s: string) => String(s || '').replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-                  const bodyText = stripHtml(art.body)
-                  const baseDesc = (art.metaDescription || art.excerpt || bodyText.slice(0, 180))
-                  const max155 = (s: string) => s.length > 155 ? s.slice(0, 155).replace(/\s+\S*$/, '') : s
-                  const tokens = Array.from(new Set(((art.title || '').toLowerCase().match(/[a-z0-9]+/g) || []).filter(w => w.length >= 4 && !['the','and','for','with','that','this','from','about','into','onto','within','your','you','our','are','will'].includes(w))))
-                  const kp = tokens.slice(0, 3).join(' ')
-                  const origin = (typeof window !== 'undefined' ? window.location.origin : '')
-                  const canon = `${origin || ''}/articles/${art.slug}`
-                  fields.metaTitle = max60(baseTitle)
-                  fields.metaDescription = max155(baseDesc)
-                  fields.keyphrase = kp
-                  fields.canonicalUrl = canon
-                  ArticlesStore.save(fields)
-                  onNavigate('articles', { minimize: autoMinimize })
-                  const note = `Updated article “${fields.title}”.`
-                  try { bus.emit('toast', { message: note, type: 'success' }) } catch {}
-                  reply = note
-                }
-                if (!reply) {
-                  if (wantsCreate && !wantsEdit) {
-                    reply = 'It looks like you want to create a new article. I wasn’t able to automatically create one from that request, but I also didn’t find any article to update.'
-                  } else if (!wantsEdit) {
-                    reply = 'How can I help? You can ask me to navigate, create or update tasks, or draft/edit articles.'
-                  } else {
-                    const rawLower = raw.toLowerCase()
-                    const tokens = (rawLower.match(/[a-z0-9]+/g) || [])
-                    const stop = new Set(['the','and','for','with','that','this','from','about','into','onto','within','your','you','our','are','will','can','make','add','update','article','articles','post','posts','please','now'])
-                    const keywords = Array.from(new Set(tokens.filter(w => w.length >= 4 && !stop.has(w)))).slice(0, 10)
-                    const all = ArticlesStore.all()
-                    const scored = all.map(a => {
-                      const text = [a.title, (a.tags||[]).join(' '), a.excerpt || '', a.slug || ''].join(' ').toLowerCase()
-                      let score = 0; for (const k of keywords) { if (text.includes(k)) score++ }
-                      return { a, score }
-                    }).filter(x => x.score > 0)
-                    scored.sort((x, y) => (y.score - x.score) || ((y.a.updatedAt||0) - (x.a.updatedAt||0)))
-                    const picks = scored.slice(0, 3).map(x => `- "${x.a.title}" (slug: ${x.a.slug})`).join('\\n')
-                    const hint = picks ? `\\n\\nPossible matches:\\n${picks}` : ''
-                    reply = `I couldn’t identify a specific article to update from that request. Please provide the slug or exact title.${hint}`
-                    bus.emit('toast', { message: 'No article update performed — need slug or exact title.', type: 'error' })
-                  }
+              }
+              // Supabase fallback by slug
+              if (!art && sm && sm[1] && getBackend() === 'supabase') {
+                try { art = await CloudArticlesStore.getBySlug(sm[1].trim()) as any } catch {}
+              }
+              if (art && wantsEdit) {
+                const fields: any = { id: art.id, slug: art.slug, title: art.title }
+                // Auto-generate SEO fields
+                const baseTitle = (art.metaTitle || art.title || '').trim()
+                const max60 = (s: string) => s.length > 60 ? s.slice(0, 60).replace(/\s+\S*$/, '') : s
+                const stripHtml = (s: string) => String(s || '').replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+                const bodyText = stripHtml(art.body)
+                const baseDesc = (art.metaDescription || art.excerpt || bodyText.slice(0, 180))
+                const max155 = (s: string) => s.length > 155 ? s.slice(0, 155).replace(/\s+\S*$/, '') : s
+                const tokens = Array.from(new Set(((art.title || '').toLowerCase().match(/[a-z0-9]+/g) || []).filter(w => w.length >= 4 && !['the','and','for','with','that','this','from','about','into','onto','within','your','you','our','are','will'].includes(w))))
+                const kp = tokens.slice(0, 3).join(' ')
+                const origin = (typeof window !== 'undefined' ? window.location.origin : '')
+                const canon = `${origin || ''}/articles/${art.slug}`
+                fields.metaTitle = max60(baseTitle)
+                fields.metaDescription = max155(baseDesc)
+                fields.keyphrase = kp
+                fields.canonicalUrl = canon
+                ArticlesStore.save(fields)
+                onNavigate('articles', { minimize: autoMinimize })
+                const note = `Updated article “${fields.title}”.`
+                try { bus.emit('toast', { message: note, type: 'success' }) } catch {}
+                reply = note
+              }
+              if (!reply) {
+                if (!wantsEdit) {
+                  reply = 'How can I help? You can ask me to navigate, create or update tasks, or draft/edit articles.'
+                } else {
+                  const rawLower = raw.toLowerCase()
+                  const tokens = (rawLower.match(/[a-z0-9]+/g) || [])
+                  const stop = new Set(['the','and','for','with','that','this','from','about','into','onto','within','your','you','our','are','will','can','make','add','update','article','articles','post','posts','please','now'])
+                  const keywords = Array.from(new Set(tokens.filter(w => w.length >= 4 && !stop.has(w)))).slice(0, 10)
+                  const all = ArticlesStore.all()
+                  const scored = all.map(a => {
+                    const text = [a.title, (a.tags||[]).join(' '), a.excerpt || '', a.slug || ''].join(' ').toLowerCase()
+                    let score = 0; for (const k of keywords) { if (text.includes(k)) score++ }
+                    return { a, score }
+                  }).filter(x => x.score > 0)
+                  scored.sort((x, y) => (y.score - x.score) || ((y.a.updatedAt||0) - (x.a.updatedAt||0)))
+                  const picks = scored.slice(0, 3).map(x => `- "${x.a.title}" (slug: ${x.a.slug})`).join('\n')
+                  const hint = picks ? `\n\nPossible matches:\n${picks}` : ''
+                  reply = `I couldn’t identify a specific article to update from that request. Please provide the slug or exact title.${hint}`
+                  bus.emit('toast', { message: 'No article update performed — need slug or exact title.', type: 'error' })
                 }
               }
             } catch {

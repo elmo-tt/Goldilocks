@@ -404,7 +404,7 @@ export default function CopilotOverlay({
             } else if (c.name === 'createArticle') {
               try {
                 let title = String(c.args?.title || 'Untitled')
-                const excerpt = String(c.args?.excerpt || '')
+                let excerpt = String(c.args?.excerpt || '')
                 let body = normalizeAiMarkdown(String(c.args?.body || ''))
                 const tags = Array.isArray(c.args?.tags) ? c.args.tags.map((t: any) => String(t)).slice(0, 8) : []
                 let keyphrase = c.args?.keyphrase ? String(c.args.keyphrase) : undefined
@@ -413,6 +413,22 @@ export default function CopilotOverlay({
                 let canonicalUrl = c.args?.canonicalUrl ? String(c.args.canonicalUrl) : undefined
                 const noindex = typeof c.args?.noindex === 'boolean' ? Boolean(c.args.noindex) : undefined
                 const status = (c.args?.status === 'published') ? 'published' : 'draft'
+                // If the model placed an Excerpt block at the top of the body but did not fill the excerpt field,
+                // peel it off into the excerpt and strip it from the body.
+                try {
+                  if (!excerpt && body) {
+                    const trimmed = body.trimStart()
+                    // Match patterns like "**Excerpt:** ..." or "Excerpt: ..." optionally followed by a separator line (---)
+                    const m = trimmed.match(/^\s*(?:\*\*\s*)?Excerpt\s*:?\s*(.+?)(?:\s*\n\s*[-*_]{3,}\s*\n?|\s*\n\s*\n+)/i)
+                    if (m && m[1]) {
+                      const exText = m[1].trim()
+                      if (exText) {
+                        excerpt = exText
+                        body = trimmed.slice(m[0].length).replace(/^\s+/, '')
+                      }
+                    }
+                  }
+                } catch {}
                 const baseSlug = slugify(title)
                 // Extract SEO lines if the model placed them in the body
                 try {

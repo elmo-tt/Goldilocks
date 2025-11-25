@@ -595,12 +595,13 @@ export default function CopilotOverlay({
               const raw = userMsg.content || ''
               const recentCtx = (active.messages.slice(-3).map(m => m.content).join(' ') + ' ' + raw).toLowerCase()
               const wantsSEO = /\b(seo|meta\s*title|meta\s*description|key\s*phrase|keyphrase|canonical)\b/i.test(recentCtx)
-              const mentionsArticle = /\b(article|post)\b/i.test(recentCtx) || /slug:\s*[a-z0-9-]+/i.test(raw) || /"[^"]{5,}"/.test(raw)
+              const mentionsArticle = /\b(article|post|blog)\b/i.test(recentCtx) || /slug:\s*[a-z0-9-]+/i.test(raw) || /"[^"]{5,}"/.test(raw)
               const wantsEdit = ((/(update|edit|modify|append|revise|publish|unpublish)\b/i.test(recentCtx) || wantsSEO) && mentionsArticle)
-              const clearlyCreate = /\b(create|draft|write|generate|develop)\b.*\b(article|post|blog)\b/i.test(raw)
+              const clearlyCreate = /\b(create|draft|write|generate|develop)\b[\s\S]*?\b(article|post|blog)\b/i.test(raw)
 
-              // If the user clearly asked to create an article and we have no tool calls, don't pretend it's an update problem.
-              if (clearlyCreate && !wantsEdit) {
+              // If the user clearly asked to create an article and we have no tool calls, don't pretend it's an update problem,
+              // even if earlier context mentioned updates/SEO.
+              if (clearlyCreate) {
                 if (!reply) {
                   reply = 'I couldn’t automatically create that article from this request. Try asking me to draft the full article text first, then you can paste it into a new article in the Articles section.'
                 }

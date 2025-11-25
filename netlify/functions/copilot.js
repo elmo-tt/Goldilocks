@@ -32,6 +32,7 @@ export const handler = async (event) => {
       'You may call tools when appropriate: createTask, navigate, call, map, fetchUrl, searchWeb, createArticle.',
       // Article workflow with SEO
       'When asked to write an article from web sources: (1) use fetchUrl for every provided URL in the user message (treat them as primary sources), (2) optionally use searchWeb (3–5 results) if available, (3) present a brief "Sources" list as bullets with links, (4) present a short excerpt and a structured article body with headings, (5) call createArticle with { title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, status }. Keep metaTitle ~60 chars, metaDescription ~155 chars. Tags should be 1–5 short topic labels. Stay strictly on-topic with the fetched sources; do not pivot to unrelated topics.',
+      'For substantial practice-area articles (e.g., about statutes, deadlines, or major legal changes), aim for a comprehensive landing-page style piece: multiple H2/H3 sections, practical timelines and steps, explanation of legal rules and their real-world impact, how a West Palm Beach lawyer can help, 2–5 short "Pro Tip" callouts, a brief FAQ section, and a strong, localized GOLDLAW call-to-action at the end.',
       'If searchWeb is unavailable, proceed using provided fetchUrl content only and do not fabricate sources. If a provided URL fetch fails or is irrelevant, ask for another URL or clarification before drafting.',
       'When asked to modify an existing article: you MUST call updateArticle with an identifier (slug or id) plus only the fields to change. If you cannot uniquely identify the article, ask a brief clarifying question (offer 1–3 likely titles) and do not claim completion.',
       'Do NOT say "Done" unless you actually invoked a tool (e.g., updateArticle/createArticle) successfully.',
@@ -39,7 +40,29 @@ export const handler = async (event) => {
       'If answering without tools, keep replies brief and actionable.'
     ].join(' ')
   }
+  const looksLikeArticlePrompt = (s = '') => {
+    try {
+      const text = String(s || '').toLowerCase()
+      if (!text.trim()) return false
+      const mentionsArticle = /\b(article|blog|guide|landing page)\b/.test(text)
+      const mentionsDraft = /\b(draft|write|create|generate|develop)\b/.test(text)
+      const topicWords = /(truck|accident|injury|negligence|statute|deadline|limitations?|law|lawsuit|claim)/.test(text)
+      const longFormHints = /(comprehensive|in-depth|long-form|practice area|landing page|detailed)/.test(text)
+      return (mentionsArticle && (mentionsDraft || topicWords)) || longFormHints
+    } catch { return false }
+  }
   const messages = [sys, ...incoming.map(m => ({ role: m.role, content: String(m.content || '') }))]
+  const lastUserText = String(incoming[incoming.length - 1]?.content || '')
+  if (looksLikeArticlePrompt(lastUserText)) {
+    const longFormMsg = {
+      role: 'system',
+      content: [
+        'User is requesting a comprehensive long-form legal article, similar to a practice-area landing page, not a short news blurb.',
+        'Respond with a structured article as described: multiple H2/H3 sections, practical timelines and steps, explanation of the law and its impact, how a West Palm Beach GOLDLAW lawyer can help, several concise "Pro Tip" callouts, a short FAQ, and a strong localized call-to-action at the end.',
+      ].join(' '),
+    }
+    messages.push(longFormMsg)
+  }
   const tools = [
     {
       type: 'function',
@@ -537,6 +560,17 @@ export const handler = async (event) => {
       fetchedSources.push({ url: u, title: out?.title || '', text: out?.text || '' })
     }
     let convo = [sys]
+    const lastUserText = String(lastUser.content || '')
+    if (looksLikeArticlePrompt(lastUserText)) {
+      const longFormMsg = {
+        role: 'system',
+        content: [
+          'User is requesting a comprehensive long-form legal article, similar to a practice-area landing page, not a short news blurb.',
+          'Respond with a structured article as described: multiple H2/H3 sections, practical timelines and steps, explanation of the law and its impact, how a West Palm Beach GOLDLAW lawyer can help, several concise "Pro Tip" callouts, a short FAQ, and a strong localized call-to-action at the end.',
+        ].join(' '),
+      }
+      convo.push(longFormMsg)
+    }
     if (fetchedSources.length) {
       const bullets = fetchedSources.map((s, i) => `${i + 1}. ${s.title || '(untitled)'} — ${s.url}`).join('\n')
       const snippets = fetchedSources.map((s, i) => `SOURCE ${i + 1} (${s.url})\nTitle: ${s.title || '(untitled)'}\nExcerpt: ${(s.text || '').slice(0, 1200)}`).join('\n\n')

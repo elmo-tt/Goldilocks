@@ -672,6 +672,30 @@ export const handler = async (event) => {
           } catch {}
         }
       } catch {}
+      // Third-stage: if still no tool calls, ask for a full Markdown article and synthesize createArticle
+      if (clientCalls.length === 0) {
+        try {
+          const articleHint = {
+            role: 'system',
+            content: 'Draft a comprehensive long-form legal article in Markdown with a single H1 title line, multiple H2/H3 sections (Key Changes, Timeline, How a Lawyer Helps, Hidden Issues, FAQ, Pro Tips), and a strong localized GOLDLAW call-to-action. Do not include any meta notes; output article content only.'
+          }
+          const r3 = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+            body: JSON.stringify({ model, messages: [...convo, articleHint], temperature: Math.min(0.7, chatTemperature), max_tokens: Math.max(chatMaxTokens, 2200), tool_choice: 'none' })
+          })
+          const j3 = await r3.json().catch(()=>({}))
+          const content3 = String(j3?.choices?.[0]?.message?.content || '').trim()
+          if (r3.ok && content3) {
+            let title3 = (content3.match(/^#\s+(.+)$/m)?.[1] || '').trim()
+            if (!title3) {
+              const t = String(lastUserText || '').replace(/^\s*(create|draft|write|generate|develop)\s+(an?\s+)?(article|post|blog)\s+(on|about)\s*/i, '').trim()
+              title3 = t || 'New Article'
+            }
+            clientCalls = [{ name: 'createArticle', args: { title: title3, body: content3, status: 'draft' } }]
+          }
+        } catch {}
+      }
     }
     return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content: finalContent, toolCalls: clientCalls }) }
   } catch (e) {

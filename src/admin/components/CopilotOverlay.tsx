@@ -633,7 +633,37 @@ export default function CopilotOverlay({
                   }
                   let draftBody = normalizeAiMarkdown(String(reply || ''))
                   if (!draftBody) {
-                    draftBody = `# ${synthTitle}\n\nThis draft article was created automatically. Add your introduction, sections, and conclusion here.\n\n## Key Points\n- Point 1\n- Point 2\n- Point 3\n`
+                    draftBody = [
+                      'This starter draft was created automatically. Expand each section with 2–3 paragraphs and add citations as needed.',
+                      '',
+                      '## Key Changes in the Law',
+                      '- Change 1: …',
+                      '- Change 2: …',
+                      '',
+                      '## Timeline of Actions for Victims',
+                      '1. Immediately After the Accident: …',
+                      '2. Within the First Week: …',
+                      '3. Within the First Month: …',
+                      '4. Before the Two-Year Deadline: …',
+                      '',
+                      '## How a West Palm Beach Lawyer Can Help',
+                      '- Investigation and evidence preservation',
+                      '- Negotiation with insurers',
+                      '- Filing and litigation within deadlines',
+                      '',
+                      '## Hidden and Advanced Issues',
+                      '- Modified comparative negligence',
+                      '- Exceptions and tolling scenarios',
+                      '',
+                      '## Frequently Asked Questions',
+                      '1. What happens if I miss the deadline? …',
+                      '2. Can I file if I was partially at fault? …',
+                      '3. What if I am still treating when the deadline approaches? …',
+                      '',
+                      '## Pro Tips',
+                      '- Document everything (medical, expenses, communications)',
+                      '- Consult an attorney early',
+                    ].join('\n')
                   }
                   const enforced = enforceSeo({ title: synthTitle, body: draftBody })
                   const origin = (typeof window !== 'undefined' ? window.location.origin : '')

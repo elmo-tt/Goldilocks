@@ -635,6 +635,44 @@ export const handler = async (event) => {
       }
       convo = [...convo, { role: 'assistant', content: assistantMsg.content || '', tool_calls: tcs }, ...toolOutputs]
     }
+    // Second-pass fallback: if the user clearly asked to create and the model did not emit client tool calls,
+    // ask for a JSON-only article draft and synthesize a createArticle tool call.
+    if (clientCalls.length === 0 && clearlyCreate) {
+      try {
+        const jsonOnlyHint = {
+          role: 'system',
+          content: 'Return JSON ONLY with keys: title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl. No prose, no code fences.'
+        }
+        const r2 = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+          body: JSON.stringify({ model, messages: [...convo, jsonOnlyHint], temperature: Math.min(0.6, chatTemperature), max_tokens: Math.max(chatMaxTokens, 2000), response_format: { type: 'json_object' } })
+        })
+        const j2 = await r2.json().catch(()=>({}))
+        const content2 = String(j2?.choices?.[0]?.message?.content || '').trim()
+        if (r2.ok && content2) {
+          try {
+            const parsed = JSON.parse(content2)
+            const title = String(parsed?.title || '').trim()
+            const bodyText = String(parsed?.body || '').trim()
+            if (title && bodyText) {
+              const args = {
+                title,
+                excerpt: String(parsed?.excerpt || ''),
+                body: bodyText,
+                tags: Array.isArray(parsed?.tags) ? parsed.tags.slice(0, 8).map((t)=>String(t)) : [],
+                keyphrase: parsed?.keyphrase ? String(parsed.keyphrase) : undefined,
+                metaTitle: parsed?.metaTitle ? String(parsed.metaTitle) : undefined,
+                metaDescription: parsed?.metaDescription ? String(parsed.metaDescription) : undefined,
+                canonicalUrl: parsed?.canonicalUrl ? String(parsed.canonicalUrl) : undefined,
+                status: 'draft'
+              }
+              clientCalls = [{ name: 'createArticle', args }]
+            }
+          } catch {}
+        }
+      } catch {}
+    }
     return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content: finalContent, toolCalls: clientCalls }) }
   } catch (e) {
     return { statusCode: 500, headers: cors, body: 'Request failed' }

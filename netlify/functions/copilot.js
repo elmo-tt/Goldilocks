@@ -12,6 +12,7 @@ export const handler = async (event) => {
   }
   let body
   try { body = JSON.parse(event.body || '{}') } catch { body = {} }
+  const intentHints = body.intentHints || {}
   const mode = String(body.mode || 'copilot')
   const primaryPrefEarly = String(process.env.TRANSLATE_PRIMARY || '').toLowerCase()
   const allowNoOpenAI = (mode === 'translate') && (primaryPrefEarly === 'deepl' || primaryPrefEarly === 'azure')
@@ -39,7 +40,17 @@ export const handler = async (event) => {
       'If answering without tools, keep replies brief and actionable.'
     ].join(' ')
   }
-  const messages = [sys, ...incoming.map(m => ({ role: m.role, content: String(m.content || '') }))]
+  // Optional high-level intent hints from the client (copilot overlay)
+  const intentMsgParts = []
+  if (intentHints && intentHints.articleCreate && !intentHints.articleEdit) {
+    intentMsgParts.push('User intent: CLEARLY wants to CREATE a NEW article, not update an existing one. Prefer calling createArticle. Do NOT ask for an article slug or title unless the user is explicitly asking to edit an existing article.')
+  } else if (intentHints && intentHints.articleEdit && !intentHints.articleCreate) {
+    intentMsgParts.push('User intent: wants to UPDATE an EXISTING article. Prefer calling updateArticle and avoid creating new articles unless explicitly asked.')
+  }
+  const intentMsg = intentMsgParts.length ? { role: 'system', content: intentMsgParts.join(' ') } : null
+  const messages = intentMsg
+    ? [sys, intentMsg, ...incoming.map(m => ({ role: m.role, content: String(m.content || '') }))]
+    : [sys, ...incoming.map(m => ({ role: m.role, content: String(m.content || '') }))]
   const tools = [
     {
       type: 'function',
@@ -582,6 +593,64 @@ export const handler = async (event) => {
       }
       convo = [...convo, { role: 'assistant', content: assistantMsg.content || '', tool_calls: tcs }, ...toolOutputs]
     }
+
+    // Second-pass article creation fallback:
+    // If the client signaled a clear create-article intent but the model did not emit any client tool calls,
+    // run a targeted JSON-only article drafting call and synthesize a createArticle client tool call from it.
+    if (intentHints && intentHints.articleCreate && !intentHints.articleEdit && clientCalls.length === 0) {
+      try {
+        const lastUserContent = String(lastUser.content || '').trim()
+        if (lastUserContent) {
+          const draftSys = [
+            'You are GOLDLAW Copilot drafting a legal blog article.',
+            'Write a well-structured Markdown article with headings, short paragraphs, and in-text citations to 3 sources (with links).',
+            'Respond with JSON ONLY, no prose, no code fences. Shape: { "title": string, "excerpt": string, "body": string, "tags": string[], "keyphrase": string, "metaTitle": string, "metaDescription": string, "canonicalUrl": string, "status": "draft" | "published" }',
+            'Keep metaTitle around 60 characters and metaDescription around 155 characters.',
+          ].join(' ')
+          const draftMessages = [
+            { role: 'system', content: draftSys },
+            { role: 'user', content: lastUserContent },
+          ]
+          const isProjectKey = /^sk-?proj-/i.test(apiKey)
+          const headersBase = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+          const orgHdr = process.env.OPENAI_ORG ? { 'OpenAI-Organization': process.env.OPENAI_ORG } : {}
+          const projHdr = process.env.OPENAI_PROJECT ? { 'OpenAI-Project': process.env.OPENAI_PROJECT } : {}
+          const headers = isProjectKey ? { ...headersBase } : { ...headersBase, ...orgHdr, ...projHdr }
+          const r = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ model, messages: draftMessages, temperature, max_tokens })
+          })
+          const j = await r.json().catch(async () => ({ error: { message: await r.text().catch(() => 'Upstream error') } }))
+          if (r.ok) {
+            const rawDraft = String(j?.choices?.[0]?.message?.content || '').trim()
+            if (rawDraft) {
+              let parsed
+              try { parsed = JSON.parse(rawDraft) } catch { parsed = null }
+              if (parsed && typeof parsed === 'object') {
+                const safe = {
+                  title: String(parsed.title || 'Untitled'),
+                  body: String(parsed.body || ''),
+                  excerpt: String(parsed.excerpt || ''),
+                  tags: Array.isArray(parsed.tags) ? parsed.tags.map(x => String(x)).slice(0, 8) : [],
+                  keyphrase: parsed.keyphrase ? String(parsed.keyphrase) : undefined,
+                  metaTitle: parsed.metaTitle ? String(parsed.metaTitle) : undefined,
+                  metaDescription: parsed.metaDescription ? String(parsed.metaDescription) : undefined,
+                  canonicalUrl: parsed.canonicalUrl ? String(parsed.canonicalUrl) : undefined,
+                  noindex: typeof parsed.noindex === 'boolean' ? parsed.noindex : undefined,
+                  status: parsed.status === 'published' ? 'published' : 'draft',
+                }
+                clientCalls.push({ name: 'createArticle', args: safe })
+                if (!finalContent) {
+                  finalContent = `Drafted a new article: "${safe.title}".`
+                }
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+
     return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content: finalContent, toolCalls: clientCalls }) }
   } catch (e) {
     return { statusCode: 500, headers: cors, body: 'Request failed' }

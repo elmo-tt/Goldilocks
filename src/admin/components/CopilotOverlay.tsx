@@ -615,11 +615,52 @@ export default function CopilotOverlay({
               const wantsEdit = ((/(update|edit|modify|append|revise|publish|unpublish)\b/i.test(recentCtx) || wantsSEO) && mentionsArticle)
               const clearlyCreate = /\b(create|draft|write|generate|develop)\b[\s\S]*?\b(article|post|blog)\b/i.test(raw)
 
-              // If the user clearly asked to create an article and we have no tool calls, don't pretend it's an update problem,
-              // even if earlier context mentioned updates/SEO.
+              // If the user clearly asked to create an article and we have no tool calls, synthesize a local draft
+              // instead of showing an error message, even if earlier context mentioned updates/SEO.
               if (clearlyCreate) {
-                if (!reply) {
-                  reply = 'I couldn’t automatically create that article from this request. Try asking me to draft the full article text first, then you can paste it into a new article in the Articles section.'
+                try {
+                  // Try to extract a title from quoted text or from "on <topic>"
+                  const qm = raw.match(/["'“”‘’]([^"'“”‘’]{5,})["'“”‘’]/)
+                  let synthTitle = qm ? (qm[1] || '').trim() : ''
+                  if (!synthTitle) {
+                    const om = raw.match(/\bon\s+([^\n]{8,})$/i)
+                    if (om && om[1]) synthTitle = om[1].trim()
+                  }
+                  if (!synthTitle) {
+                    // Fallback to stripping leading verbs from the request
+                    const stripped = raw.replace(/^(please\s+)?(create|draft|write|generate|develop)\s+(an?\s+)?(article|post|blog)\s+(on|about)\s*/i, '').trim()
+                    synthTitle = stripped || 'New Article'
+                  }
+                  let draftBody = normalizeAiMarkdown(String(reply || ''))
+                  if (!draftBody) {
+                    draftBody = `# ${synthTitle}\n\nThis draft article was created automatically. Add your introduction, sections, and conclusion here.\n\n## Key Points\n- Point 1\n- Point 2\n- Point 3\n`
+                  }
+                  const enforced = enforceSeo({ title: synthTitle, body: draftBody })
+                  const origin = (typeof window !== 'undefined' ? window.location.origin : '')
+                  const canonicalUrl = origin ? `${origin}/articles/${enforced.slug}` : `/articles/${enforced.slug}`
+                  const excerpt = ensureMaxLen(stripMd(draftBody), 180)
+                  const saved = ArticlesStore.save({
+                    title: enforced.title,
+                    slug: enforced.slug,
+                    excerpt,
+                    body: enforced.body,
+                    tags: [],
+                    keyphrase: enforced.keyphrase,
+                    metaTitle: enforced.metaTitle,
+                    metaDescription: enforced.metaDescription,
+                    canonicalUrl,
+                    status: 'draft'
+                  })
+                  // Ensure canonical matches final slug if uniqueness adjusted
+                  try {
+                    const desired = origin ? `${origin}/articles/${saved.slug}` : `/articles/${saved.slug}`
+                    if (saved.canonicalUrl !== desired) ArticlesStore.save({ id: saved.id, title: saved.title, slug: saved.slug, canonicalUrl: desired })
+                  } catch {}
+                  onNavigate('articles', { minimize: autoMinimize })
+                  reply = `Created draft article “${saved.title}”.`
+                  try { bus.emit('toast', { message: reply, type: 'success' }) } catch {}
+                } catch {
+                  reply = 'I couldn’t automatically create that article from this request.'
                 }
               } else {
                 // Try slug pattern first

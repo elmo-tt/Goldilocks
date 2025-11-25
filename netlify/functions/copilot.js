@@ -561,7 +561,8 @@ export const handler = async (event) => {
     }
     let convo = [sys]
     const lastUserText = String(lastUser.content || '')
-    if (looksLikeArticlePrompt(lastUserText)) {
+    const articleLike = looksLikeArticlePrompt(lastUserText)
+    if (articleLike) {
       const longFormMsg = {
         role: 'system',
         content: [
@@ -586,11 +587,13 @@ export const handler = async (event) => {
     convo = [...convo, ...incoming.map(m => ({ role: m.role, content: String(m.content || '') }))]
     let clientCalls = []
     let finalContent = ''
+    const chatTemperature = articleLike ? Math.min(0.7, temperature + 0.2) : temperature
+    const chatMaxTokens = articleLike ? Math.max(max_tokens, 1800) : max_tokens
     for (let step = 0; step < 3; step++) {
       const resp = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-        body: JSON.stringify({ model, messages: convo, temperature, max_tokens, tools, tool_choice: 'auto' })
+        body: JSON.stringify({ model, messages: convo, temperature: chatTemperature, max_tokens: chatMaxTokens, tools, tool_choice: 'auto' })
       })
       const data = await resp.json()
       if (!resp.ok) {

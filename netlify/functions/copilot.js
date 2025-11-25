@@ -562,6 +562,7 @@ export const handler = async (event) => {
       const out = await runServerTool('fetchUrl', { url: u })
       fetchedSources.push({ url: u, title: out?.title || '', text: out?.text || '' })
     }
+    // Build conversation with long-form and creation intent hints
     let convo = [sys]
     const lastUserText = String(lastUser.content || '')
     const articleLike = looksLikeArticlePrompt(lastUserText)
@@ -574,6 +575,17 @@ export const handler = async (event) => {
         ].join(' '),
       }
       convo.push(longFormMsg)
+    }
+    const clearlyCreate = /\b(create|draft|write|generate|develop)\b[\s\S]*?\b(article|post|blog)\b/i.test(lastUserText)
+    if (clearlyCreate) {
+      const forceCreateMsg = {
+        role: 'system',
+        content: [
+          'User explicitly asked to create a new article. You must call createArticle with full fields: { title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, status }.',
+          'Infer reasonable defaults where missing. Do not ask the user to draft manually; proceed to create the article now.'
+        ].join(' ')
+      }
+      convo.push(forceCreateMsg)
     }
     if (fetchedSources.length) {
       const bullets = fetchedSources.map((s, i) => `${i + 1}. ${s.title || '(untitled)'} — ${s.url}`).join('\n')
@@ -592,11 +604,12 @@ export const handler = async (event) => {
     let finalContent = ''
     const chatTemperature = articleLike ? Math.min(0.7, temperature + 0.2) : temperature
     const chatMaxTokens = articleLike ? Math.max(max_tokens, 1800) : max_tokens
+    const toolChoice = clearlyCreate ? { type: 'function', function: { name: 'createArticle' } } : 'auto'
     for (let step = 0; step < 3; step++) {
       const resp = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-        body: JSON.stringify({ model, messages: convo, temperature: chatTemperature, max_tokens: chatMaxTokens, tools, tool_choice: 'auto' })
+        body: JSON.stringify({ model, messages: convo, temperature: chatTemperature, max_tokens: chatMaxTokens, tools, tool_choice: toolChoice })
       })
       const data = await resp.json()
       if (!resp.ok) {

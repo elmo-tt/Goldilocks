@@ -575,14 +575,6 @@ export const handler = async (event) => {
       const out = await runServerTool('fetchUrl', { url: u })
       return { url: u, title: out?.title || '', text: out?.text || '' }
     }))
-    // If the user asked for citations and we have time and a search provider, pre-search to ground the draft
-    let searchedResults = []
-    if (wantsCitations && budgetLeft() > 800) {
-      try {
-        const out = await runServerTool('searchWeb', { query: lastUserText.slice(0, 240), maxResults: 5 })
-        if (Array.isArray(out?.results)) searchedResults = out.results.slice(0, 5)
-      } catch {}
-    }
     // Build conversation with long-form and creation intent hints
     let convo = [sys]
     const lastUserText = String(lastUser.content || '')
@@ -617,6 +609,15 @@ export const handler = async (event) => {
         content: 'User requested cited sources. Use searchWeb (3–5 reputable results) and/or provided URLs, quote accurately, and include a final Sources section with bullet links. Cite inline where helpful.'
       }
       convo.push(citeMsg)
+    }
+    // If the user asked for citations and we have time and a search provider, pre-search to ground the draft
+    let searchedResults = []
+    if (wantsCitations && budgetLeft() > 800) {
+      try {
+        const queryText = (lastUserText || '').slice(0, 240)
+        const out = await runServerTool('searchWeb', { query: queryText, maxResults: 5 })
+        if (Array.isArray(out?.results)) searchedResults = out.results.slice(0, 5)
+      } catch {}
     }
     if (fetchedSources.length) {
       const bullets = fetchedSources.map((s, i) => `${i + 1}. ${s.title || '(untitled)'} — ${s.url}`).join('\n')
@@ -832,6 +833,8 @@ export const handler = async (event) => {
     }
     return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content: finalContent, toolCalls: clientCalls }) }
   } catch (e) {
-    return { statusCode: 500, headers: cors, body: 'Request failed' }
+    try { console.error('Copilot handler error:', e && (e.stack || e.message || e)) } catch {}
+    const msg = (e && (e.message || (typeof e === 'string' ? e : 'Request failed'))) || 'Request failed'
+    return { statusCode: 500, headers: cors, body: String(msg) }
   }
 }

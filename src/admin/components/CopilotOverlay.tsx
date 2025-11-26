@@ -28,14 +28,15 @@ function removeExcerptLead(body: string, excerpt: string) {
     while (idx < lines.length && lines[idx].trim() !== '') { paraLines.push(lines[idx]); idx++ }
     const para = stripMd(paraLines.join(' ').trim())
     const ex = stripMd(String(excerpt || ''))
-    if (ex && para && (
-      para.toLowerCase() === ex.toLowerCase() ||
-      ex.toLowerCase().startsWith(para.toLowerCase())
-    )) {
+    if (ex && para) {
+      const p = para.toLowerCase()
+      const e = ex.toLowerCase()
+      if (p === e || p.startsWith(e)) {
       const rest = lines.slice(idx)
       while (rest.length && rest[0].trim() === '') rest.shift()
       const rebuilt = (header ? [header, '', ...rest] : rest).join('\n')
       return normalizeAiMarkdown(rebuilt)
+      }
     }
   } catch {}
   return body
@@ -52,7 +53,8 @@ function buildExcerpt(excerptInput: string | undefined, bodyForFallback: string)
       ex = polishSummary(ensureMaxLen(ex, maxLen))
       return ensureSentence(ex)
     }
-    const plain = stripMd(bodyForFallback || '')
+    const noH1 = String(bodyForFallback || '').replace(/^\s*#{1,6}\s+[^\n]+\s*\n+/, '')
+    const plain = stripMd(noH1)
     const parts = plain.split(/(?<=[.!?])\s+/).filter(Boolean)
     let out = ''
     for (const s of parts) {
@@ -163,6 +165,8 @@ function polishSummary(s: string) {
   if (!x) return x
   x = x.replace(/\s*[:–—-]\s*$/, '')
   x = x.replace(/,?\s*(which|that)\s+(have|has|raise|raises|drawn|sparked|created|caused)\b[^.]*$/i, '')
+  x = x.replace(/(?:,\s*)?(?:of|for|with|on|in|to|into|onto|about|regarding)\s+[^.]{0,30}$/i, '')
+  x = x.replace(/\s+(?:the|these|those|their|this|that)$/i, '')
   if (/\b(widespread|significant|numerous|serious|critical|major|severe|ongoing|substantial)\.?$/i.test(x)) {
     const cut = x.lastIndexOf(',')
     if (cut > 40) x = x.slice(0, cut)
@@ -270,12 +274,23 @@ function enforceSeo(input: { title: string; body: string; metaTitle?: string; me
     }
   } catch {}
   // Do not inject additional density lines; rely on authoring and CTA
-  let metaTitle = (input.metaTitle || title).trim()
-  if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(metaTitle)) metaTitle = `${kp} — ${metaTitle}`
-  metaTitle = smartTitle(ensureMaxLen(metaTitle, 65))
+  let metaTitleRaw = (input.metaTitle || title).trim()
+  if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(metaTitleRaw)) metaTitleRaw = `${kp} — ${metaTitleRaw}`
+  let mtCandidate = smartTitle(ensureMaxLen(metaTitleRaw, 65))
+  const awkwardEnd = /\b(the|a|an|and|or|of|with|for|to|in|on|their|these|this|current)$/i.test(mtCandidate)
+  if ((mtCandidate.length >= 55 && /\s—\s/.test(mtCandidate)) || awkwardEnd) {
+    const kpNorm = kp.toLowerCase()
+    let alt = ''
+    if (/\blegal\s+issues\b/.test(kpNorm) && /mass\s+deportation/.test(kpNorm)) alt = 'Legal Issues in Mass Deportation'
+    else if (/mass\s+deportation/.test(kpNorm)) alt = 'Mass Deportation: Legal Issues'
+    else alt = smartTitle(kp)
+    if (alt && alt.length <= 60) mtCandidate = alt
+  }
+  let metaTitle = mtCandidate
   let metaDescription = (input.metaDescription || '').trim()
   if (!metaDescription) {
-    const plain = stripMd(body)
+    const noH1 = body.replace(/^\s*#\s+[^\n]+\n?\n?/, '')
+    const plain = stripMd(noH1)
     const parts = plain.split(/(?<=[.!?])\s+/).filter(Boolean)
     const maxLen = 160
     let desc = ''

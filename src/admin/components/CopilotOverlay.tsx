@@ -13,6 +13,32 @@ import { PanelLeft, Plus, X, Send, Bot, Trash2 } from 'lucide-react'
 
 export type Message = { id: string; role: 'user' | 'assistant'; content: string; ts: number; typing?: boolean }
 
+function makeIntroH2FromKeyphrase(kp: string) {
+  try {
+    const raw = String(kp || '').trim()
+    const lower = raw.toLowerCase()
+    const cap = (s: string) => smartTitle(s)
+    // Legal issues in X
+    const mLegal = lower.match(/^\s*legal\s+issues(?:\s+(?:in|of))?\s+(.+)$/)
+    if (mLegal && mLegal[1]) return `## Legal Issues in ${cap(mLegal[1])}`
+    // Statute of limitations for X
+    const mSol = lower.match(/^\s*statute\s+of\s+limitations(?:\s+(?:in|for))?\s+(.+)$/)
+    if (mSol && mSol[1]) return `## Statute of Limitations for ${cap(mSol[1])}`
+    // How/What/When questions
+    if (/^\s*how\s+to\b/.test(lower)) return `## ${cap(raw)}`
+    if (/^\s*what\s+(is|are)\b/.test(lower)) return `## ${cap(raw)}`
+    if (/^\s*when\s+to\b/.test(lower)) return `## ${cap(raw)}`
+    // Laws
+    if (/\b(law|laws)\b/.test(lower)) return `## Understanding ${cap(raw)}`
+    // If keyphrase already includes a guide/overview term, use as-is
+    if (/\b(guide|overview|understanding|basics|introduction)\b/.test(lower)) return `## ${cap(raw)}`
+    // Default
+    return `## Overview of ${cap(raw)}`
+  } catch {
+    return `## Overview of ${smartTitle(kp || '')}`
+  }
+}
+
 function removeExcerptLead(body: string, excerpt: string) {
   try {
     let text = String(body || '').replace(/\r\n?/g, '\n')
@@ -174,7 +200,10 @@ function smartTitle(s: string) {
       : core
     return pre + cap + post
   })
-  return out.join(' ')
+  let result = out.join(' ')
+  // Capitalize the first word after em dash/en dash/colon boundaries
+  result = result.replace(/([—–:])\s+([a-z])/g, (_, p, c) => `${p} ${c.toUpperCase()}`)
+  return result
 }
 
 function ensureSentence(s: string) {
@@ -332,17 +361,14 @@ function enforceSeo(input: { title: string; body: string; metaTitle?: string; me
     }
     if (out.length) body = out.join('\n\n')
   } catch {}
-  // Ensure body has an H1 heading using the final title
+  // Ensure an early readable heading (H2) without duplicating the page H1
   try {
-    const hasH1 = /^\s*#\s+/.test(body.trim())
-    if (!hasH1) {
-      const base = smartTitle(kp)
-      const tnorm = String(title || '').trim().toLowerCase()
-      let variant = base
-      if (base.length < 8 || base.toLowerCase() === tnorm) {
-        variant = smartTitle(`${kp} — ${title}`)
-      }
-      body = `# ${variant}` + (body ? `\n\n${body}` : '')
+    const trimmedBody = body.trim()
+    const firstLine = (trimmedBody.split('\n').find(l => l.trim().length > 0) || '')
+    const firstIsHeading = /^#{1,6}\s+/.test(firstLine)
+    if (!firstIsHeading) {
+      const h2 = makeIntroH2FromKeyphrase(kp)
+      body = h2 + (trimmedBody ? `\n\n${trimmedBody}` : '')
     }
   } catch {}
   // Do not inject additional density lines; rely on authoring and CTA

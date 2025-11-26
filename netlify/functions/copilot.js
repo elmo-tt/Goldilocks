@@ -589,7 +589,8 @@ export const handler = async (event) => {
       }
       convo.push(longFormMsg)
     }
-    const clearlyCreate = /\b(create|draft|write|generate|develop)\b[\s\S]*?\b(article|post|blog)\b/i.test(lastUserText)
+    const clearlyCreate = /\b(create|draft|write|generate|develop)\b[\s\S]{0,80}\b(article|post|blog|guide|landing\s*page)\b/i.test(lastUserText)
+    const wantsCitations = /\b(cite|citation|citations|sources?)\b/i.test(lastUserText) || /\b\d+\s+(sources?|citations?)\b/i.test(lastUserText)
     if (clearlyCreate) {
       const forceCreateMsg = {
         role: 'system',
@@ -599,6 +600,13 @@ export const handler = async (event) => {
         ].join(' ')
       }
       convo.push(forceCreateMsg)
+    }
+    if (wantsCitations) {
+      const citeMsg = {
+        role: 'system',
+        content: 'User requested cited sources. Use searchWeb (3–5 reputable results) and/or provided URLs, quote accurately, and include a final Sources section with bullet links. Cite inline where helpful.'
+      }
+      convo.push(citeMsg)
     }
     if (fetchedSources.length) {
       const bullets = fetchedSources.map((s, i) => `${i + 1}. ${s.title || '(untitled)'} — ${s.url}`).join('\n')
@@ -617,24 +625,25 @@ export const handler = async (event) => {
     let finalContent = ''
     const chatTemperature = articleLike ? Math.min(0.7, temperature + 0.2) : temperature
     const chatMaxTokens = articleLike ? Math.max(max_tokens, 1800) : max_tokens
-    const toolChoice = clearlyCreate ? { type: 'function', function: { name: 'createArticle' } } : 'auto'
-    const steps = 1
+    const steps = (wantsCitations || uniqueUrls.length > 0) ? 2 : 1
     for (let step = 0; step < steps; step++) {
+      const forceCreateThisStep = clearlyCreate && (step === steps - 1)
+      const toolChoice = forceCreateThisStep ? { type: 'function', function: { name: 'createArticle' } } : 'auto'
       if (budgetLeft() < 1500) break
       const resp = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
         body: JSON.stringify({ model, messages: convo, temperature: chatTemperature, max_tokens: chatMaxTokens, tools, tool_choice: toolChoice })
       }, Math.min(9000, budgetLeft()))
-      const data = await resp.json()
+      const data = await resp.json().catch(() => ({}))
       if (!resp.ok) {
-        const msg = data?.error?.message || 'Upstream error'
-        return { statusCode: 500, headers: cors, body: msg }
+        // Upstream error: proceed to fallback stages instead of returning 500
+        break
       }
       const assistantMsg = data?.choices?.[0]?.message || {}
       finalContent = (assistantMsg?.content?.trim?.() || finalContent)
       const tcs = Array.isArray(assistantMsg?.tool_calls) ? assistantMsg.tool_calls : []
-      if (!tcs.length) break
+      if (!tcs.length) { convo = [...convo, { role: 'assistant', content: assistantMsg.content || '' }]; continue }
       const toolOutputs = []
       for (const tc of tcs) {
         const name = tc?.function?.name || ''
@@ -690,7 +699,7 @@ export const handler = async (event) => {
         }
       } catch {}
       // Third-stage: if still no tool calls, ask for a full Markdown article and synthesize createArticle
-      if (clientCalls.length === 0 && budgetLeft() > 800) {
+      if (clientCalls.length === 0 && articleLike && budgetLeft() > 800) {
         try {
           const articleHint = {
             role: 'system',

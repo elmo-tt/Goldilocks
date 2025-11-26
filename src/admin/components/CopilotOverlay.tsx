@@ -13,6 +13,62 @@ import { PanelLeft, Plus, X, Send, Bot, Trash2 } from 'lucide-react'
 
 export type Message = { id: string; role: 'user' | 'assistant'; content: string; ts: number; typing?: boolean }
 
+function removeExcerptLead(body: string, excerpt: string) {
+  try {
+    let text = String(body || '').replace(/\r\n?/g, '\n')
+    const lines = text.split('\n')
+    let idx = 0
+    let header = ''
+    if (lines.length && /^\s*#\s+/.test(lines[0])) {
+      header = lines[0]
+      idx = 1
+      while (idx < lines.length && lines[idx].trim() === '') idx++
+    }
+    const paraLines: string[] = []
+    while (idx < lines.length && lines[idx].trim() !== '') { paraLines.push(lines[idx]); idx++ }
+    const para = stripMd(paraLines.join(' ').trim())
+    const ex = stripMd(String(excerpt || ''))
+    if (ex && para && (
+      para.toLowerCase() === ex.toLowerCase() ||
+      ex.toLowerCase().startsWith(para.toLowerCase())
+    )) {
+      const rest = lines.slice(idx)
+      while (rest.length && rest[0].trim() === '') rest.shift()
+      const rebuilt = (header ? [header, '', ...rest] : rest).join('\n')
+      return normalizeAiMarkdown(rebuilt)
+    }
+  } catch {}
+  return body
+}
+
+function buildExcerpt(excerptInput: string | undefined, bodyForFallback: string) {
+  const maxLen = 180
+  try {
+    let ex = String(excerptInput || '').trim()
+    if (ex) {
+      ex = ex.replace(/^(?:\*\*\s*)?(?:Article\s*(?:Draft)?|Title|Excerpt|Body)\s*:\s*/i, '')
+      ex = ex.replace(/Excerpt\s*:?:?\s*/i, '')
+      ex = stripMd(ex)
+      ex = polishSummary(ensureMaxLen(ex, maxLen))
+      return ensureSentence(ex)
+    }
+    const plain = stripMd(bodyForFallback || '')
+    const parts = plain.split(/(?<=[.!?])\s+/).filter(Boolean)
+    let out = ''
+    for (const s of parts) {
+      const cand = (out ? out + ' ' : '') + s.trim()
+      if (cand.length > maxLen - 10) break
+      out = cand
+    }
+    if (!out) out = ensureMaxLen(plain, 150)
+    out = polishSummary(out)
+    out = ensureMaxLen(out, maxLen)
+    return ensureSentence(out)
+  } catch {
+    return ensureSentence(ensureMaxLen(stripMd(String(excerptInput || bodyForFallback || '')), maxLen))
+  }
+}
+
 function deriveKeyphrase(title: string, provided?: string, tags?: string[]) {
   const p = (provided || '').trim()
   if (p) return p
@@ -204,7 +260,13 @@ function enforceSeo(input: { title: string; body: string; metaTitle?: string; me
   try {
     const hasH1 = /^\s*#\s+/.test(body.trim())
     if (!hasH1) {
-      body = `# ${title}` + (body ? `\n\n${body}` : '')
+      const base = smartTitle(kp)
+      const tnorm = String(title || '').trim().toLowerCase()
+      let variant = base
+      if (base.length < 8 || base.toLowerCase() === tnorm) {
+        variant = smartTitle(`${kp} — ${title}`)
+      }
+      body = `# ${variant}` + (body ? `\n\n${body}` : '')
     }
   } catch {}
   // Do not inject additional density lines; rely on authoring and CTA
@@ -613,13 +675,12 @@ export default function CopilotOverlay({
                 // Enforce SEO rules on the final content and fields
                 const enforced = enforceSeo({ title, body, metaTitle, metaDescription, keyphrase, tags, canonicalUrl })
                 title = enforced.title
-                body = enforced.body
+                const cleanExcerpt = buildExcerpt(excerpt, enforced.body)
+                body = removeExcerptLead(enforced.body, cleanExcerpt)
                 keyphrase = enforced.keyphrase
                 metaTitle = enforced.metaTitle
                 metaDescription = enforced.metaDescription
-                // Ensure excerpt is clean and not duplicated labels
-                try { excerpt = ensureMaxLen(stripMd(String(excerpt || '')), 180) } catch {}
-                const saved = ArticlesStore.save({ title, slug: enforced.slug, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, noindex, status })
+                const saved = ArticlesStore.save({ title, slug: enforced.slug, excerpt: cleanExcerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, noindex, status })
                 // If slug changed due to uniqueness, correct canonical to the final slug
                 try {
                   const origin = (typeof window !== 'undefined' ? window.location.origin : '')
@@ -876,12 +937,13 @@ export default function CopilotOverlay({
                   const enforced = enforceSeo({ title: chosenTitle, body: draftBody })
                   const origin = (typeof window !== 'undefined' ? window.location.origin : '')
                   const canonicalUrl = origin ? `${origin}/articles/${enforced.slug}` : `/articles/${enforced.slug}`
-                  const excerpt = excerptFromReply ? ensureMaxLen(stripMd(excerptFromReply), 180) : ensureMaxLen(stripMd(draftBody), 180)
+                  const excerpt = buildExcerpt(excerptFromReply, draftBody)
+                  const finalBody = removeExcerptLead(enforced.body, excerpt)
                   const saved = ArticlesStore.save({
                     title: enforced.title,
                     slug: enforced.slug,
                     excerpt,
-                    body: enforced.body,
+                    body: finalBody,
                     tags: [],
                     keyphrase: enforced.keyphrase,
                     metaTitle: enforced.metaTitle,

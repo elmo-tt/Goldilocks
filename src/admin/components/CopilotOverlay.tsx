@@ -50,21 +50,46 @@ function buildExcerpt(excerptInput: string | undefined, bodyForFallback: string)
       ex = ex.replace(/^(?:\*\*\s*)?(?:Article\s*(?:Draft)?|Title|Excerpt|Body)\s*:\s*/i, '')
       ex = ex.replace(/Excerpt\s*:?:?\s*/i, '')
       ex = stripMd(ex)
-      ex = polishSummary(ensureMaxLen(ex, maxLen))
-      return ensureSentence(ex)
+      const parts = ex.split(/(?<=[.!?])\s+/).filter(Boolean)
+      let out = ''
+      let lastIdx = -1
+      for (let i = 0; i < parts.length; i++) {
+        const s = parts[i]
+        if (isMetaSentence(s)) continue
+        const cand = (out ? out + ' ' : '') + s.trim()
+        if (cand.length > maxLen - 10) break
+        out = cand
+        lastIdx = i
+        if (out.length >= 80) break
+      }
+      if (!out) out = compressSentence(ex, maxLen)
+      else out = compressSentence(out, maxLen)
+      if (/\b(of|for|with|on|in|to|into|onto|about|regarding|as|by|from)\.?$/i.test(out) && lastIdx >= 0 && parts[lastIdx + 1]) {
+        const next = parts[lastIdx + 1].trim()
+        if (next && !isMetaSentence(next)) out = compressSentence(`${out} ${next}`, maxLen)
+      }
+      return ensureSentence(out)
     }
     const noH1 = String(bodyForFallback || '').replace(/^\s*#{1,6}\s+[^\n]+\s*\n+/, '')
     const plain = stripMd(noH1)
     const parts = plain.split(/(?<=[.!?])\s+/).filter(Boolean)
     let out = ''
-    for (const s of parts) {
+    let lastIdx = -1
+    for (let i = 0; i < parts.length; i++) {
+      const s = parts[i]
+      if (isMetaSentence(s)) continue
       const cand = (out ? out + ' ' : '') + s.trim()
-      if (cand.length > maxLen - 10) break
+      if (cand.length > maxLen - 10) { break }
       out = cand
+      lastIdx = i
+      if (out.length >= 80) break
     }
-    if (!out) out = ensureMaxLen(plain, 150)
-    out = polishSummary(out)
-    out = ensureMaxLen(out, maxLen)
+    if (!out) out = compressSentence(parts[0] || plain, maxLen)
+    else out = compressSentence(out, maxLen)
+    if (/\b(of|for|with|on|in|to|into|onto|about|regarding|as|by|from)\.?$/i.test(out) && lastIdx >= 0 && parts[lastIdx + 1]) {
+      const next = parts[lastIdx + 1].trim()
+      if (next && !isMetaSentence(next)) out = compressSentence(`${out} ${next}`, maxLen)
+    }
     return ensureSentence(out)
   } catch {
     return ensureSentence(ensureMaxLen(stripMd(String(excerptInput || bodyForFallback || '')), maxLen))
@@ -154,6 +179,7 @@ function smartTitle(s: string) {
 
 function ensureSentence(s: string) {
   let x = String(s || '').trim()
+  x = trimTrailingWeak(x)
   if (!x) return x
   x = x.charAt(0).toUpperCase() + x.slice(1)
   if (!/[.!?]$/.test(x)) x += '.'
@@ -166,7 +192,9 @@ function polishSummary(s: string) {
   x = x.replace(/\s*[:–—-]\s*$/, '')
   x = x.replace(/,?\s*(which|that)\s+(have|has|raise|raises|drawn|sparked|created|caused)\b[^.]*$/i, '')
   x = x.replace(/(?:,\s*)?(?:of|for|with|on|in|to|into|onto|about|regarding)\s+[^.]{0,30}$/i, '')
+  x = x.replace(/\s+(?:of|for|with|on|in|to|into|onto|about|regarding)\s*(?:[.!?])?$/i, '')
   x = x.replace(/\s+(?:the|these|those|their|this|that)$/i, '')
+  x = trimTrailingWeak(x)
   if (/\b(widespread|significant|numerous|serious|critical|major|severe|ongoing|substantial)\.?$/i.test(x)) {
     const cut = x.lastIndexOf(',')
     if (cut > 40) x = x.slice(0, cut)
@@ -174,6 +202,49 @@ function polishSummary(s: string) {
   x = x.replace(/\s+/g, ' ').trim()
   if (!/[.!?]$/.test(x)) x += '.'
   return x
+}
+
+function isMetaSentence(s: string) {
+  return /^\s*(this\s+article|in\s+this\s+article|this\s+post|in\s+this\s+post|we\s+(?:discuss|explore|examine)|the\s+article)\b/i.test(String(s || ''))
+}
+
+function trimTrailingWeak(s: string) {
+  let x = String(s || '').trim()
+  x = x.replace(/\s+([.!?])$/, '$1')
+  const preps = '(?:of|for|with|on|in|to|into|onto|about|regarding|as|by|from)'
+  const dets = '(?:the|a|an|these|those|their|this|that|its)'
+  for (let i = 0; i < 5; i++) {
+    const before = x
+    x = x.replace(/\s*(?:,|;|:)\s*$/, '')
+    x = x.replace(new RegExp(`\n+$`), '')
+    // Remove trailing "of (the|these|...)" patterns
+    x = x.replace(new RegExp(`\s+${preps}\s+(?:${dets})\s*$`, 'i'), '')
+    // Remove trailing single prep/det/conj words
+    x = x.replace(new RegExp(`\s+(?:${preps}|${dets}|and|or|but|than)$`, 'i'), '')
+    if (x === before) break
+  }
+  return x.trim()
+}
+
+function cutAtBoundary(s: string, maxLen: number) {
+  const text = String(s || '').trim()
+  if (text.length <= maxLen) return text
+  const slice = text.slice(0, maxLen)
+  const punct = Math.max(slice.lastIndexOf(','), slice.lastIndexOf(';'), slice.lastIndexOf('—'), slice.lastIndexOf('–'), slice.lastIndexOf(':'))
+  let cut = punct >= 40 ? punct : slice.lastIndexOf(' ')
+  if (cut < 40) cut = maxLen
+  return slice.slice(0, cut).trim()
+}
+
+function compressSentence(s: string, maxLen: number) {
+  let base = String(s || '').trim()
+  // Prefer stopping at first full sentence if available
+  const m = base.match(/^[\s\S]*?[.!?](?=\s|$)/)
+  if (m) base = m[0].trim()
+  if (base.length > maxLen) base = cutAtBoundary(base, maxLen)
+  base = trimTrailingWeak(base)
+  base = polishSummary(base)
+  return ensureMaxLen(base, maxLen)
 }
 
 function norm(s: string) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() }
@@ -295,12 +366,21 @@ function enforceSeo(input: { title: string; body: string; metaTitle?: string; me
     const maxLen = 160
     let desc = ''
     for (const s of parts) {
+      if (isMetaSentence(s)) continue
       const cand = (desc ? desc + ' ' : '') + s.trim()
       if (cand.length > 150) break
       desc = cand
     }
-    if (!desc) desc = plain.slice(0, 140).replace(/\s+\S*$/, '')
-    desc = polishSummary(desc)
+    if (!desc) desc = compressSentence(plain, 155)
+    // If too short, append next sentence if available
+    if (desc.length < 60) {
+      const idx = parts.findIndex(p => desc.includes(p.trim()))
+      const next = idx >= 0 && parts[idx + 1] ? parts[idx + 1].trim() : ''
+      if (next && !isMetaSentence(next)) {
+        const joined = `${desc} ${next}`
+        desc = compressSentence(joined, 155)
+      }
+    }
     const hasKp = new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(desc)
     if (!hasKp) {
       const pref = `${kp} — `

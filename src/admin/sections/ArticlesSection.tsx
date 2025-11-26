@@ -1198,7 +1198,7 @@ function SeoChecks(props: { title: string; slug: string; body: string; excerpt: 
     }
     return hits >= need
   })()
-  const descUse = includesWord(props.metaDescription || props.excerpt, props.keyphrase)
+  const descUse = includesKeyphraseLoose(props.metaDescription || props.excerpt, props.keyphrase)
   const headUse = includesHeadings(props.body, props.keyphrase)
   const words = ((txt || '').toLowerCase().replace(/[-_]+/g, ' ').trim().match(/\b[a-z0-9]+\b/g) || []).length
   const hits = countWord(txt, props.keyphrase)

@@ -13,6 +13,24 @@ import { PanelLeft, Plus, X, Send, Bot, Trash2 } from 'lucide-react'
 
 export type Message = { id: string; role: 'user' | 'assistant'; content: string; ts: number; typing?: boolean }
 
+function formatKeyphraseLabel(kp: string) {
+  try {
+    const raw = String(kp || '').trim()
+    const lower = raw.toLowerCase()
+    const cap = (s: string) => smartTitle(s)
+    const mLegal = lower.match(/^\s*legal\s+issues(?:\s+(?:in|of))?\s+(.+)$/)
+    if (mLegal && mLegal[1]) return `Legal Issues in ${cap(mLegal[1])}`
+    const mSol = lower.match(/^\s*statute\s+of\s+limitations(?:\s+(?:in|for))?\s+(.+)$/)
+    if (mSol && mSol[1]) return `Statute of Limitations for ${cap(mSol[1])}`
+    if (/^\s*how\s+to\b/.test(lower)) return cap(raw)
+    if (/^\s*what\s+(is|are)\b/.test(lower)) return cap(raw)
+    if (/^\s*when\s+to\b/.test(lower)) return cap(raw)
+    if (/\b(law|laws)\b/.test(lower)) return `Understanding ${cap(raw)}`
+    if (/\b(guide|overview|understanding|basics|introduction)\b/.test(lower)) return cap(raw)
+    return cap(raw)
+  } catch { return smartTitle(kp || '') }
+}
+
 function makeIntroH2FromKeyphrase(kp: string) {
   try {
     const raw = String(kp || '').trim()
@@ -387,8 +405,8 @@ function enforceSeo(input: { title: string; body: string; metaTitle?: string; me
   let metaTitle = mtCandidate
   let metaDescription = (input.metaDescription || '').trim()
   if (!metaDescription) {
-    const noH1 = body.replace(/^\s*#\s+[^\n]+\n?\n?/, '')
-    const plain = stripMd(noH1)
+    const noHeads = body.replace(/^\s*#{1,6}\s+[^\n]+\n?/gm, '')
+    const plain = stripMd(noHeads)
     const parts = plain.split(/(?<=[.!?])\s+/).filter(Boolean)
     const maxLen = 160
     let desc = ''
@@ -408,9 +426,17 @@ function enforceSeo(input: { title: string; body: string; metaTitle?: string; me
         desc = compressSentence(joined, 155)
       }
     }
-    const hasKp = new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(desc)
+    // If desc already begins with the formatted label but lacks punctuation, insert an em dash
+    const label = formatKeyphraseLabel(kp)
+    const escLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const reStart = new RegExp(`^${escLabel}(\s+)(?![—–:\-])`, 'i')
+    if (reStart.test(desc)) {
+      desc = desc.replace(reStart, `${label} — `)
+    }
+    // Treat label presence as satisfying keyphrase presence to avoid double prefix
+    const hasKp = new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(desc) || desc.toLowerCase().includes(label.toLowerCase())
     if (!hasKp) {
-      const pref = `${kp} — `
+      const pref = `${label} — `
       if ((pref + desc).length <= maxLen) desc = pref + desc
     }
     metaDescription = ensureMaxLen(desc, maxLen)

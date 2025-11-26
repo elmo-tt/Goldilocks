@@ -405,7 +405,8 @@ export default function CopilotOverlay({
               try {
                 let title = String(c.args?.title || 'Untitled')
                 let excerpt = String(c.args?.excerpt || '')
-                let body = normalizeAiMarkdown(String(c.args?.body || ''))
+                const rawBody = String(c.args?.body || '')
+                let body = normalizeAiMarkdown(rawBody)
                 const tags = Array.isArray(c.args?.tags) ? c.args.tags.map((t: any) => String(t)).slice(0, 8) : []
                 let keyphrase = c.args?.keyphrase ? String(c.args.keyphrase) : undefined
                 let metaTitle = c.args?.metaTitle ? String(c.args.metaTitle) : undefined
@@ -413,18 +414,70 @@ export default function CopilotOverlay({
                 let canonicalUrl = c.args?.canonicalUrl ? String(c.args.canonicalUrl) : undefined
                 const noindex = typeof c.args?.noindex === 'boolean' ? Boolean(c.args.noindex) : undefined
                 const status = (c.args?.status === 'published') ? 'published' : 'draft'
+                try {
+                  if (excerpt) {
+                    let ex = String(excerpt || '').replace(/\r\n?/g, '\n').trim()
+                    const mx = ex.match(/Excerpt\s*:?:?\s*([\s\S]*)/i)
+                    if (mx && mx[1]) ex = mx[1].trim()
+                    ex = ex.replace(/^\s*(?:\*\*\s*)?(?:Article\s*(?:Draft)?|Title|Excerpt|Body)\s*:\s*/gim, '')
+                    excerpt = ensureMaxLen(stripMd(ex), 180)
+                  } else {
+                    const m = rawBody.match(/(?:^|\n)\s*(?:\*\*\s*)?Excerpt\s*:?:?\s*([\s\S]*?)(?:\n{2,}|(?:^|\n)\s*(?:\*\*\s*)?Body\s*:|$)/i)
+                    if (m && m[1]) {
+                      excerpt = ensureMaxLen(stripMd(m[1].trim()), 180)
+                    }
+                  }
+                } catch {}
                 // Sanitize body: drop label/meta lines and conversational prompts
                 try {
                   body = body
-                    .replace(/^.*Article\s*Draft\s*:.*$/gim, '')
-                    .replace(/^\s*Title\s*:\s*.*$/gim, '')
-                    .replace(/^\s*Excerpt\s*:\s*[\s\S]*?(?:\n{2,}|$)/gim, '')
-                    .replace(/^\s*Body\s*:\s*/gim, '')
+                    .replace(/^\s*(?:\*\*\s*)?Article\s*(?:Draft)?\s*:\s*.*$/gim, '')
+                    .replace(/^\s*(?:\*\*\s*)?Title\s*:\s*.*$/gim, '')
+                    .replace(/^\s*(?:\*\*\s*)?Excerpt\s*:?:?\s*[\s\S]*?(?:\n{2,}|$)/gim, '')
+                    .replace(/^\s*(?:\*\*\s*)?Body\s*:\s*/gim, '')
                     .replace(/^\s*Would you like me to create.*$/gim, '')
                     .replace(/^[^\n]*\bmin\s*read\b[^\n]*$/gim, '')
                     .replace(/^(?:\s)*(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}[^\n]*$/gim, '')
                   body = normalizeAiMarkdown(body)
                 } catch {}
+                // Prefer H1 or explicit Title/Article Draft in body as title when provided
+                try {
+                  const tAD = rawBody.match(/(?:^|\n)\s*(?:\*\*\s*)?Article\s*(?:Draft)?\s*:\s*(.+)/i)?.[1]?.trim()
+                  const tT = rawBody.match(/(?:^|\n)\s*(?:\*\*\s*)?Title\s*:\s*(.+)/i)?.[1]?.trim()
+                  const h1 = body.match(/^\s*#\s+(.+)$/m)?.[1]?.trim()
+                  const bodyTitle = (tAD || tT || h1 || '').trim()
+                  const cleanupTitle = (s: string) => s
+                    .replace(/^\s*(please\s+)?(create|draft|write|generate|develop)\s+(?:an?\s+)?(?:[a-z]+\s+){0,6}?(article|post|blog)\s+(on|about|regarding|for)\s*/i, '')
+                    .replace(/\s+(and|with)\s+(include|including)\b[\s\S]*$/i, '')
+                    .replace(/\s+include\s+\d+\s+(citations?|sources?).*$/i, '')
+                    .replace(/\s+with\s+\d+\s+(citations?|sources?).*$/i, '')
+                    .replace(/\s+and\s+\d+\s+(citations?|sources?).*$/i, '')
+                    .replace(/\s*[,;:–—-]\s*(include|including|with)\b[\s\S]*$/i, '')
+                  const cleaned = cleanupTitle(title).trim()
+                  const looksDirective = /^(please\s+)?(create|draft|write|generate|develop)\b/i.test(title)
+                  if ((looksDirective || !cleaned || cleaned.toLowerCase() === (userMsg.content || '').trim().toLowerCase()) && bodyTitle && bodyTitle.length >= 6) {
+                    title = bodyTitle
+                  } else {
+                    title = cleaned || title
+                  }
+                } catch {}
+                // If excerpt is still empty, peel it from the raw body top block and remove that block from body
+                try {
+                  if (!excerpt && rawBody) {
+                    const trimmedRaw = String(rawBody || '').replace(/\r\n?/g, '\n').trimStart()
+                    const m = trimmedRaw.match(/^\s*(?:\*\*\s*)?Excerpt\s*:?:?\s*([\s\S]*?)(?:\n{2,}|\n\s*[-*_]{3,}\s*\n?|$)/i)
+                    if (m && m[1]) {
+                      excerpt = ensureMaxLen(stripMd(m[1].trim()), 180)
+                      const after = trimmedRaw.slice(m[0].length).replace(/^\s+/, '')
+                      body = normalizeAiMarkdown(after)
+                      body = body
+                        .replace(/^\s*(?:\*\*\s*)?Article\s*(?:Draft)?\s*:\s*.*$/gim, '')
+                        .replace(/^\s*(?:\*\*\s*)?Title\s*:\s*.*$/gim, '')
+                        .replace(/^\s*(?:\*\*\s*)?Body\s*:\s*/gim, '')
+                    }
+                  }
+                } catch {}
+                
                 // Prefer H1 in body as title if present
                 try {
                   const h1 = body.match(/^\s*#\s+(.+)$/m)?.[1]?.trim()
@@ -438,7 +491,7 @@ export default function CopilotOverlay({
                     .replace(/\s+with\s+\d+\s+(citations?|sources?).*$/i, '')
                     .replace(/\s+and\s+\d+\s+(citations?|sources?).*$/i, '')
                     .replace(/\s*[,;:–—-]\s*(include|including|with)\b[\s\S]*$/i, '')
-                title = cleanupTitle(title).trim() || title
+                  title = cleanupTitle(title).trim() || title
                 } catch {}
                 // If the model placed an Excerpt block at the top of the body but did not fill the excerpt field,
                 // peel it off into the excerpt and strip it from the body.
@@ -446,7 +499,7 @@ export default function CopilotOverlay({
                   if (!excerpt && body) {
                     const trimmed = body.trimStart()
                     // Match patterns like "**Excerpt:** ..." or "Excerpt: ..." optionally followed by a separator line (---)
-                    const m = trimmed.match(/^\s*(?:\*\*\s*)?Excerpt\s*:?\s*(.+?)(?:\s*\n\s*[-*_]{3,}\s*\n?|\s*\n\s*\n+)/i)
+                    const m = trimmed.match(/^\s*(?:\*\*\s*)?Excerpt\s*:?:?\s*([\s\S]*?)(?:\s*\n\s*[-*_]{3,}\s*\n?|\s*\n\s*\n+)/i)
                     if (m && m[1]) {
                       const exText = m[1].trim()
                       if (exText) {
@@ -489,6 +542,8 @@ export default function CopilotOverlay({
                 keyphrase = enforced.keyphrase
                 metaTitle = enforced.metaTitle
                 metaDescription = enforced.metaDescription
+                // Ensure excerpt is clean and not duplicated labels
+                try { excerpt = ensureMaxLen(stripMd(String(excerpt || '')), 180) } catch {}
                 const saved = ArticlesStore.save({ title, slug: enforced.slug, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, noindex, status })
                 // If slug changed due to uniqueness, correct canonical to the final slug
                 try {
@@ -670,25 +725,25 @@ export default function CopilotOverlay({
                   let titleFromReply = ''
                   let excerptFromReply = ''
                   let bodyFromReply = ''
-                  const mAD = rawReply.match(/(?:^|\n)\s*Article\s*Draft\s*:\s*(.+)/i)
+                  const mAD = rawReply.match(/(?:^|\n)\s*(?:\*\*\s*)?Article\s*(?:Draft)?\s*:\s*(.+)/i)
                   if (mAD && mAD[1]) titleFromReply = mAD[1].trim()
                   if (!titleFromReply) {
-                    const mT = rawReply.match(/(?:^|\n)\s*Title\s*:\s*(.+)/i)
+                    const mT = rawReply.match(/(?:^|\n)\s*(?:\*\*\s*)?Title\s*:\s*(.+)/i)
                     if (mT && mT[1]) titleFromReply = mT[1].trim()
                   }
                   if (!titleFromReply) {
                     const mH1 = rawReply.match(/^\s*#\s+(.+)$/m)
                     if (mH1 && mH1[1]) titleFromReply = mH1[1].trim()
                   }
-                  const mEx = rawReply.match(/(?:^|\n)\s*Excerpt\s*:\s*([\s\S]*?)(?:\n{2,}|(?:^|\n)\s*Body\s*:|$)/i)
+                  const mEx = rawReply.match(/(?:^|\n)\s*(?:\*\*\s*)?Excerpt\s*:?:?\s*([\s\S]*?)(?:\n{2,}|(?:^|\n)\s*(?:\*\*\s*)?Body\s*:|$)/i)
                   if (mEx && mEx[1]) excerptFromReply = mEx[1].trim()
-                  const mBody = rawReply.match(/(?:^|\n)\s*Body\s*:\s*([\s\S]+)/i)
+                  const mBody = rawReply.match(/(?:^|\n)\s*(?:\*\*\s*)?Body\s*:\s*([\s\S]+)/i)
                   bodyFromReply = (mBody && mBody[1]) ? mBody[1].trim() : rawReply
                   let draftBody = bodyFromReply
-                    .replace(/^.*Article\s*Draft\s*:.*$/gim, '')
-                    .replace(/^\s*Title\s*:\s*.*$/gim, '')
-                    .replace(/^\s*Excerpt\s*:\s*[\s\S]*?(?:\n{2,}|$)/gim, '')
-                    .replace(/^\s*Body\s*:\s*/gim, '')
+                    .replace(/^\s*(?:\*\*\s*)?Article\s*(?:Draft)?\s*:\s*.*$/gim, '')
+                    .replace(/^\s*(?:\*\*\s*)?Title\s*:\s*.*$/gim, '')
+                    .replace(/^\s*(?:\*\*\s*)?Excerpt\s*:?:?\s*[\s\S]*?(?:\n{2,}|$)/gim, '')
+                    .replace(/^\s*(?:\*\*\s*)?Body\s*:\s*/gim, '')
                     .replace(/^\s*Would you like me to create.*$/gim, '')
                     .replace(/^[^\n]*\bmin\s*read\b[^\n]*$/gim, '')
                     .replace(/^(?:\s)*(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}[^\n]*$/gim, '')
@@ -732,7 +787,17 @@ export default function CopilotOverlay({
                       '- Ask for written confirmation of key decisions and timelines.',
                     ].join('\n')
                   }
-                  const chosenTitle = (titleFromReply || synthTitle)
+                  const cleanedSynthTitle = (() => {
+                    const cleanup = (s: string) => s
+                      .replace(/^\s*(please\s+)?(create|draft|write|generate|develop)\s+(?:an?\s+)?(?:[a-z]+\s+){0,6}?(article|post|blog)\s+(on|about|regarding|for)\s*/i, '')
+                      .replace(/\s+(and|with)\s+(include|including)\b[\s\S]*$/i, '')
+                      .replace(/\s+include\s+\d+\s+(citations?|sources?).*$/i, '')
+                      .replace(/\s+with\s+\d+\s+(citations?|sources?).*$/i, '')
+                      .replace(/\s+and\s+\d+\s+(citations?|sources?).*$/i, '')
+                      .replace(/\s*[,;:–—-]\s*(include|including|with)\b[\s\S]*$/i, '')
+                    return cleanup(synthTitle).trim() || synthTitle
+                  })()
+                  const chosenTitle = (titleFromReply || cleanedSynthTitle)
                   const enforced = enforceSeo({ title: chosenTitle, body: draftBody })
                   const origin = (typeof window !== 'undefined' ? window.location.origin : '')
                   const canonicalUrl = origin ? `${origin}/articles/${enforced.slug}` : `/articles/${enforced.slug}`

@@ -413,6 +413,33 @@ export default function CopilotOverlay({
                 let canonicalUrl = c.args?.canonicalUrl ? String(c.args.canonicalUrl) : undefined
                 const noindex = typeof c.args?.noindex === 'boolean' ? Boolean(c.args.noindex) : undefined
                 const status = (c.args?.status === 'published') ? 'published' : 'draft'
+                // Sanitize body: drop label/meta lines and conversational prompts
+                try {
+                  body = body
+                    .replace(/^.*Article\s*Draft\s*:.*$/gim, '')
+                    .replace(/^\s*Title\s*:\s*.*$/gim, '')
+                    .replace(/^\s*Excerpt\s*:\s*[\s\S]*?(?:\n{2,}|$)/gim, '')
+                    .replace(/^\s*Body\s*:\s*/gim, '')
+                    .replace(/^\s*Would you like me to create.*$/gim, '')
+                    .replace(/^[^\n]*\bmin\s*read\b[^\n]*$/gim, '')
+                    .replace(/^(?:\s)*(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}[^\n]*$/gim, '')
+                  body = normalizeAiMarkdown(body)
+                } catch {}
+                // Prefer H1 in body as title if present
+                try {
+                  const h1 = body.match(/^\s*#\s+(.+)$/m)?.[1]?.trim()
+                  if (h1 && h1.length >= 6) title = h1
+                } catch {}
+                // Clean directive phrases from provided title like "and include 3 sources"
+                try {
+                  const cleanupTitle = (s: string) => s
+                    .replace(/\s+(and|with)\s+(include|including)\b[\s\S]*$/i, '')
+                    .replace(/\s+include\s+\d+\s+(citations?|sources?).*$/i, '')
+                    .replace(/\s+with\s+\d+\s+(citations?|sources?).*$/i, '')
+                    .replace(/\s+and\s+\d+\s+(citations?|sources?).*$/i, '')
+                    .replace(/\s*[,;:–—-]\s*(include|including|with)\b[\s\S]*$/i, '')
+                title = cleanupTitle(title).trim() || title
+                } catch {}
                 // If the model placed an Excerpt block at the top of the body but did not fill the excerpt field,
                 // peel it off into the excerpt and strip it from the body.
                 try {
@@ -619,7 +646,6 @@ export default function CopilotOverlay({
               // instead of showing an error message, even if earlier context mentioned updates/SEO.
               if (clearlyCreate) {
                 try {
-                  // Try to extract a title from quoted text or from "on <topic>"
                   const qm = raw.match(/["'“”‘’]([^"'“”‘’]{5,})["'“”‘’]/)
                   let synthTitle = qm ? (qm[1] || '').trim() : ''
                   if (!synthTitle) {
@@ -627,14 +653,49 @@ export default function CopilotOverlay({
                     if (om && om[1]) synthTitle = om[1].trim()
                   }
                   if (!synthTitle) {
-                    // Fallback to stripping leading verbs from the request
                     const stripped = raw.replace(/^(please\s+)?(create|draft|write|generate|develop)\s+(an?\s+)?(article|post|blog)\s+(on|about)\s*/i, '').trim()
                     synthTitle = stripped || 'New Article'
                   }
-                  let draftBody = normalizeAiMarkdown(String(reply || ''))
+                  // Drop trailing directive phrases like 'and include 3 sources/citations'
+                  try {
+                    const cleanupTitle = (s: string) => s
+                      .replace(/\s+(and|with)\s+(include|including)\b[\s\S]*$/i, '')
+                      .replace(/\s+include\s+\d+\s+(citations?|sources?).*$/i, '')
+                      .replace(/\s+with\s+\d+\s+(citations?|sources?).*$/i, '')
+                      .replace(/\s+and\s+\d+\s+(citations?|sources?).*$/i, '')
+                      .replace(/\s*[,;:–—-]\s*(include|including|with)\b[\s\S]*$/i, '')
+                  synthTitle = cleanupTitle(synthTitle).trim()
+                  } catch {}
+                  const rawReply = String(reply || '')
+                  let titleFromReply = ''
+                  let excerptFromReply = ''
+                  let bodyFromReply = ''
+                  const mAD = rawReply.match(/(?:^|\n)\s*Article\s*Draft\s*:\s*(.+)/i)
+                  if (mAD && mAD[1]) titleFromReply = mAD[1].trim()
+                  if (!titleFromReply) {
+                    const mT = rawReply.match(/(?:^|\n)\s*Title\s*:\s*(.+)/i)
+                    if (mT && mT[1]) titleFromReply = mT[1].trim()
+                  }
+                  if (!titleFromReply) {
+                    const mH1 = rawReply.match(/^\s*#\s+(.+)$/m)
+                    if (mH1 && mH1[1]) titleFromReply = mH1[1].trim()
+                  }
+                  const mEx = rawReply.match(/(?:^|\n)\s*Excerpt\s*:\s*([\s\S]*?)(?:\n{2,}|(?:^|\n)\s*Body\s*:|$)/i)
+                  if (mEx && mEx[1]) excerptFromReply = mEx[1].trim()
+                  const mBody = rawReply.match(/(?:^|\n)\s*Body\s*:\s*([\s\S]+)/i)
+                  bodyFromReply = (mBody && mBody[1]) ? mBody[1].trim() : rawReply
+                  let draftBody = bodyFromReply
+                    .replace(/^.*Article\s*Draft\s*:.*$/gim, '')
+                    .replace(/^\s*Title\s*:\s*.*$/gim, '')
+                    .replace(/^\s*Excerpt\s*:\s*[\s\S]*?(?:\n{2,}|$)/gim, '')
+                    .replace(/^\s*Body\s*:\s*/gim, '')
+                    .replace(/^\s*Would you like me to create.*$/gim, '')
+                    .replace(/^[^\n]*\bmin\s*read\b[^\n]*$/gim, '')
+                    .replace(/^(?:\s)*(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}[^\n]*$/gim, '')
+                  draftBody = normalizeAiMarkdown(draftBody)
                   if (!draftBody) {
                     draftBody = [
-                      `# ${synthTitle}`,
+                      `# ${titleFromReply || synthTitle}`,
                       '',
                       '## Key Changes and Legal Framework',
                       'Overview the core legal rules, recent developments, and practical impact on people affected by this topic. Explain what changed (if anything), why it matters, and who is covered.',
@@ -671,10 +732,11 @@ export default function CopilotOverlay({
                       '- Ask for written confirmation of key decisions and timelines.',
                     ].join('\n')
                   }
-                  const enforced = enforceSeo({ title: synthTitle, body: draftBody })
+                  const chosenTitle = (titleFromReply || synthTitle)
+                  const enforced = enforceSeo({ title: chosenTitle, body: draftBody })
                   const origin = (typeof window !== 'undefined' ? window.location.origin : '')
                   const canonicalUrl = origin ? `${origin}/articles/${enforced.slug}` : `/articles/${enforced.slug}`
-                  const excerpt = ensureMaxLen(stripMd(draftBody), 180)
+                  const excerpt = excerptFromReply ? ensureMaxLen(stripMd(excerptFromReply), 180) : ensureMaxLen(stripMd(draftBody), 180)
                   const saved = ArticlesStore.save({
                     title: enforced.title,
                     slug: enforced.slug,

@@ -20,7 +20,7 @@ export const handler = async (event) => {
     return { statusCode: 500, headers: cors, body: 'Missing OPENAI_API_KEY' }
   }
   const incoming = Array.isArray(body.messages) ? body.messages : []
-  const model = body.model || process.env.COPILOT_MODEL || 'gpt-4o'
+  const model = body.model || process.env.COPILOT_MODEL || 'gpt-4o-mini'
   const temperature = Number(process.env.COPILOT_TEMPERATURE ?? body.temperature ?? 0.3)
   // Allow env/body to fully control max_tokens; use a higher default so we aren't artificially capping articles at ~900 tokens.
   const max_tokens = Number(process.env.COPILOT_MAX_TOKENS ?? body.max_tokens ?? 2400)
@@ -34,8 +34,8 @@ export const handler = async (event) => {
       // Article workflow with SEO
       'When asked to write an article from web sources: (1) use fetchUrl for every provided URL in the user message (treat them as primary sources), (2) optionally use searchWeb (3–5 results) if available, (3) present a brief "Sources" list as bullets with links, (4) present a short excerpt and a structured article body with headings, (5) call createArticle with { title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, status }. Keep metaTitle ~60 chars, metaDescription ~155 chars. Tags should be 1–5 short topic labels. Stay strictly on-topic with the fetched sources; do not pivot to unrelated topics.',
       'For substantial practice-area articles (e.g., about statutes, deadlines, or major legal changes), aim for a comprehensive landing-page style piece: multiple H2/H3 sections, practical timelines and steps, explanation of legal rules and their real-world impact, how a West Palm Beach lawyer can help, 2–5 short "Pro Tip" callouts, a brief FAQ section, and a strong, localized GOLDLAW call-to-action at the end.',
-      'When you create a new article, choose a clear primary SEO keyphrase and set the article keyphrase to that exact string. After you pick the keyphrase, copy-paste that exact string into the H1 (or first main heading) and into at least two H2 or H3 headings, even if it feels slightly repetitive, while still keeping headings readable for humans.',
-      'In the body text of long-form articles, repeat that exact keyphrase string multiple times so that its density is roughly between about 0.5% and 2.5% of the total word count. Do not make adjacent sentences all start with the keyphrase, but do reuse the exact phrase verbatim in several paragraphs to help satisfy strict SEO checks.',
+      'When you create a new article, choose a clear primary SEO keyphrase and set the article keyphrase to that string. Use the exact keyphrase in the H1 (or first main heading) and in at least one H2 or H3 heading, while keeping headings natural and readable for humans.',
+      'In the body text of long-form articles, reuse the keyphrase naturally enough that its density is roughly between about 0.5% and 2.5% of the total word count. Do not keyword-stuff; only repeat the keyphrase where it reads naturally and provides value to the reader.',
       'If searchWeb is unavailable, proceed using provided fetchUrl content only and do not fabricate sources. If a provided URL fetch fails or is irrelevant, ask for another URL or clarification before drafting.',
       'When asked to modify an existing article: you MUST call updateArticle with an identifier (slug or id) plus only the fields to change. If you cannot uniquely identify the article, ask a brief clarifying question (offer 1–3 likely titles) and do not claim completion.',
       'Do NOT say "Done" unless you actually invoked a tool (e.g., updateArticle/createArticle) successfully.',
@@ -505,10 +505,6 @@ export const handler = async (event) => {
         return { statusCode: 500, headers: cors, body: 'Upstream error' }
       }
     }
-    // Time budget for upstream calls (ms)
-    const started = Date.now()
-    const BUDGET_MS = Number(process.env.COPILOT_BUDGET_MS || 9000)
-    const budgetLeft = () => Math.max(0, BUDGET_MS - (Date.now() - started))
     const textFromHtml = (html = '') => {
       try {
         let s = String(html)
@@ -522,22 +518,12 @@ export const handler = async (event) => {
       } catch { return { title: '', text: '' } }
     }
 
-    // Helper: fetch with timeout
-    const fetchWithTimeout = async (url, options = {}, ms = 8000) => {
-      const ctrl = new AbortController()
-      const id = setTimeout(() => ctrl.abort(), ms)
-      try {
-        const r = await fetch(url, { ...options, signal: ctrl.signal })
-        return r
-      } finally { clearTimeout(id) }
-    }
-
     const runServerTool = async (name, args) => {
       if (name === 'fetchUrl') {
         const url = String(args?.url || '')
         if (!/^https?:\/\//i.test(url)) return { error: 'INVALID_URL' }
         try {
-          const r = await fetchWithTimeout(url, { headers: { 'User-Agent': 'Mozilla/5.0 GOLDLAW-Copilot' } }, Math.min(7000, budgetLeft()))
+          const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 GOLDLAW-Copilot' } })
           const ct = r.headers.get('content-type') || ''
           if (!ct.includes('text/html')) {
             const text = await r.text().catch(()=> '')
@@ -554,11 +540,11 @@ export const handler = async (event) => {
         const key = process.env.TAVILY_API_KEY || ''
         if (!key) return { error: 'SEARCH_UNAVAILABLE', results: [] }
         try {
-          const r = await fetchWithTimeout('https://api.tavily.com/search', {
+          const r = await fetch('https://api.tavily.com/search', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ api_key: key, query, max_results: Math.min(8, Math.max(1, maxResults)), include_answer: false, include_raw_content: false })
-          }, Math.min(7000, budgetLeft()))
+          })
           const data = await r.json().catch(()=>({}))
           const results = Array.isArray(data?.results) ? data.results.map(x => ({ title: x.title, url: x.url, snippet: x.content })) : []
           return { query, results }
@@ -571,11 +557,11 @@ export const handler = async (event) => {
     const lastUser = incoming[incoming.length - 1] || {}
     const urlMatches = String(lastUser.content || '').match(/https?:\/\/[^\s)"'<>]+/g) || []
     const uniqueUrls = Array.from(new Set(urlMatches)).slice(0, 2)
-    const fetchedSources = await Promise.all(uniqueUrls.map(async (u) => {
+    const fetchedSources = []
+    for (const u of uniqueUrls) {
       const out = await runServerTool('fetchUrl', { url: u })
-      return { url: u, title: out?.title || '', text: out?.text || '' }
-    }))
-    // Build conversation with long-form and creation intent hints
+      fetchedSources.push({ url: u, title: out?.title || '', text: out?.text || '' })
+    }
     let convo = [sys]
     const lastUserText = String(lastUser.content || '')
     const articleLike = looksLikeArticlePrompt(lastUserText)
@@ -585,39 +571,9 @@ export const handler = async (event) => {
         content: [
           'User is requesting a comprehensive long-form legal article, similar to a practice-area landing page, not a short news blurb.',
           'Respond with a structured article as described: multiple H2/H3 sections, practical timelines and steps, explanation of the law and its impact, how a West Palm Beach GOLDLAW lawyer can help, several concise "Pro Tip" callouts, a short FAQ, and a strong localized call-to-action at the end.',
-          'Write complete prose — do not use placeholders like "Change 1: …" or "…". Target approximately 1200–1800 words. Keep it specific to the user’s topic and jurisdiction if provided.',
         ].join(' '),
       }
       convo.push(longFormMsg)
-    }
-    const clearlyCreate = /\b(create|draft|write|generate|develop)\b[\s\S]{0,80}\b(article|post|blog|guide|landing\s*page)\b/i.test(lastUserText)
-    const wantsCitations = /\b(cite|citation|citations|sources?)\b/i.test(lastUserText) || /\b\d+\s+(sources?|citations?)\b/i.test(lastUserText)
-    if (clearlyCreate) {
-      const forceCreateMsg = {
-        role: 'system',
-        content: [
-          'User explicitly asked to create a new article. You must call createArticle with full fields: { title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, status }.',
-          'The body must be fully written (no placeholders like "…"), specific to the prompt, and long-form (roughly 1200–1800 words).',
-          'Infer reasonable defaults where missing. Do not ask the user to draft manually; proceed to create the article now.'
-        ].join(' ')
-      }
-      convo.push(forceCreateMsg)
-    }
-    if (wantsCitations) {
-      const citeMsg = {
-        role: 'system',
-        content: 'User requested cited sources. Use searchWeb (3–5 reputable results) and/or provided URLs, quote accurately, and include a final Sources section with bullet links. Cite inline where helpful.'
-      }
-      convo.push(citeMsg)
-    }
-    // If the user asked for citations and we have time and a search provider, pre-search to ground the draft
-    let searchedResults = []
-    if (wantsCitations && budgetLeft() > 800) {
-      try {
-        const queryText = (lastUserText || '').slice(0, 240)
-        const out = await runServerTool('searchWeb', { query: queryText, maxResults: 5 })
-        if (Array.isArray(out?.results)) searchedResults = out.results.slice(0, 5)
-      } catch {}
     }
     if (fetchedSources.length) {
       const bullets = fetchedSources.map((s, i) => `${i + 1}. ${s.title || '(untitled)'} — ${s.url}`).join('\n')
@@ -631,41 +587,26 @@ export const handler = async (event) => {
       ].join('\n\n')
       convo.push({ role: 'system', content: srcMsg })
     }
-    if (Array.isArray(searchedResults) && searchedResults.length) {
-      const bullets = searchedResults.map((r, i) => `${i + 1}. ${r.title || '(untitled)'} — ${r.url}`).join('\n')
-      const snippets = searchedResults.map((r, i) => `RESULT ${i + 1} (${r.url})\nTitle: ${r.title || '(untitled)'}\nSnippet: ${(r.snippet || '').slice(0, 400)}`).join('\n\n')
-      const citeMsg = [
-        'High-level web results to ground your draft. Prefer reputable, authoritative sources and reflect them accurately. Include them under a final Sources section with bullet links.',
-        bullets,
-        'Snippets (for your reference):',
-        snippets
-      ].join('\n\n')
-      convo.push({ role: 'system', content: citeMsg })
-    }
     convo = [...convo, ...incoming.map(m => ({ role: m.role, content: String(m.content || '') }))]
     let clientCalls = []
     let finalContent = ''
-    const chatTemperature = articleLike ? Math.min(0.5, temperature) : temperature
-    const chatMaxTokens = articleLike ? Math.max(max_tokens, 2200) : max_tokens
-    const steps = (wantsCitations || uniqueUrls.length > 0) ? 2 : 1
-    for (let step = 0; step < steps; step++) {
-      const forceCreateThisStep = clearlyCreate && (step === steps - 1)
-      const toolChoice = forceCreateThisStep ? { type: 'function', function: { name: 'createArticle' } } : 'auto'
-      if (budgetLeft() < 1500) break
-      const resp = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
+    const chatTemperature = articleLike ? Math.min(0.7, temperature + 0.2) : temperature
+    const chatMaxTokens = articleLike ? Math.max(max_tokens, 1800) : max_tokens
+    for (let step = 0; step < 3; step++) {
+      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-        body: JSON.stringify({ model, messages: convo, temperature: chatTemperature, max_tokens: chatMaxTokens, tools, tool_choice: toolChoice })
-      }, Math.min(9000, budgetLeft()))
-      const data = await resp.json().catch(() => ({}))
+        body: JSON.stringify({ model, messages: convo, temperature: chatTemperature, max_tokens: chatMaxTokens, tools, tool_choice: 'auto' })
+      })
+      const data = await resp.json()
       if (!resp.ok) {
-        // Upstream error: proceed to fallback stages instead of returning 500
-        break
+        const msg = data?.error?.message || 'Upstream error'
+        return { statusCode: 500, headers: cors, body: msg }
       }
       const assistantMsg = data?.choices?.[0]?.message || {}
       finalContent = (assistantMsg?.content?.trim?.() || finalContent)
       const tcs = Array.isArray(assistantMsg?.tool_calls) ? assistantMsg.tool_calls : []
-      if (!tcs.length) { convo = [...convo, { role: 'assistant', content: assistantMsg.content || '' }]; continue }
+      if (!tcs.length) break
       const toolOutputs = []
       for (const tc of tcs) {
         const name = tc?.function?.name || ''
@@ -681,160 +622,8 @@ export const handler = async (event) => {
       }
       convo = [...convo, { role: 'assistant', content: assistantMsg.content || '', tool_calls: tcs }, ...toolOutputs]
     }
-    // If we already have substantive assistant prose and clear create intent, synthesize createArticle before fallbacks
-    if (clientCalls.length === 0 && clearlyCreate) {
-      const prose = String(finalContent || '').trim()
-      if (prose.length > 600) {
-        let title = (prose.match(/^#\s+(.+)$/m)?.[1] || '').trim()
-        if (!title) {
-          const t = String(lastUserText || '').replace(/^\s*(create|draft|write|generate|develop)\s+(an?\s+)?(article|post|blog|guide|landing\s*page)\s+(on|about)\s*/i, '').trim()
-          title = t || 'New Article'
-        }
-        clientCalls = [{ name: 'createArticle', args: { title, body: prose, status: 'draft' } }]
-      }
-    }
-    // Second-pass fallback: if the user clearly asked to create and the model did not emit client tool calls,
-    // ask for a JSON-only article draft and synthesize a createArticle tool call.
-    if (clientCalls.length === 0 && clearlyCreate) {
-      try {
-        const jsonOnlyHint = {
-          role: 'system',
-          content: 'Return JSON ONLY with keys: title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl. No prose, no code fences.'
-        }
-        if (budgetLeft() > 800) {
-          const r2 = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-            body: JSON.stringify({ model, messages: [...convo, jsonOnlyHint], temperature: Math.min(0.6, chatTemperature), max_tokens: Math.min(chatMaxTokens, 1600), response_format: { type: 'json_object' } })
-          }, Math.min(8000, budgetLeft()))
-          const j2 = await r2.json().catch(() => ({ }))
-          const content2 = String(j2?.choices?.[0]?.message?.content || '').trim()
-          if (r2.ok && content2) {
-            try {
-              const parsed = JSON.parse(content2)
-              const title = String(parsed?.title || '').trim()
-              const bodyText = String(parsed?.body || '').trim()
-              if (title && bodyText) {
-                const args = {
-                  title,
-                  excerpt: String(parsed?.excerpt || ''),
-                  body: bodyText,
-                  tags: Array.isArray(parsed?.tags) ? parsed.tags.slice(0, 8).map((t) => String(t)) : [],
-                  keyphrase: parsed?.keyphrase ? String(parsed.keyphrase) : undefined,
-                  metaTitle: parsed?.metaTitle ? String(parsed.metaTitle) : undefined,
-                  metaDescription: parsed?.metaDescription ? String(parsed.metaDescription) : undefined,
-                  canonicalUrl: parsed?.canonicalUrl ? String(parsed.canonicalUrl) : undefined,
-                  status: 'draft'
-                }
-                clientCalls = [{ name: 'createArticle', args }]
-              }
-            } catch {}
-          }
-        }
-      } catch {}
-      // Third-stage: if still no tool calls, ask for a full Markdown article and synthesize createArticle
-      if (clientCalls.length === 0 && articleLike && budgetLeft() > 800) {
-        try {
-          const articleHint = {
-            role: 'system',
-            content: 'Draft a comprehensive long-form legal article in Markdown with a single H1 title line, multiple H2/H3 sections (Key Changes, Timeline, How a Lawyer Helps, Hidden Issues, FAQ, Pro Tips), and a strong localized GOLDLAW call-to-action. Do not include any meta notes; output article content only.'
-          }
-          const r3 = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-            body: JSON.stringify({ model, messages: [...convo, articleHint], temperature: Math.min(0.7, chatTemperature), max_tokens: Math.min(chatMaxTokens, 2000), tool_choice: 'none' })
-          }, Math.min(8000, budgetLeft()))
-          const j3 = await r3.json().catch(()=>({}))
-          const content3 = String(j3?.choices?.[0]?.message?.content || '').trim()
-          if (r3.ok && content3) {
-            let title3 = (content3.match(/^#\s+(.+)$/m)?.[1] || '').trim()
-            if (!title3) {
-              const t = String(lastUserText || '').replace(/^\s*(create|draft|write|generate|develop)\s+(an?\s+)?(article|post|blog)\s+(on|about)\s*/i, '').trim()
-              title3 = t || 'New Article'
-            }
-            clientCalls = [{ name: 'createArticle', args: { title: title3, body: content3, status: 'draft' } }]
-          }
-        } catch {}
-      }
-      // Final local synthesis if upstream fallbacks could not run
-      if (clientCalls.length === 0 && clearlyCreate) {
-        try {
-          let synthTitle = (String(lastUserText || '').replace(/^\s*(create|draft|write|generate|develop)\s+(an?\s+)?(article|post|blog)\s+(on|about)\s*/i, '').trim()) || 'New Article'
-          const kp = synthTitle.toLowerCase().replace(/[^a-z0-9\s]+/g, ' ').trim()
-          const city = 'West Palm Beach'
-          const keyphraseUse = kp || 'personal injury law'
-          const srcList = (Array.isArray(fetchedSources) && fetchedSources.length)
-            ? ('\n\n## Sources\n' + fetchedSources.map((s) => `- [${s.title || s.url}](${s.url})`).join('\n'))
-            : ''
-          const proTips = [
-            'Document medical care, expenses, and missed work.',
-            'Avoid detailed statements to insurers before consulting an attorney.',
-            'Consult an attorney early to preserve evidence and meet deadlines.'
-          ]
-          const tipsMd = proTips.map(t => `- ${t}`).join('\n')
-          const cta = `If you or someone you know has been a victim of ${keyphraseUse}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
-          const body = [
-            `# ${synthTitle}`,
-            '',
-            '## Key Changes in the Law',
-            `Florida recently updated key rules affecting ${keyphraseUse}. These changes alter timelines, proof requirements, and how claims are handled. Below is a practical breakdown focused on what victims and families in ${city} should know and do next.`,
-            '',
-            '### Change 1',
-            `Explain the change and why it matters for ${keyphraseUse} cases in ${city}. Give concrete, plain-English examples that show how the rule impacts deadlines, evidence collection, and insurance negotiations.`,
-            '',
-            '### Change 2',
-            'Explain the change with practical examples. Note how it affects medical treatment coordination, claim valuation, and common pitfalls that could reduce compensation.',
-            '',
-            '## Timeline of Actions for Victims',
-            'A structured checklist helps you act quickly and avoid missing critical deadlines.',
-            '',
-            '1. Immediately After the Accident',
-            'Get medical care, report the incident, and preserve evidence (photos, witnesses, scene details). Keep all paperwork and receipts.',
-            '',
-            '2. Within the First Week',
-            'Notify insurers and request claim numbers. Follow medical advice and track symptoms. Avoid broad recorded statements without legal guidance.',
-            '',
-            '3. Within the First Month',
-            'Consult a lawyer to evaluate liability, damages, and insurance coverage. Your attorney can send preservation letters and begin negotiations.',
-            '',
-            '4. Before the Two-Year Deadline',
-            'Florida’s statute of limitations in many negligence cases is two years. Do not wait. Filing late can bar recovery entirely.',
-            '',
-            `## How a ${city} Lawyer Can Help`,
-            'A local attorney levels the playing field with insurers and defendants.',
-            '',
-            '- Investigation and evidence preservation',
-            '- Negotiation with insurers',
-            '- Filing and litigation within deadlines',
-            '',
-            '## Hidden and Advanced Issues',
-            '- Modified comparative negligence: recovery can be reduced or barred based on fault percentages.',
-            '- Exceptions and tolling scenarios: minors, late discovery, and out-of-state defendants can affect timing.',
-            '',
-            '## Frequently Asked Questions',
-            '**What happens if I miss the deadline?** Your claim may be dismissed. Speak to a lawyer immediately to evaluate any limited exceptions.',
-            '',
-            '**Can I file if I was partially at fault?** Often yes, but recovery may be reduced. Get advice before speaking with insurers.',
-            '',
-            '**What if I am still treating when the deadline approaches?** Filing preserves your rights while treatment continues.',
-            '',
-            '## Pro Tips',
-            `${tipsMd}`,
-            '',
-            cta,
-            srcList
-          ].join('\n')
-          const tags = keyphraseUse ? keyphraseUse.split(/\s+/).filter(Boolean).slice(0, 5) : []
-          const metaTitle = `${synthTitle} — GOLDLAW`
-          const metaDescription = `What changed, timelines, pitfalls, and how a ${city} lawyer helps in ${synthTitle}.`
-          clientCalls = [{ name: 'createArticle', args: { title: synthTitle, body, tags, keyphrase: keyphraseUse, metaTitle, metaDescription, status: 'draft' } }]
-        } catch {}
-      }
-    }
     return { statusCode: 200, headers: { ...cors, 'Content-Type': 'application/json' }, body: JSON.stringify({ content: finalContent, toolCalls: clientCalls }) }
   } catch (e) {
-    try { console.error('Copilot handler error:', e && (e.stack || e.message || e)) } catch {}
-    const msg = (e && (e.message || (typeof e === 'string' ? e : 'Request failed'))) || 'Request failed'
-    return { statusCode: 500, headers: cors, body: String(msg) }
+    return { statusCode: 500, headers: cors, body: 'Request failed' }
   }
 }

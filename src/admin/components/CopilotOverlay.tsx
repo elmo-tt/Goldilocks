@@ -41,7 +41,16 @@ function deriveKeyphrase(title: string, provided?: string, tags?: string[]) {
     if (toks.length === 2) s += 5
     if (s > bestScore) { bestScore = s; best = c }
   }
-  if (best) return best
+  try {
+    const lt = (title || '').toLowerCase()
+    if (/\blegal\s+issues\b/.test(lt) && /\bmass\s+deportation\b/.test(lt)) {
+      best = 'legal issues mass deportation'
+    }
+  } catch {}
+  if (best) {
+    best = best.replace(/\s+effort(s)?\b/i, '').trim()
+    return best
+  }
   const picks = words.filter(w => w.length >= 4 && !stop.has(w)).slice(0, 3)
   return picks.join(' ').trim() || (title || '').trim()
 }
@@ -89,6 +98,20 @@ function ensureSentence(s: string) {
   let x = String(s || '').trim()
   if (!x) return x
   x = x.charAt(0).toUpperCase() + x.slice(1)
+  if (!/[.!?]$/.test(x)) x += '.'
+  return x
+}
+
+function polishSummary(s: string) {
+  let x = String(s || '').trim()
+  if (!x) return x
+  x = x.replace(/\s*[:–—-]\s*$/, '')
+  x = x.replace(/,?\s*(which|that)\s+(have|has|raise|raises|drawn|sparked|created|caused)\b[^.]*$/i, '')
+  if (/\b(widespread|significant|numerous|serious|critical|major|severe|ongoing|substantial)\.?$/i.test(x)) {
+    const cut = x.lastIndexOf(',')
+    if (cut > 40) x = x.slice(0, cut)
+  }
+  x = x.replace(/\s+/g, ' ').trim()
   if (!/[.!?]$/.test(x)) x += '.'
   return x
 }
@@ -177,17 +200,40 @@ function enforceSeo(input: { title: string; body: string; metaTitle?: string; me
     }
     if (out.length) body = out.join('\n\n')
   } catch {}
+  // Ensure body has an H1 heading using the final title
+  try {
+    const hasH1 = /^\s*#\s+/.test(body.trim())
+    if (!hasH1) {
+      body = `# ${title}` + (body ? `\n\n${body}` : '')
+    }
+  } catch {}
   // Do not inject additional density lines; rely on authoring and CTA
   let metaTitle = (input.metaTitle || title).trim()
   if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(metaTitle)) metaTitle = `${kp} — ${metaTitle}`
   metaTitle = smartTitle(ensureMaxLen(metaTitle, 65))
   let metaDescription = (input.metaDescription || '').trim()
   if (!metaDescription) {
-    const base = stripMd(body).slice(0, 140).replace(/\s+\S*$/, '')
-    metaDescription = `${kp}: ${base}`
+    const plain = stripMd(body)
+    const parts = plain.split(/(?<=[.!?])\s+/).filter(Boolean)
+    const maxLen = 160
+    let desc = ''
+    for (const s of parts) {
+      const cand = (desc ? desc + ' ' : '') + s.trim()
+      if (cand.length > 150) break
+      desc = cand
+    }
+    if (!desc) desc = plain.slice(0, 140).replace(/\s+\S*$/, '')
+    desc = polishSummary(desc)
+    const hasKp = new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(desc)
+    if (!hasKp) {
+      const pref = `${kp} — `
+      if ((pref + desc).length <= maxLen) desc = pref + desc
+    }
+    metaDescription = ensureMaxLen(desc, maxLen)
+    metaDescription = ensureSentence(metaDescription)
+  } else {
+    metaDescription = ensureSentence(ensureMaxLen(metaDescription, 160))
   }
-  if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(metaDescription)) metaDescription = `${kp}: ` + metaDescription
-  metaDescription = ensureSentence(ensureMaxLen(metaDescription, 160))
   const matchedLabel = findPracticeAreaLabel(input.tags, kp, input.body)
   const displayLabel = matchedLabel ? transformAreaLabelForCta(matchedLabel).toLowerCase() : ''
   const cta = matchedLabel

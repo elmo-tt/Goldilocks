@@ -20,7 +20,7 @@ export const handler = async (event) => {
     return { statusCode: 500, headers: cors, body: 'Missing OPENAI_API_KEY' }
   }
   const incoming = Array.isArray(body.messages) ? body.messages : []
-  const model = body.model || process.env.COPILOT_MODEL || 'gpt-4o-mini'
+  const model = body.model || process.env.COPILOT_MODEL || 'gpt-4o'
   const temperature = Number(process.env.COPILOT_TEMPERATURE ?? body.temperature ?? 0.3)
   // Allow env/body to fully control max_tokens; use a higher default so we aren't artificially capping articles at ~900 tokens.
   const max_tokens = Number(process.env.COPILOT_MAX_TOKENS ?? body.max_tokens ?? 2400)
@@ -575,6 +575,14 @@ export const handler = async (event) => {
       const out = await runServerTool('fetchUrl', { url: u })
       return { url: u, title: out?.title || '', text: out?.text || '' }
     }))
+    // If the user asked for citations and we have time and a search provider, pre-search to ground the draft
+    let searchedResults = []
+    if (wantsCitations && budgetLeft() > 800) {
+      try {
+        const out = await runServerTool('searchWeb', { query: lastUserText.slice(0, 240), maxResults: 5 })
+        if (Array.isArray(out?.results)) searchedResults = out.results.slice(0, 5)
+      } catch {}
+    }
     // Build conversation with long-form and creation intent hints
     let convo = [sys]
     const lastUserText = String(lastUser.content || '')
@@ -585,6 +593,7 @@ export const handler = async (event) => {
         content: [
           'User is requesting a comprehensive long-form legal article, similar to a practice-area landing page, not a short news blurb.',
           'Respond with a structured article as described: multiple H2/H3 sections, practical timelines and steps, explanation of the law and its impact, how a West Palm Beach GOLDLAW lawyer can help, several concise "Pro Tip" callouts, a short FAQ, and a strong localized call-to-action at the end.',
+          'Write complete prose — do not use placeholders like "Change 1: …" or "…". Target approximately 1200–1800 words. Keep it specific to the user’s topic and jurisdiction if provided.',
         ].join(' '),
       }
       convo.push(longFormMsg)
@@ -596,6 +605,7 @@ export const handler = async (event) => {
         role: 'system',
         content: [
           'User explicitly asked to create a new article. You must call createArticle with full fields: { title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl, status }.',
+          'The body must be fully written (no placeholders like "…"), specific to the prompt, and long-form (roughly 1200–1800 words).',
           'Infer reasonable defaults where missing. Do not ask the user to draft manually; proceed to create the article now.'
         ].join(' ')
       }
@@ -620,11 +630,22 @@ export const handler = async (event) => {
       ].join('\n\n')
       convo.push({ role: 'system', content: srcMsg })
     }
+    if (Array.isArray(searchedResults) && searchedResults.length) {
+      const bullets = searchedResults.map((r, i) => `${i + 1}. ${r.title || '(untitled)'} — ${r.url}`).join('\n')
+      const snippets = searchedResults.map((r, i) => `RESULT ${i + 1} (${r.url})\nTitle: ${r.title || '(untitled)'}\nSnippet: ${(r.snippet || '').slice(0, 400)}`).join('\n\n')
+      const citeMsg = [
+        'High-level web results to ground your draft. Prefer reputable, authoritative sources and reflect them accurately. Include them under a final Sources section with bullet links.',
+        bullets,
+        'Snippets (for your reference):',
+        snippets
+      ].join('\n\n')
+      convo.push({ role: 'system', content: citeMsg })
+    }
     convo = [...convo, ...incoming.map(m => ({ role: m.role, content: String(m.content || '') }))]
     let clientCalls = []
     let finalContent = ''
-    const chatTemperature = articleLike ? Math.min(0.7, temperature + 0.2) : temperature
-    const chatMaxTokens = articleLike ? Math.max(max_tokens, 1800) : max_tokens
+    const chatTemperature = articleLike ? Math.min(0.5, temperature) : temperature
+    const chatMaxTokens = articleLike ? Math.max(max_tokens, 2200) : max_tokens
     const steps = (wantsCitations || uniqueUrls.length > 0) ? 2 : 1
     for (let step = 0; step < steps; step++) {
       const forceCreateThisStep = clearlyCreate && (step === steps - 1)
@@ -658,6 +679,18 @@ export const handler = async (event) => {
         }
       }
       convo = [...convo, { role: 'assistant', content: assistantMsg.content || '', tool_calls: tcs }, ...toolOutputs]
+    }
+    // If we already have substantive assistant prose and clear create intent, synthesize createArticle before fallbacks
+    if (clientCalls.length === 0 && clearlyCreate) {
+      const prose = String(finalContent || '').trim()
+      if (prose.length > 600) {
+        let title = (prose.match(/^#\s+(.+)$/m)?.[1] || '').trim()
+        if (!title) {
+          const t = String(lastUserText || '').replace(/^\s*(create|draft|write|generate|develop)\s+(an?\s+)?(article|post|blog|guide|landing\s*page)\s+(on|about)\s*/i, '').trim()
+          title = t || 'New Article'
+        }
+        clientCalls = [{ name: 'createArticle', args: { title, body: prose, status: 'draft' } }]
+      }
     }
     // Second-pass fallback: if the user clearly asked to create and the model did not emit client tool calls,
     // ask for a JSON-only article draft and synthesize a createArticle tool call.

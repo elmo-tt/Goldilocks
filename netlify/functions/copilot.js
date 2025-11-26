@@ -658,39 +658,39 @@ export const handler = async (event) => {
           role: 'system',
           content: 'Return JSON ONLY with keys: title, excerpt, body, tags, keyphrase, metaTitle, metaDescription, canonicalUrl. No prose, no code fences.'
         }
-        if (budgetLeft() > 2500) {
-        const r2 = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-          body: JSON.stringify({ model, messages: [...convo, jsonOnlyHint], temperature: Math.min(0.6, chatTemperature), max_tokens: Math.max(chatMaxTokens, 2000), response_format: { type: 'json_object' } })
-        }, Math.min(8000, budgetLeft()))
-        const j2 = await r2.json().catch(()=>({}))
-        const content2 = String(j2?.choices?.[0]?.message?.content || '').trim()
-        if (r2.ok && content2) {
-          try {
-            const parsed = JSON.parse(content2)
-            const title = String(parsed?.title || '').trim()
-            const bodyText = String(parsed?.body || '').trim()
-            if (title && bodyText) {
-              const args = {
-                title,
-                excerpt: String(parsed?.excerpt || ''),
-                body: bodyText,
-                tags: Array.isArray(parsed?.tags) ? parsed.tags.slice(0, 8).map((t)=>String(t)) : [],
-                keyphrase: parsed?.keyphrase ? String(parsed.keyphrase) : undefined,
-                metaTitle: parsed?.metaTitle ? String(parsed.metaTitle) : undefined,
-                metaDescription: parsed?.metaDescription ? String(parsed.metaDescription) : undefined,
-                canonicalUrl: parsed?.canonicalUrl ? String(parsed.canonicalUrl) : undefined,
-                status: 'draft'
+        if (budgetLeft() > 800) {
+          const r2 = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+            body: JSON.stringify({ model, messages: [...convo, jsonOnlyHint], temperature: Math.min(0.6, chatTemperature), max_tokens: Math.min(chatMaxTokens, 1600), response_format: { type: 'json_object' } })
+          }, Math.min(8000, budgetLeft()))
+          const j2 = await r2.json().catch(() => ({ }))
+          const content2 = String(j2?.choices?.[0]?.message?.content || '').trim()
+          if (r2.ok && content2) {
+            try {
+              const parsed = JSON.parse(content2)
+              const title = String(parsed?.title || '').trim()
+              const bodyText = String(parsed?.body || '').trim()
+              if (title && bodyText) {
+                const args = {
+                  title,
+                  excerpt: String(parsed?.excerpt || ''),
+                  body: bodyText,
+                  tags: Array.isArray(parsed?.tags) ? parsed.tags.slice(0, 8).map((t) => String(t)) : [],
+                  keyphrase: parsed?.keyphrase ? String(parsed.keyphrase) : undefined,
+                  metaTitle: parsed?.metaTitle ? String(parsed.metaTitle) : undefined,
+                  metaDescription: parsed?.metaDescription ? String(parsed.metaDescription) : undefined,
+                  canonicalUrl: parsed?.canonicalUrl ? String(parsed.canonicalUrl) : undefined,
+                  status: 'draft'
+                }
+                clientCalls = [{ name: 'createArticle', args }]
               }
-              clientCalls = [{ name: 'createArticle', args }]
-            }
-          } catch {}
-        }
+            } catch {}
+          }
         }
       } catch {}
       // Third-stage: if still no tool calls, ask for a full Markdown article and synthesize createArticle
-      if (clientCalls.length === 0 && budgetLeft() > 2500) {
+      if (clientCalls.length === 0 && budgetLeft() > 800) {
         try {
           const articleHint = {
             role: 'system',
@@ -699,7 +699,7 @@ export const handler = async (event) => {
           const r3 = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-            body: JSON.stringify({ model, messages: [...convo, articleHint], temperature: Math.min(0.7, chatTemperature), max_tokens: Math.max(chatMaxTokens, 2200), tool_choice: 'none' })
+            body: JSON.stringify({ model, messages: [...convo, articleHint], temperature: Math.min(0.7, chatTemperature), max_tokens: Math.min(chatMaxTokens, 2000), tool_choice: 'none' })
           }, Math.min(8000, budgetLeft()))
           const j3 = await r3.json().catch(()=>({}))
           const content3 = String(j3?.choices?.[0]?.message?.content || '').trim()
@@ -711,6 +711,80 @@ export const handler = async (event) => {
             }
             clientCalls = [{ name: 'createArticle', args: { title: title3, body: content3, status: 'draft' } }]
           }
+        } catch {}
+      }
+      // Final local synthesis if upstream fallbacks could not run
+      if (clientCalls.length === 0 && clearlyCreate) {
+        try {
+          let synthTitle = (String(lastUserText || '').replace(/^\s*(create|draft|write|generate|develop)\s+(an?\s+)?(article|post|blog)\s+(on|about)\s*/i, '').trim()) || 'New Article'
+          const kp = synthTitle.toLowerCase().replace(/[^a-z0-9\s]+/g, ' ').trim()
+          const city = 'West Palm Beach'
+          const keyphraseUse = kp || 'personal injury law'
+          const srcList = (Array.isArray(fetchedSources) && fetchedSources.length)
+            ? ('\n\n## Sources\n' + fetchedSources.map((s) => `- [${s.title || s.url}](${s.url})`).join('\n'))
+            : ''
+          const proTips = [
+            'Document medical care, expenses, and missed work.',
+            'Avoid detailed statements to insurers before consulting an attorney.',
+            'Consult an attorney early to preserve evidence and meet deadlines.'
+          ]
+          const tipsMd = proTips.map(t => `- ${t}`).join('\n')
+          const cta = `If you or someone you know has been a victim of ${keyphraseUse}, you are not alone — and you are not without options. Contact GOLDLAW today for a confidential consultation. We will listen, guide you through your rights, and fight for accountability.`
+          const body = [
+            `# ${synthTitle}`,
+            '',
+            '## Key Changes in the Law',
+            `Florida recently updated key rules affecting ${keyphraseUse}. These changes alter timelines, proof requirements, and how claims are handled. Below is a practical breakdown focused on what victims and families in ${city} should know and do next.`,
+            '',
+            '### Change 1',
+            `Explain the change and why it matters for ${keyphraseUse} cases in ${city}. Give concrete, plain-English examples that show how the rule impacts deadlines, evidence collection, and insurance negotiations.`,
+            '',
+            '### Change 2',
+            'Explain the change with practical examples. Note how it affects medical treatment coordination, claim valuation, and common pitfalls that could reduce compensation.',
+            '',
+            '## Timeline of Actions for Victims',
+            'A structured checklist helps you act quickly and avoid missing critical deadlines.',
+            '',
+            '1. Immediately After the Accident',
+            'Get medical care, report the incident, and preserve evidence (photos, witnesses, scene details). Keep all paperwork and receipts.',
+            '',
+            '2. Within the First Week',
+            'Notify insurers and request claim numbers. Follow medical advice and track symptoms. Avoid broad recorded statements without legal guidance.',
+            '',
+            '3. Within the First Month',
+            'Consult a lawyer to evaluate liability, damages, and insurance coverage. Your attorney can send preservation letters and begin negotiations.',
+            '',
+            '4. Before the Two-Year Deadline',
+            'Florida’s statute of limitations in many negligence cases is two years. Do not wait. Filing late can bar recovery entirely.',
+            '',
+            `## How a ${city} Lawyer Can Help`,
+            'A local attorney levels the playing field with insurers and defendants.',
+            '',
+            '- Investigation and evidence preservation',
+            '- Negotiation with insurers',
+            '- Filing and litigation within deadlines',
+            '',
+            '## Hidden and Advanced Issues',
+            '- Modified comparative negligence: recovery can be reduced or barred based on fault percentages.',
+            '- Exceptions and tolling scenarios: minors, late discovery, and out-of-state defendants can affect timing.',
+            '',
+            '## Frequently Asked Questions',
+            '**What happens if I miss the deadline?** Your claim may be dismissed. Speak to a lawyer immediately to evaluate any limited exceptions.',
+            '',
+            '**Can I file if I was partially at fault?** Often yes, but recovery may be reduced. Get advice before speaking with insurers.',
+            '',
+            '**What if I am still treating when the deadline approaches?** Filing preserves your rights while treatment continues.',
+            '',
+            '## Pro Tips',
+            `${tipsMd}`,
+            '',
+            cta,
+            srcList
+          ].join('\n')
+          const tags = keyphraseUse ? keyphraseUse.split(/\s+/).filter(Boolean).slice(0, 5) : []
+          const metaTitle = `${synthTitle} — GOLDLAW`
+          const metaDescription = `What changed, timelines, pitfalls, and how a ${city} lawyer helps in ${synthTitle}.`
+          clientCalls = [{ name: 'createArticle', args: { title: synthTitle, body, tags, keyphrase: keyphraseUse, metaTitle, metaDescription, status: 'draft' } }]
         } catch {}
       }
     }

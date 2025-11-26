@@ -20,7 +20,7 @@ function deriveKeyphrase(title: string, provided?: string, tags?: string[]) {
   if (t) return t
   const raw = (title || '').toLowerCase()
   const words = raw.match(/[a-z0-9]+/g) || []
-  const stop = new Set(['the','and','for','with','that','this','from','about','into','onto','within','your','you','our','are','will','can','how','what','why','when','of','a','in'])
+  const stop = new Set(['the','and','for','with','that','this','from','about','into','onto','within','your','you','our','are','will','can','how','what','why','when','of','a','in','their','its','current','administration','faces','today','latest','new','trump'])
   const slug = slugify(title || '').replace(/-/g, ' ')
   const cands: string[] = []
   // collect trigrams and bigrams (prefer contiguous phrases from the title)
@@ -56,6 +56,8 @@ function stripMd(s: string) {
   x = x.replace(/^\s*\d+\.\s+/gm, ' ')
   x = x.replace(/^#{1,6}\s+/gm, ' ')
   x = x.replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, '$1')
+  x = x.replace(/^\s*\*{2,}\s+/gm, '')
+  x = x.replace(/^\s*[*_]+\s*$/gm, '')
   x = x.replace(/\s+/g, ' ')
   return x.trim()
 }
@@ -65,6 +67,30 @@ function ensureMaxLen(s: string, n: number) {
   if (s.length <= n) return s
   const cut = s.slice(0, n)
   return cut.replace(/\s+\S*$/, '')
+}
+
+function smartTitle(s: string) {
+  const minor = new Set(['and','or','the','a','an','of','for','to','in','on','at','by','from','with','vs','via'])
+  const w = String(s || '').toLowerCase().split(/\s+/)
+  const out = w.map((word, i) => {
+    if (!word) return word
+    const core = word.replace(/^(["'“”‘’(\[]?)(.*?)([)\]"'“”‘’.,:;!?]*)$/, '$2')
+    const pre = word.slice(0, word.indexOf(core))
+    const post = word.slice(pre.length + core.length)
+    const cap = (!minor.has(core) || i === 0 || i === w.length - 1)
+      ? core.charAt(0).toUpperCase() + core.slice(1)
+      : core
+    return pre + cap + post
+  })
+  return out.join(' ')
+}
+
+function ensureSentence(s: string) {
+  let x = String(s || '').trim()
+  if (!x) return x
+  x = x.charAt(0).toUpperCase() + x.slice(1)
+  if (!/[.!?]$/.test(x)) x += '.'
+  return x
 }
 
 function norm(s: string) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim() }
@@ -126,6 +152,7 @@ function enforceSeo(input: { title: string; body: string; metaTitle?: string; me
   if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(title)) {
     title = `${kp.charAt(0).toUpperCase()}${kp.slice(1)} — ${title}`
   }
+  title = smartTitle(title)
   let slug = slugify(`${title} ${kp}`)
   let body = input.body || ''
   // Remove generic headings like Introduction/Conclusion even if not marked with '#'
@@ -153,14 +180,14 @@ function enforceSeo(input: { title: string; body: string; metaTitle?: string; me
   // Do not inject additional density lines; rely on authoring and CTA
   let metaTitle = (input.metaTitle || title).trim()
   if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(metaTitle)) metaTitle = `${kp} — ${metaTitle}`
-  metaTitle = ensureMaxLen(metaTitle, 65)
+  metaTitle = smartTitle(ensureMaxLen(metaTitle, 65))
   let metaDescription = (input.metaDescription || '').trim()
   if (!metaDescription) {
     const base = stripMd(body).slice(0, 140).replace(/\s+\S*$/, '')
     metaDescription = `${kp}: ${base}`
   }
   if (!new RegExp(`\\b${kp.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i').test(metaDescription)) metaDescription = `${kp}: ` + metaDescription
-  metaDescription = ensureMaxLen(metaDescription, 160)
+  metaDescription = ensureSentence(ensureMaxLen(metaDescription, 160))
   const matchedLabel = findPracticeAreaLabel(input.tags, kp, input.body)
   const displayLabel = matchedLabel ? transformAreaLabelForCta(matchedLabel).toLowerCase() : ''
   const cta = matchedLabel
@@ -196,6 +223,8 @@ function normalizeAiMarkdown(text: string) {
   s = s.replace(/([^\n])\s+\*\s/g, '$1\n* ')
   // Ensure a blank line before list blocks for proper Markdown parsing
   s = s.replace(/([^\n])\n(\s*(?:- |\d+\. ))/g, '$1\n\n$2')
+  s = s.replace(/^\s*\*{2,}\s+([^\n]+)/gm, '$1')
+  s = s.replace(/^\s*[*_]+\s*$/gm, '')
   // Normalize multiple blank lines to max two
   s = s.replace(/\n{3,}/g, '\n\n')
   // Trim trailing spaces on lines

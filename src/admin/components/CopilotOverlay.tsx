@@ -191,6 +191,7 @@ function polishSummary(s: string) {
   if (!x) return x
   x = x.replace(/\s*[:–—-]\s*$/, '')
   x = x.replace(/,?\s*(which|that)\s+(have|has|raise|raises|drawn|sparked|created|caused)\b[^.]*$/i, '')
+  x = x.replace(/,?\s*(raising|prompting|sparking|fueling|triggering|leading\s+to|resulting\s+in|contributing\s+to)\s+[^.]*$/i, '')
   x = x.replace(/(?:,\s*)?(?:of|for|with|on|in|to|into|onto|about|regarding)\s+[^.]{0,30}$/i, '')
   x = x.replace(/\s+(?:of|for|with|on|in|to|into|onto|about|regarding)\s*(?:[.!?])?$/i, '')
   x = x.replace(/\s+(?:the|these|those|their|this|that)$/i, '')

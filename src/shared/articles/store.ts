@@ -157,6 +157,8 @@ if (getBackend() === 'supabase') {
     CloudArticlesStore.all().then((remote) => {
       if (!Array.isArray(remote)) return
       const remoteArr = remote as Article[]
+      // Keep local cache when remote has no rows yet
+      if (remoteArr.length === 0) return
       // Remote-as-source-of-truth: start from remote, optionally preserve select local-only flags
       const local = readAll()
       const byIdLocal = new Map(local.map(l => [l.id, l] as const))

@@ -46,7 +46,9 @@ function usePublished() {
     if (getBackend() !== 'supabase') return
     CloudArticlesStore.published().then((list) => {
       if (cancelled) return
-      if (Array.isArray(list)) setItems(list as Article[])
+      if (!Array.isArray(list)) return
+      // Keep local cache as fallback when remote has no published rows
+      if (list.length > 0) setItems(list as Article[])
     }).catch(() => {})
     return () => { cancelled = true }
   }, [])
